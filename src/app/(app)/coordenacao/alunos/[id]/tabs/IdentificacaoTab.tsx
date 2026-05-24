@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Alert } from "@/components/ui/Alert";
+import { Textarea } from "@/components/ui/Textarea";
 import type { StudentDetailRow, StudentContactRow } from "@/lib/supabase/queries/students";
 
 function SubmitButton() {
@@ -183,6 +184,17 @@ export function IdentificacaoTab({
               name="graduation_name"
               defaultValue={student.graduation_name ?? ""}
               placeholder="Ex: Direito, Administração, Engenharia Civil…"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="professional_experience">Experiência profissional</Label>
+            <Textarea
+              id="professional_experience"
+              name="professional_experience"
+              defaultValue={student.professional_experience ?? ""}
+              placeholder="Descreva suas experiências profissionais anteriores, cargos ocupados, tempo de serviço, etc."
+              rows={3}
             />
           </div>
         </div>

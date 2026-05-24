@@ -255,6 +255,9 @@ export function ResumoTab({
             <Field label="Nome da mãe" value={student.mother_name} />
             <Field label="Escolaridade" value={student.education_level} />
             <Field label="Graduação" value={student.graduation_name} />
+            <div className="col-span-2">
+              <Field label="Experiência profissional" value={student.professional_experience} />
+            </div>
           </dl>
         </CardContent>
       </Card>

@@ -470,6 +470,7 @@ const identificationSchema = z.object({
   education_level: z.string().optional(),
   graduation_type: z.string().optional(),
   graduation_name: z.string().optional(),
+  professional_experience: z.string().optional(),
   voter_id: z.string().optional(),
   voter_zone: z.string().optional(),
   voter_section: z.string().optional(),
