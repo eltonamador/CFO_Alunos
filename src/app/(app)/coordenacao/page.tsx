@@ -5,6 +5,7 @@ import { AlertCircle, Users, FileText, CheckCircle2, AlertTriangle, ArrowRight }
 import Link from "next/link";
 
 export const metadata = { title: "Início — Coordenação" };
+export const dynamic = "force-dynamic";
 
 interface ProgressBarProps {
   done: number;
@@ -40,17 +41,22 @@ export default async function CoordenacaoHome() {
   const supabase = createSupabaseServerClient();
 
   // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
-  const { data: rawStudentsData } = await supabase
+  const { data: rawStudentsData, error } = await supabase
     .from("students")
     .select(`
       id,
       sex,
-      cpf, rg, birth_date, marital_status, mother_name,
-      student_contacts(whatsapp),
-      student_addresses(street, city, zip),
-      health_restrictions(blood_type, validation_status)
+      cpf, rg, birth_date, marital_status, mother_name, education_level,
+      student_contacts(whatsapp, email_personal),
+      student_addresses(street, city, zip, state),
+      health_restrictions(blood_type, validation_status),
+      emergency_contacts(id, priority),
+      student_logistics(student_id),
+      vehicles(student_id)
     `)
     .is("deleted_at", null);
+
+  if (error) console.error("Error fetching students:", error);
 
   const allStudentsData = (rawStudentsData ?? []) as any[];
   const totalStudents = allStudentsData.length;
@@ -64,6 +70,10 @@ export default async function CoordenacaoHome() {
       const c = Array.isArray(s.student_contacts) ? s.student_contacts[0] : s.student_contacts;
       const a = Array.isArray(s.student_addresses) ? s.student_addresses[0] : s.student_addresses;
       const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
+      const eList = Array.isArray(s.emergency_contacts) ? s.emergency_contacts : (s.emergency_contacts ? [s.emergency_contacts] : []);
+      const em = eList.find((x: any) => x.priority === 1);
+      const l = Array.isArray(s.student_logistics) ? s.student_logistics[0] : s.student_logistics;
+      const v = Array.isArray(s.vehicles) ? s.vehicles[0] : s.vehicles;
 
       const cadastroFields = [
         s.cpf,
@@ -71,11 +81,18 @@ export default async function CoordenacaoHome() {
         s.birth_date,
         s.marital_status,
         s.mother_name,
+        s.sex,
+        s.education_level,
         c?.whatsapp,
+        c?.email_personal,
         a?.street,
         a?.city,
         a?.zip,
+        a?.state,
         h?.blood_type,
+        em?.id,
+        l?.student_id,
+        v?.student_id,
       ];
       if (cadastroFields.every(Boolean)) {
         completedProfilesCount++;

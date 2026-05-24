@@ -10,6 +10,8 @@ import {
   ClipboardList,
   Boxes,
   Folder,
+  CalendarDays,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 import { logoutAction } from "@/modules/identity/presentation/actions/authActions";
@@ -29,6 +31,8 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
+    { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
+    { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
     { href: "/coordenacao/relatorios", label: "Relatórios", icon: FileText },
   ],
@@ -39,10 +43,13 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   ],
   instrutor: [
     { href: "/instrutor", label: "Buscar", icon: Search, exact: true },
+    { href: "/instrutor/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/instrutor/turma", label: "Turma", icon: GraduationCap },
   ],
   aluno: [
     { href: "/aluno", label: "Início", icon: Home, exact: true },
+    { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
+    { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/aluno/ficha", label: "Ficha", icon: ClipboardList },
     { href: "/aluno/documentos", label: "Documentos", icon: Folder },
     { href: "/aluno/materiais", label: "Materiais", icon: Boxes },
@@ -198,10 +205,10 @@ export function AppShell({
       {/* ===== Bottom nav (mobile) ===== */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card md:hidden">
         <div
-          className="grid h-16 items-center"
-          style={{ gridTemplateColumns: `repeat(${Math.min(nav.length, 4)}, minmax(0, 1fr))` }}
+          className="grid h-16 min-w-full items-center overflow-x-auto"
+          style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(74px, 1fr))` }}
         >
-          {nav.slice(0, 4).map((item) => (
+          {nav.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}

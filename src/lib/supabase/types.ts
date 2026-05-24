@@ -70,6 +70,121 @@ type StudentCardInstructorRow = {
   canga_number: number | null;
 };
 
+type DutyRoleRow = {
+  id: string;
+  code: "aluno_dia" | "subxerife" | "aluno_alimentacao" | "aluno_logistica";
+  name: string;
+  description: string | null;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type DutyRosterRow = {
+  id: string;
+  class_id: string;
+  period_start: string;
+  period_end: string;
+  status: "rascunho" | "publicada" | "arquivada";
+  generated_by: string | null;
+  generated_at: string | null;
+  published_by: string | null;
+  published_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type DutyAssignmentRow = {
+  id: string;
+  roster_id: string;
+  class_id: string;
+  duty_date: string;
+  role_id: string;
+  student_id: string;
+  status: "prevista" | "confirmada" | "substituida" | "cancelada";
+  assignment_source: "automatica" | "manual" | "substituicao_automatica";
+  manual_reason: string | null;
+  replaced_assignment_id: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type DutyImpedimentRow = {
+  id: string;
+  student_id: string;
+  impediment_type:
+    | "ausencia"
+    | "dispensa"
+    | "restricao_medica"
+    | "missao_externa"
+    | "problema_administrativo"
+    | "outro";
+  starts_on: string;
+  ends_on: string;
+  reason: string;
+  affected_role_ids: string[] | null;
+  operational_note: string | null;
+  active: boolean;
+  registered_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type DutyAssignmentLogRow = {
+  id: string;
+  assignment_id: string | null;
+  roster_id: string | null;
+  action: "generated" | "published" | "manual_change" | "auto_substitution" | "cancelled";
+  actor_id: string | null;
+  actor_role: string | null;
+  before_data: Json | null;
+  after_data: Json | null;
+  reason: string | null;
+  created_at: string;
+};
+
+type AnnouncementRow = {
+  id: string;
+  class_id: string | null;
+  title: string;
+  body: string;
+  audience_type: "turma" | "individual" | "perfil";
+  target_role: "coordenacao" | "secretaria" | "instrutor" | "aluno" | null;
+  target_student_ids: string[] | null;
+  priority: "normal" | "alta" | "urgente";
+  status: "rascunho" | "publicado" | "arquivado";
+  published_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type AnnouncementAttachmentRow = {
+  id: string;
+  announcement_id: string;
+  storage_path: string | null;
+  external_url: string | null;
+  original_filename: string;
+  mime_type: string;
+  file_size_bytes: number | null;
+  attachment_type: "documento" | "planilha" | "imagem" | "video" | "link";
+  sort_order: number;
+  uploaded_by: string;
+  created_at: string;
+};
+
+type AnnouncementReadRow = {
+  id: string;
+  announcement_id: string;
+  student_id: string;
+  read_by: string;
+  read_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -95,6 +210,62 @@ export interface Database {
         Row: StudentRow;
         Insert: Partial<StudentRow> & Pick<StudentRow, "class_id" | "full_name" | "war_name">;
         Update: Partial<StudentRow>;
+        Relationships: [];
+      };
+      duty_roles: {
+        Row: DutyRoleRow;
+        Insert: Partial<DutyRoleRow> & Pick<DutyRoleRow, "code" | "name" | "sort_order">;
+        Update: Partial<DutyRoleRow>;
+        Relationships: [];
+      };
+      duty_rosters: {
+        Row: DutyRosterRow;
+        Insert: Partial<DutyRosterRow> & Pick<DutyRosterRow, "class_id" | "period_start" | "period_end">;
+        Update: Partial<DutyRosterRow>;
+        Relationships: [];
+      };
+      duty_assignments: {
+        Row: DutyAssignmentRow;
+        Insert: Partial<DutyAssignmentRow> &
+          Pick<DutyAssignmentRow, "roster_id" | "class_id" | "duty_date" | "role_id" | "student_id">;
+        Update: Partial<DutyAssignmentRow>;
+        Relationships: [];
+      };
+      duty_impediments: {
+        Row: DutyImpedimentRow;
+        Insert: Partial<DutyImpedimentRow> &
+          Pick<DutyImpedimentRow, "student_id" | "impediment_type" | "starts_on" | "ends_on" | "reason">;
+        Update: Partial<DutyImpedimentRow>;
+        Relationships: [];
+      };
+      duty_assignment_logs: {
+        Row: DutyAssignmentLogRow;
+        Insert: Partial<DutyAssignmentLogRow> & Pick<DutyAssignmentLogRow, "action">;
+        Update: Partial<DutyAssignmentLogRow>;
+        Relationships: [];
+      };
+      announcements: {
+        Row: AnnouncementRow;
+        Insert: Partial<AnnouncementRow> &
+          Pick<AnnouncementRow, "title" | "body" | "audience_type" | "created_by">;
+        Update: Partial<AnnouncementRow>;
+        Relationships: [];
+      };
+      announcement_attachments: {
+        Row: AnnouncementAttachmentRow;
+        Insert: Partial<AnnouncementAttachmentRow> &
+          Pick<
+            AnnouncementAttachmentRow,
+            "announcement_id" | "original_filename" | "mime_type" | "attachment_type" | "uploaded_by"
+          >;
+        Update: Partial<AnnouncementAttachmentRow>;
+        Relationships: [];
+      };
+      announcement_reads: {
+        Row: AnnouncementReadRow;
+        Insert: Partial<AnnouncementReadRow> &
+          Pick<AnnouncementReadRow, "announcement_id" | "student_id" | "read_by">;
+        Update: Partial<AnnouncementReadRow>;
         Relationships: [];
       };
     };

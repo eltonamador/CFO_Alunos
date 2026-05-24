@@ -14,6 +14,7 @@ const nextConfig = {
   poweredByHeader: false,
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ["pdfkit"],
     serverActions: {
       bodySizeLimit: "11mb", // documentos até 10 MB + overhead multipart
     },
