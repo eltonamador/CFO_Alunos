@@ -81,7 +81,11 @@ export function PendingChangeRow({ pending }: { pending: PendingChangeWithStuden
       </div>
 
       {/* Diff visual destacando campos alterados */}
-      <DiffTable previous={pending.previous_value} next={pending.new_value} />
+      <DiffTable
+        previous={pending.previous_value}
+        next={pending.new_value}
+        context={pending.context}
+      />
 
       {showReason && (
         <Input
