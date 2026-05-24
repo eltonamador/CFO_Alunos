@@ -52,26 +52,26 @@ export default async function AlunoHome() {
     const supabase = createServerClientUntyped();
 
     // Busca paralela de todos os dados necessários
-    const [studentRes, contactRes, addressRes, healthRes, docsRes, equipStatusRes, equipReqsRes] =
+    const [studentRes, contactRes, addressRes, healthRes, docsRes, equipStatusRes, equipReqsRes, emergencyRes, logRes, vehRes] =
       await Promise.all([
         supabase
           .from("students")
-          .select("cpf,rg,birth_date,marital_status,mother_name")
+          .select("cpf,rg,birth_date,marital_status,mother_name,sex,education_level")
           .eq("id", session.studentId)
           .maybeSingle(),
         supabase
           .from("student_contacts")
-          .select("whatsapp")
+          .select("whatsapp,email_personal")
           .eq("student_id", session.studentId)
           .maybeSingle(),
         supabase
           .from("student_addresses")
-          .select("street,city,zip")
+          .select("street,city,zip,state")
           .eq("student_id", session.studentId)
           .maybeSingle(),
         supabase
           .from("health_restrictions")
-          .select("blood_type,rh_factor")
+          .select("blood_type,rh_factor,id")
           .eq("student_id", session.studentId)
           .maybeSingle(),
         supabase
@@ -87,6 +87,22 @@ export default async function AlunoHome() {
           .from("equipment_requirements")
           .select("id,phase,mandatory")
           .eq("active", true),
+        supabase
+          .from("emergency_contacts")
+          .select("id")
+          .eq("student_id", session.studentId)
+          .eq("priority", 1)
+          .maybeSingle(),
+        supabase
+          .from("student_logistics")
+          .select("student_id")
+          .eq("student_id", session.studentId)
+          .maybeSingle(),
+        supabase
+          .from("vehicles")
+          .select("student_id")
+          .eq("student_id", session.studentId)
+          .maybeSingle(),
       ]);
 
     // ── Cadastro % ──────────────────────────────────────────────────────
@@ -94,6 +110,9 @@ export default async function AlunoHome() {
     const c = contactRes.data as Record<string, unknown> | null;
     const a = addressRes.data as Record<string, unknown> | null;
     const h = healthRes.data as Record<string, unknown> | null;
+    const em = emergencyRes.data as Record<string, unknown> | null;
+    const l = logRes.data as Record<string, unknown> | null;
+    const v = vehRes.data as Record<string, unknown> | null;
 
     const cadastroFields = [
       s?.cpf,
@@ -101,11 +120,19 @@ export default async function AlunoHome() {
       s?.birth_date,
       s?.marital_status,
       s?.mother_name,
+      s?.sex,
+      s?.education_level,
       c?.whatsapp,
+      c?.email_personal,
       a?.street,
       a?.city,
       a?.zip,
+      a?.state,
+      h?.id, // Verifica se o registro de saúde existe
       h?.blood_type,
+      em?.id, // Emergência
+      l?.student_id, // Logística
+      v?.student_id, // Veículo
     ];
     const cadastroFilled = cadastroFields.filter(Boolean).length;
     const cadastroPct = Math.round((cadastroFilled / cadastroFields.length) * 100);
