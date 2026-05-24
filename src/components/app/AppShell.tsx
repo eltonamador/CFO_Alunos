@@ -15,6 +15,7 @@ import { logoutAction } from "@/modules/identity/presentation/actions/authAction
 import type { SessionProfile } from "@/modules/identity/presentation/session";
 import { Button } from "@/components/ui/Button";
 import { NavLink } from "@/components/app/NavLink";
+import { getStudentSigla } from "@/lib/utils";
 
 interface NavItem {
   href: string;
@@ -61,6 +62,23 @@ const ROLE_INITIALS: Record<SessionProfile["role"], string> = {
   aluno: "AL",
 };
 
+function getUserInitials(session: SessionProfile): string {
+  if (session.role === "aluno" && session.warName) {
+    return getStudentSigla(session.studentNumber, session.warName);
+  }
+  return ROLE_INITIALS[session.role];
+}
+
+function getUserDisplayName(session: SessionProfile): string {
+  if (session.role === "aluno" && session.warName) {
+    const num = session.studentNumber
+      ? String(session.studentNumber).padStart(2, "0")
+      : null;
+    return num ? `${session.warName} — Nº ${num}` : session.warName;
+  }
+  return session.fullName;
+}
+
 export function AppShell({
   session,
   children,
@@ -69,6 +87,8 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const nav = NAV_BY_ROLE[session.role];
+  const userInitials = getUserInitials(session);
+  const userDisplayName = getUserDisplayName(session);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -79,17 +99,17 @@ export function AppShell({
       >
         <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-md font-display text-base font-bold tracking-wider text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-md font-display text-sm font-bold tracking-wider text-white"
             style={{ backgroundColor: "#8b1a1f" }}
           >
-            CB
+            CFO
           </div>
           <div className="leading-tight">
             <p className="font-display text-sm font-bold uppercase tracking-[0.12em] text-white">
               CFO Alunos
             </p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
-              CBMAP · ACBM
+              CBMAP · ABM
             </p>
           </div>
         </div>
@@ -112,10 +132,10 @@ export function AppShell({
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold text-white"
               style={{ backgroundColor: "#8b1a1f" }}
             >
-              {ROLE_INITIALS[session.role]}
+              {userInitials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-white">{session.fullName}</p>
+              <p className="truncate text-xs font-semibold text-white">{userDisplayName}</p>
               <p className="text-[10px] uppercase tracking-[0.12em] text-white/70">
                 {ROLE_LABEL[session.role]}
               </p>
@@ -144,10 +164,10 @@ export function AppShell({
               className="flex items-center gap-2"
             >
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-md font-display text-xs font-bold text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-md font-display text-[10px] font-bold text-white"
                 style={{ backgroundColor: "#8b1a1f" }}
               >
-                CB
+                CFO
               </div>
               <span className="font-display text-sm font-bold uppercase tracking-[0.1em] text-foreground">
                 CFO Alunos

@@ -1,5 +1,6 @@
 import { requireRole } from "@/components/app/RoleGuard";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
 
@@ -25,6 +26,16 @@ const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
 
 export default async function AlunoHome() {
   const session = await requireRole("aluno");
+
+  // Usa war_name e student_number já carregados na sessão
+  const warName = session.warName;
+  const studentNumber = session.studentNumber;
+  const numLabel = studentNumber ? String(studentNumber).padStart(2, "0") : null;
+  const greetingId = warName
+    ? numLabel
+      ? `${warName} — Nº ${numLabel}`
+      : warName
+    : session.fullName;
 
   type ProgressItem = { label: string; value: number };
   type Pendencia = { label: string };
@@ -160,7 +171,9 @@ export default async function AlunoHome() {
     <div className="space-y-6">
       <header>
         <p className="section-eyebrow">Portal do Aluno</p>
-        <h1 className="text-2xl font-bold">{`Olá, ${session.fullName}`}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground uppercase">
+          {greetingId}
+        </h1>
         {!session.studentId && (
           <p className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Sua conta ainda não está vinculada a um aluno. Procure a Coordenação.

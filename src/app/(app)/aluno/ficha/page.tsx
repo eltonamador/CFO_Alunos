@@ -23,6 +23,9 @@ import { LogisticaTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/Logistica
 import { VeiculoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/VeiculoTab";
 import { MateriaisTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/MateriaisTab";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
+import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
+import { getStudentSigla } from "@/lib/utils";
 
 export const metadata = { title: "Minha ficha" };
 
@@ -74,15 +77,29 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <header className="space-y-1">
-        <SectionEyebrow>Aluno · CFO 2026.1</SectionEyebrow>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-          {student.war_name}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Mantenha seus dados atualizados. Alterações em dados sensíveis (saúde) aguardam validação
-          da Coordenação.
-        </p>
+      <header className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-4 shadow-card-sm md:px-5">
+        <Avatar
+          src={undefined}
+          alt={student.war_name}
+          initials={getStudentSigla(student.student_number, student.war_name)}
+          size="xl"
+        />
+        <div className="min-w-0 flex-1">
+          <SectionEyebrow className="mb-0.5">
+            Nº{" "}
+            <span className="num-mono">
+              {student.student_number ? String(student.student_number).padStart(2, "0") : "—"}
+            </span>{" "}
+            · Minha ficha
+          </SectionEyebrow>
+          <h1 className="font-display text-2xl font-bold uppercase tracking-[0.02em] text-foreground">
+            {student.war_name}
+          </h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {student.pelotao && <Badge variant="gold" dot>{student.pelotao}</Badge>}
+            <Badge variant="success" dot>CFO 2026.1</Badge>
+          </div>
+        </div>
       </header>
 
       <Tabs items={TABS} defaultValue="resumo" />
