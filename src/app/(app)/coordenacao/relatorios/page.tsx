@@ -1,4 +1,7 @@
+import { Download } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
+import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata = {
   title: "Relatórios — CFO 2026.1",
@@ -11,6 +14,7 @@ interface Report {
   description: string;
   icon: string;
   roles: string[];
+  sensitive?: boolean;
 }
 
 const REPORTS: Report[] = [
@@ -37,6 +41,7 @@ const REPORTS: Report[] = [
       "Somente alunos com restrições médicas ou uso de medicação registrados. Dados LGPD-restritos.",
     icon: "🏥",
     roles: ["coordenacao"],
+    sensitive: true,
   },
   {
     slug: "emergencia",
@@ -54,11 +59,14 @@ export default async function RelatoriosPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">Relatórios Excel</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Clique em um relatório para baixar o arquivo .xlsx gerado em tempo real com os dados
-          atuais do banco.
+      <header className="space-y-1">
+        <SectionEyebrow>Central de relatórios</SectionEyebrow>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+          Relatórios Excel
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Clique em um relatório para baixar o arquivo <span className="num-mono">.xlsx</span> gerado
+          em tempo real com os dados atuais do banco.
         </p>
       </header>
 
@@ -68,32 +76,24 @@ export default async function RelatoriosPage() {
             key={report.slug}
             href={`/api/reports/${report.slug}`}
             download
-            className="group flex flex-col gap-3 rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
+            className="group flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-card-sm transition-all hover:-translate-y-px hover:border-brand-red-100 hover:shadow-card-md"
           >
             <div className="flex items-start gap-3">
-              <span className="text-3xl">{report.icon}</span>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-semibold leading-tight text-foreground group-hover:text-primary">
-                  {report.title}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">{report.description}</p>
+              <span aria-hidden className="text-3xl leading-none">
+                {report.icon}
+              </span>
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground group-hover:text-primary">
+                    {report.title}
+                  </h2>
+                  {report.sensitive && <Badge variant="warning">LGPD</Badge>}
+                </div>
+                <p className="text-sm text-muted-foreground">{report.description}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-primary">
+              <Download className="h-4 w-4" />
               <span>Baixar .xlsx</span>
             </div>
           </a>

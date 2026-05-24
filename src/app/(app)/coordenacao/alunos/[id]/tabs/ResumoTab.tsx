@@ -17,11 +17,23 @@ import type {
   StudentListRow,
 } from "@/lib/supabase/queries/students";
 
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
+function Field({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
   return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium">{value ?? "—"}</dd>
+    <div className="space-y-0.5">
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </dt>
+      <dd className={`text-sm font-medium text-foreground ${mono ? "num-mono" : ""}`}>
+        {value ?? <span className="text-muted-foreground">—</span>}
+      </dd>
     </div>
   );
 }
@@ -164,9 +176,16 @@ export function ResumoTab({
                 <Field label="Nome completo" value={student.full_name} />
               </div>
               <Field label="Nome de guerra" value={student.war_name} />
-              <Field label="Número" value={student.student_number ? String(student.student_number).padStart(2, "0") : null} />
-              <Field label="Sexo" value={student.sex === "M" ? "Masculino" : student.sex === "F" ? "Feminino" : null} />
-              <Field label="Data de nasc." value={student.birth_date} />
+              <Field
+                label="Número"
+                mono
+                value={student.student_number ? String(student.student_number).padStart(2, "0") : null}
+              />
+              <Field
+                label="Sexo"
+                value={student.sex === "M" ? "Masculino" : student.sex === "F" ? "Feminino" : null}
+              />
+              <Field label="Data de nasc." value={student.birth_date} mono />
               <Field label="Fase do CFO" value={student.pelotao} />
               <Field
                 label="Canga"
@@ -176,7 +195,7 @@ export function ResumoTab({
                     : "Não atribuído"
                 }
               />
-              <Field label="Matrícula" value={student.enrollment_id} />
+              <Field label="Matrícula" value={student.enrollment_id} mono />
               <Field label="Situação" value={student.situation} />
             </dl>
           )}
@@ -211,10 +230,10 @@ export function ResumoTab({
         <CardHeader><CardTitle>Documentos pessoais</CardTitle></CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-3">
-            <Field label="CPF" value={student.cpf} />
-            <Field label="RG" value={student.rg} />
-            <Field label="PIS" value={student.pis} />
-            <Field label="Título eleitoral" value={student.voter_id} />
+            <Field label="CPF" value={student.cpf} mono />
+            <Field label="RG" value={student.rg} mono />
+            <Field label="PIS" value={student.pis} mono />
+            <Field label="Título eleitoral" value={student.voter_id} mono />
           </dl>
         </CardContent>
       </Card>

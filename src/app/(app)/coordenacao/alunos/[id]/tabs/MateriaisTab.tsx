@@ -59,9 +59,9 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
         <span>{done} de {total} itens obrigatórios concluídos</span>
         <span>{pct}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
         <div
-          className="h-full rounded-full bg-green-500 transition-all duration-500"
+          className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

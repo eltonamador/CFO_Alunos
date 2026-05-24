@@ -137,7 +137,7 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
             Nenhum log de auditoria registrado para este aluno.
           </div>
         ) : (
-          <div className="relative border-l border-zinc-200 ml-4 pl-6 space-y-8">
+          <div className="relative border-l border-border ml-4 pl-6 space-y-8">
             {logs.map((log) => {
               const dateObj = new Date(log.created_at);
               const formattedDate = dateObj.toLocaleDateString("pt-BR", {
@@ -158,7 +158,7 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
               const isView = log.action === "view_emergency_contact";
 
               // Icon/Bullet colors depending on action
-              let bulletColor = "bg-zinc-200 border-zinc-300 ring-zinc-100";
+              let bulletColor = "bg-muted border-border ring-muted/40";
               if (isInsert) bulletColor = "bg-blue-500 border-blue-600 ring-blue-100";
               if (isUpdate) bulletColor = "bg-amber-500 border-amber-600 ring-amber-100";
               if (isDelete) bulletColor = "bg-red-500 border-red-600 ring-red-100";
@@ -170,20 +170,20 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
                   <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${bulletColor} ring-4 transition-transform group-hover:scale-110`} />
                   
                   {/* Log Content Card */}
-                  <div className="bg-zinc-50 rounded-xl p-4 border border-zinc-100 shadow-sm transition-all hover:shadow hover:border-zinc-200">
+                  <div className="bg-secondary rounded-xl p-4 border border-border shadow-sm transition-all hover:shadow hover:border-border">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                       {/* Action & Entity Badges */}
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge
                           variant="outline"
                           className={`font-semibold px-2 py-0.5 rounded-md border text-xs capitalize ${
-                            ACTION_COLORS[log.action] || "bg-zinc-50 text-zinc-700"
+                            ACTION_COLORS[log.action] || "bg-secondary text-foreground"
                           }`}
                         >
                           {log.action === "view_emergency_contact" ? "visualização" : log.action}
                         </Badge>
-                        <span className="text-zinc-400 text-xs">•</span>
-                        <span className="font-semibold text-zinc-700 text-xs">
+                        <span className="text-muted-foreground/60 text-xs">•</span>
+                        <span className="font-semibold text-foreground text-xs">
                           {ENTITY_LABELS[log.entity] || log.entity}
                         </span>
                       </div>
@@ -195,24 +195,24 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
                     </div>
 
                     {/* Change Description */}
-                    <div className="text-sm text-zinc-800 mb-2">
+                    <div className="text-sm text-foreground mb-2">
                       {isView && (
                         <span>
                           Os contatos de emergência deste aluno foram consultados por{" "}
-                          <strong className="text-zinc-900">{log.actor_name}</strong>.
+                          <strong className="text-foreground">{log.actor_name}</strong>.
                         </span>
                       )}
                       
                       {!isView && (
                         <span>
                           Registro modificado por{" "}
-                          <strong className="text-zinc-900">{log.actor_name}</strong> (
+                          <strong className="text-foreground">{log.actor_name}</strong> (
                           <span className="text-xs text-muted-foreground uppercase">{log.actor_role}</span>).
                         </span>
                       )}
                       
                       {log.reason && (
-                        <p className="mt-1 text-xs text-zinc-500 italic bg-white border border-zinc-100 rounded p-2">
+                        <p className="mt-1 text-xs text-muted-foreground italic bg-white border border-border rounded p-2">
                           <strong>Motivo: </strong> {log.reason}
                         </p>
                       )}
@@ -220,19 +220,19 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
 
                     {/* Comparisons and details for changes */}
                     {changes.length > 0 && (
-                      <div className="mt-3 overflow-x-auto border border-zinc-200 rounded-lg bg-white">
-                        <table className="min-w-full divide-y divide-zinc-200 text-xs">
-                          <thead className="bg-zinc-50">
+                      <div className="mt-3 overflow-x-auto border border-border rounded-lg bg-white">
+                        <table className="min-w-full divide-y divide-border text-xs">
+                          <thead className="bg-secondary">
                             <tr>
-                              <th className="px-3 py-2 text-left font-semibold text-zinc-600">Campo</th>
-                              <th className="px-3 py-2 text-left font-semibold text-zinc-600">Valor Anterior</th>
-                              <th className="px-3 py-2 text-left font-semibold text-zinc-600">Novo Valor</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Campo</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Valor Anterior</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Novo Valor</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-zinc-100 font-mono">
+                          <tbody className="divide-y divide-border font-mono">
                             {changes.map((ch, idx) => (
-                              <tr key={idx} className="hover:bg-zinc-50 transition-colors">
-                                <td className="px-3 py-2 font-sans font-semibold text-zinc-700">
+                              <tr key={idx} className="hover:bg-secondary transition-colors">
+                                <td className="px-3 py-2 font-sans font-semibold text-foreground">
                                   {FIELD_LABELS[ch.field] || ch.field}
                                 </td>
                                 <td className="px-3 py-2 text-red-600 line-through whitespace-pre-wrap">
@@ -252,10 +252,10 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
                     {!isUpdate && !isView && (log.before_data || log.after_data) && (
                       <div className="mt-2 text-xs text-muted-foreground">
                         <details className="cursor-pointer group">
-                          <summary className="font-semibold text-zinc-600 group-hover:text-zinc-900 transition-colors">
+                          <summary className="font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
                             Visualizar dados completos do registro ({isInsert ? "Inserido" : "Removido"})
                           </summary>
-                          <pre className="mt-2 p-3 bg-zinc-950 text-zinc-200 rounded-lg overflow-x-auto font-mono text-[11px] leading-relaxed">
+                          <pre className="mt-2 p-3 bg-ink-900 text-ink-100 rounded-lg overflow-x-auto font-mono text-[11px] leading-relaxed">
                             {JSON.stringify(log.after_data || log.before_data, null, 2)}
                           </pre>
                         </details>

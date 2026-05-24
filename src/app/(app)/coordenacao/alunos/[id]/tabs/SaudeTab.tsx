@@ -51,12 +51,19 @@ export function SaudeTab({ studentId, health, canCurate = false }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="sensitive-banner">
+        <span className="font-display text-[11px] uppercase tracking-[0.12em]">LGPD</span>
+        <span className="font-normal">
+          Dados sensíveis — visíveis apenas pela Coordenação e pelo próprio aluno.
+        </span>
+      </div>
+
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
             <CardTitle>Dados clínicos</CardTitle>
             <CardDescription>
-              Dados sensíveis — vistos apenas pela Coordenação e pelo próprio aluno.
+              Inclui tipo sanguíneo, medidas, restrições físicas e medicação contínua.
             </CardDescription>
           </div>
           {validationBadge()}
