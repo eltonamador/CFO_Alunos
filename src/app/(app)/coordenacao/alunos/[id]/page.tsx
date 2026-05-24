@@ -18,6 +18,8 @@ import {
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
+import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { ResumoTab } from "./tabs/ResumoTab";
 import { ContatoTab } from "./tabs/ContatoTab";
 import { EnderecoTab } from "./tabs/EnderecoTab";
@@ -85,28 +87,32 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
       </div>
 
       {/* Header sticky */}
-      <header className="sticky top-14 z-10 -mx-4 flex items-center gap-3 border-b bg-background px-4 py-3 md:mx-0 md:rounded-lg md:border md:px-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
-          {photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl} alt={student.war_name} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-xl font-bold text-muted-foreground">
-              {student.student_number ? String(student.student_number).padStart(2, "0") : "?"}
-            </span>
-          )}
-        </div>
+      <header className="sticky top-14 z-10 -mx-4 flex items-center gap-4 border-b border-border bg-card px-4 py-4 shadow-card-sm md:top-14 md:mx-0 md:rounded-lg md:border md:px-5 md:py-4">
+        <Avatar
+          src={photoUrl ?? undefined}
+          alt={student.war_name}
+          initials={
+            student.student_number
+              ? String(student.student_number).padStart(2, "0")
+              : student.war_name.slice(0, 2).toUpperCase()
+          }
+          size="xl"
+        />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="tabular-nums text-sm text-muted-foreground">
+          <SectionEyebrow className="mb-0.5">
+            Nº{" "}
+            <span className="num-mono">
               {student.student_number ? String(student.student_number).padStart(2, "0") : "—"}
-            </span>
-            <h1 className="truncate text-lg font-bold">{student.war_name}</h1>
-          </div>
+            </span>{" "}
+            · Ficha do aluno
+          </SectionEyebrow>
+          <h1 className="truncate font-display text-2xl font-bold uppercase tracking-[0.02em] text-foreground">
+            {student.war_name}
+          </h1>
           <p className="truncate text-sm text-muted-foreground">{student.full_name}</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {student.pelotao && <Badge variant="outline">{student.pelotao}</Badge>}
-            <Badge variant={student.situation === "matriculado" ? "default" : "warning"}>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {student.pelotao && <Badge variant="gold" dot>{student.pelotao}</Badge>}
+            <Badge variant={student.situation === "matriculado" ? "success" : "warning"} dot>
               {student.situation}
             </Badge>
             {health?.validation_status === "validado" && health?.operational_summary && (
