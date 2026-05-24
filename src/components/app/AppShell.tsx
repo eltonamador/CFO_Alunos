@@ -73,41 +73,50 @@ export function AppShell({
   return (
     <div className="flex min-h-screen bg-background">
       {/* ===== Sidebar (desktop) ===== */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-900 text-white md:flex">
-        <div className="flex h-16 items-center gap-3 border-b border-ink-800 px-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-red-700 font-display text-base font-bold tracking-wider text-white">
+      <aside
+        className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/20 text-white md:flex"
+        style={{ backgroundColor: "#16140f" }}
+      >
+        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-md font-display text-base font-bold tracking-wider text-white"
+            style={{ backgroundColor: "#8b1a1f" }}
+          >
             CB
           </div>
           <div className="leading-tight">
             <p className="font-display text-sm font-bold uppercase tracking-[0.12em] text-white">
               CFO Alunos
             </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold-300">
-              CBMAP · AcBM
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
+              CBMAP · ACBM
             </p>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav aria-label="Navegação principal" className="flex-1 space-y-1 px-3 py-4">
           {nav.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
               label={item.label}
               exact={item.exact}
-              icon={<item.icon className="h-4 w-4" />}
+              icon={<item.icon className="h-4 w-4" aria-hidden />}
             />
           ))}
         </nav>
 
-        <div className="border-t border-ink-800 p-3">
+        <div className="border-t border-white/10 p-3">
           <div className="mb-2 flex items-center gap-2.5 rounded-md px-2 py-1.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-red-700 font-display text-xs font-semibold text-white">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold text-white"
+              style={{ backgroundColor: "#8b1a1f" }}
+            >
               {ROLE_INITIALS[session.role]}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-white">{session.fullName}</p>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-brand-gold-300">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-white/70">
                 {ROLE_LABEL[session.role]}
               </p>
             </div>
@@ -117,7 +126,7 @@ export function AppShell({
               type="submit"
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-ink-200 hover:bg-ink-800 hover:text-white"
+              className="w-full justify-start text-white/85 hover:bg-white/10 hover:text-white"
             >
               Sair
             </Button>
@@ -127,11 +136,17 @@ export function AppShell({
 
       {/* ===== Coluna direita ===== */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar (mobile + apoio desktop) */}
-        <header className="sticky top-0 z-20 border-b border-border bg-card md:bg-background/95 md:backdrop-blur">
-          <div className="flex h-14 items-center justify-between gap-3 px-4 md:hidden">
-            <Link href={`/${session.role === "coordenacao" ? "coordenacao" : session.role}`} className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-red-700 font-display text-xs font-bold text-white">
+        {/* Top bar (apenas mobile — desktop usa sidebar) */}
+        <header className="sticky top-0 z-20 border-b border-border bg-card md:hidden">
+          <div className="flex h-14 items-center justify-between gap-3 px-4">
+            <Link
+              href={`/${session.role === "coordenacao" ? "coordenacao" : session.role}`}
+              className="flex items-center gap-2"
+            >
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-md font-display text-xs font-bold text-white"
+                style={{ backgroundColor: "#8b1a1f" }}
+              >
                 CB
               </div>
               <span className="font-display text-sm font-bold uppercase tracking-[0.1em] text-foreground">
@@ -144,15 +159,9 @@ export function AppShell({
               </Button>
             </form>
           </div>
-          <div className="hidden h-14 items-center justify-end gap-3 px-6 md:flex">
-            <p className="text-xs text-muted-foreground">
-              <span className="uppercase tracking-[0.12em]">Logado como</span>{" "}
-              <span className="font-semibold text-foreground">{session.fullName}</span>
-            </p>
-          </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:pb-8">{children}</main>
+        <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">{children}</main>
       </div>
 
       {/* ===== Bottom nav (mobile) ===== */}

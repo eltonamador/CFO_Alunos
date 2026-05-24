@@ -25,7 +25,10 @@ export function Tabs({ items, param = "tab", defaultValue }: TabsProps) {
   const current = searchParams.get(param) ?? defaultValue;
 
   return (
-    <div className="-mx-4 flex gap-0 overflow-x-auto border-b border-border bg-card/40 px-4 md:mx-0 md:rounded-t-md md:px-2">
+    <div
+      role="tablist"
+      className="-mx-4 flex gap-0 overflow-x-auto border-b border-border bg-card px-4 md:mx-0 md:rounded-t-md md:px-2"
+    >
       {items.map((item) => {
         const params = new URLSearchParams(searchParams);
         params.set(param, item.value);
@@ -35,12 +38,15 @@ export function Tabs({ items, param = "tab", defaultValue }: TabsProps) {
             key={item.value}
             href={`${pathname}?${params.toString()}`}
             scroll={false}
+            role="tab"
+            aria-selected={isActive}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative whitespace-nowrap px-3 py-2.5 font-display text-sm font-semibold uppercase tracking-[0.06em] transition-colors",
+              "relative whitespace-nowrap px-3 py-3 font-display text-sm font-semibold uppercase tracking-[0.06em] transition-colors",
               "after:absolute after:inset-x-2 after:-bottom-px after:h-[3px] after:rounded-t-sm after:transition-colors",
               isActive
                 ? "text-primary after:bg-primary"
-                : "text-muted-foreground hover:text-foreground after:bg-transparent",
+                : "text-foreground/75 hover:bg-secondary hover:text-foreground after:bg-transparent",
             )}
           >
             {item.label}

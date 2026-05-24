@@ -75,11 +75,23 @@
     letter-spacing: 0.01em;
   }
 
+  /* Alvos de toque mínimos (botões e ações com role=button) */
   button,
-  [role="button"],
-  a {
+  [role="button"] {
     @apply min-h-[44px];
     touch-action: manipulation;
+  }
+
+  /* Foco visível padrão para teclado em interativos */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 

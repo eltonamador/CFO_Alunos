@@ -12,6 +12,7 @@ import {
   fetchStudentVehicle,
 } from "@/lib/supabase/queries/students";
 import { Tabs } from "@/components/ui/Tabs";
+import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { ContatoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/ContatoTab";
 import { EnderecoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/EnderecoTab";
 import { EmergenciaTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/EmergenciaTab";
@@ -71,8 +72,11 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-bold">Minha ficha</h1>
+      <header className="space-y-1">
+        <SectionEyebrow>Aluno · CFO 2026.1</SectionEyebrow>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+          {student.war_name}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Mantenha seus dados atualizados. Alterações em dados sensíveis (saúde) aguardam validação
           da Coordenação.
