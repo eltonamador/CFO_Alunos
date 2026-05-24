@@ -148,6 +148,45 @@ export function IdentificacaoTab({
         </div>
       </fieldset>
 
+      {/* ── Documentos pessoais ── */}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold">Documentos pessoais</legend>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5 sm:col-span-1">
+            <Label htmlFor="cpf">CPF</Label>
+            <MaskedInput
+              id="cpf"
+              name="cpf"
+              mask="cpf"
+              defaultValue={student.cpf}
+              placeholder="000.000.000-00"
+            />
+            <FieldHint>Apenas números (11 dígitos).</FieldHint>
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-1">
+            <Label htmlFor="rg">RG</Label>
+            <Input
+              id="rg"
+              name="rg"
+              defaultValue={student.rg ?? ""}
+              placeholder="Registro Geral"
+            />
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-1">
+            <Label htmlFor="pis">PIS/PASEP</Label>
+            <Input
+              id="pis"
+              name="pis"
+              defaultValue={student.pis ?? ""}
+              placeholder="Apenas números"
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+      </fieldset>
+
       {/* ── Formação acadêmica ── */}
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold">Formação acadêmica</legend>

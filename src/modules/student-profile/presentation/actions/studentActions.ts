@@ -10,10 +10,12 @@ import {
   maskUF,
   maskPlate,
   maskVoter,
+  maskCPF,
   isValidPhone,
   isValidCEP,
   isValidUF,
   isValidPlate,
+  isValidCPF,
   nullIfEmpty,
   cleanSpaces,
   normalizeName,
@@ -599,6 +601,12 @@ const identificationSchema = z.object({
   voter_section: optionalTrimmed(),
   father_name: optionalTrimmed(),
   mother_name: optionalTrimmed(),
+  cpf: optionalTrimmed().refine(
+    (v) => v === undefined || isValidCPF(v),
+    "CPF inválido."
+  ),
+  rg: optionalTrimmed(),
+  pis: optionalTrimmed(),
   email_personal: optionalTrimmed().refine(
     (v) => v === undefined || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
     "E-mail inválido.",
@@ -635,6 +643,9 @@ export async function updateIdentificationAction(
     voter_section,
     father_name,
     mother_name,
+    cpf,
+    rg,
+    pis,
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
@@ -658,6 +669,9 @@ export async function updateIdentificationAction(
       voter_section: nullIfEmpty(voter_section),
       father_name: father_name ? normalizeName(father_name) : null,
       mother_name: mother_name ? normalizeName(mother_name) : null,
+      cpf: cpf ? maskCPF(cpf) : null,
+      rg: nullIfEmpty(rg),
+      pis: nullIfEmpty(pis),
       updated_by: session.userId,
     })
     .eq("id", studentId);
