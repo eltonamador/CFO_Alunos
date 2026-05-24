@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import {
   updateIdentificationAction,
@@ -39,6 +40,14 @@ export function IdentificacaoTab({
     updateIdentificationAction,
     null,
   );
+
+  const [religion, setReligion] = useState(student.religion ?? "");
+  const [hasRestriction, setHasRestriction] = useState(
+    student.has_religious_restriction === true ? "true" : student.has_religious_restriction === false ? "false" : ""
+  );
+
+  const showReligionOther = religion === "Outra";
+  const showRestrictionNotes = religion === "Adventista" || hasRestriction === "true";
 
   return (
     <form action={formAction} className="space-y-8">
@@ -283,6 +292,80 @@ export function IdentificacaoTab({
             />
             <FieldHint>12 dígitos.</FieldHint>
           </div>
+        </div>
+      </fieldset>
+
+      {/* ── Informações complementares (Religião e Restrições) ── */}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold text-orange-600 dark:text-orange-500">
+          Informações complementares (Religião e Restrições)
+        </legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="religion">Religião/Crença (Opcional)</Label>
+            <Select
+              id="religion"
+              name="religion"
+              value={religion}
+              onChange={(e) => setReligion(e.target.value)}
+            >
+              <option value="">Não informar</option>
+              <option value="Católica">Católica</option>
+              <option value="Evangélica">Evangélica</option>
+              <option value="Adventista">Adventista</option>
+              <option value="Espírita">Espírita</option>
+              <option value="Umbanda/Candomblé">Umbanda/Candomblé</option>
+              <option value="Sem religião">Sem religião</option>
+              <option value="Outra">Outra</option>
+            </Select>
+            <FieldHint>Esta informação é sensível e será acessada restritamente.</FieldHint>
+          </div>
+
+          {showReligionOther && (
+            <div className="space-y-2">
+              <Label htmlFor="religion_other">Qual?</Label>
+              <Input
+                id="religion_other"
+                name="religion_other"
+                defaultValue={student.religion_other ?? ""}
+                placeholder="Informe sua religião"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="has_religious_restriction">
+              Possui restrição ou consideração operacional por motivo religioso?
+            </Label>
+            <Select
+              id="has_religious_restriction"
+              name="has_religious_restriction"
+              value={hasRestriction}
+              onChange={(e) => setHasRestriction(e.target.value)}
+            >
+              <option value="">Não informar</option>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </Select>
+            <FieldHint>
+              Ex: Guardar dia específico (Sábado), restrição alimentar, corte de cabelo, etc.
+            </FieldHint>
+          </div>
+
+          {showRestrictionNotes && (
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="religious_restriction_notes">
+                Observações da restrição (Obrigatório se possuir)
+              </Label>
+              <Textarea
+                id="religious_restriction_notes"
+                name="religious_restriction_notes"
+                defaultValue={student.religious_restriction_notes ?? ""}
+                placeholder="Detalhe as considerações operacionais ou de escala…"
+                rows={3}
+              />
+            </div>
+          )}
         </div>
       </fieldset>
 

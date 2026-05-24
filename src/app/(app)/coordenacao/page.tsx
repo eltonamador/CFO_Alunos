@@ -5,6 +5,7 @@ import { AlertCircle, Users, FileText, CheckCircle2, AlertTriangle, ArrowRight }
 import Link from "next/link";
 
 export const metadata = { title: "Início — Coordenação" };
+export const dynamic = "force-dynamic";
 
 interface ProgressBarProps {
   done: number;
@@ -40,7 +41,7 @@ export default async function CoordenacaoHome() {
   const supabase = createSupabaseServerClient();
 
   // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
-  const { data: rawStudentsData } = await supabase
+  const { data: rawStudentsData, error } = await supabase
     .from("students")
     .select(`
       id,
@@ -48,12 +49,14 @@ export default async function CoordenacaoHome() {
       cpf, rg, birth_date, marital_status, mother_name, education_level,
       student_contacts(whatsapp, email_personal),
       student_addresses(street, city, zip, state),
-      health_restrictions(id, blood_type, validation_status),
+      health_restrictions(blood_type, validation_status),
       emergency_contacts(id, priority),
       student_logistics(student_id),
       vehicles(student_id)
     `)
     .is("deleted_at", null);
+
+  if (error) console.error("Error fetching students:", error);
 
   const allStudentsData = (rawStudentsData ?? []) as any[];
   const totalStudents = allStudentsData.length;
@@ -86,7 +89,6 @@ export default async function CoordenacaoHome() {
         a?.city,
         a?.zip,
         a?.state,
-        h?.id,
         h?.blood_type,
         em?.id,
         l?.student_id,

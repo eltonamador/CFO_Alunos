@@ -15,7 +15,7 @@ import {
   buildEmergenciaPDF,
 } from "@/lib/reports/pdf-builders";
 
-type Builder = (supabase: ReturnType<typeof createSupabaseServerClient>) => Promise<any>;
+type Builder = (supabase: ReturnType<typeof createSupabaseServerClient>, selectedFields?: string[]) => Promise<any>;
 
 interface ReportSpec {
   label: string;
@@ -46,9 +46,10 @@ const REPORTS: Record<string, ReportSpec> = {
   },
 };
 
-export async function GET(
+async function handleReportRequest(
   req: NextRequest,
-  { params }: { params: { slug: string } },
+  slug: string,
+  selectedFields?: string[]
 ) {
   // 1. Autenticação
   const session = await getSession();
@@ -62,13 +63,13 @@ export async function GET(
   }
 
   // 3. Valida slug
-  const report = REPORTS[params.slug];
+  const report = REPORTS[slug];
   if (!report) {
     return NextResponse.json({ error: "Relatório não encontrado" }, { status: 404 });
   }
 
   // 4. Saúde é restrito à Coordenação (LGPD)
-  if (params.slug === "saude" && session.role !== "coordenacao") {
+  if (slug === "saude" && session.role !== "coordenacao") {
     return NextResponse.json({ error: "Acesso restrito à Coordenação" }, { status: 403 });
   }
 
@@ -83,7 +84,7 @@ export async function GET(
 
   try {
     const buffer =
-      format === "pdf" ? await report.pdf(supabase as any) : await report.xlsx(supabase as any);
+      format === "pdf" ? await report.pdf(supabase as any, selectedFields) : await report.xlsx(supabase as any);
 
     const date = new Date().toISOString().slice(0, 10);
     const ext = format === "pdf" ? "pdf" : "xlsx";
@@ -102,10 +103,30 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error(`[reports/${params.slug}/${format}] erro:`, err);
+    console.error(`[reports/${slug}/${format}] erro:`, err);
     return NextResponse.json(
       { error: "Falha ao gerar relatório", detail: err?.message ?? String(err) },
       { status: 500 },
     );
+  }
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { slug: string } },
+) {
+  return handleReportRequest(req, params.slug);
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { slug: string } },
+) {
+  try {
+    const body = await req.json();
+    const selectedFields = Array.isArray(body?.selectedFields) ? body.selectedFields : undefined;
+    return handleReportRequest(req, params.slug, selectedFields);
+  } catch {
+    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
   }
 }

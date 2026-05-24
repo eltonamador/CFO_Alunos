@@ -31,6 +31,10 @@ export interface StudentProps {
   motherName?: string;
   presentationDate?: Date;
   photoPath?: string;
+  religion?: string;
+  religionOther?: string;
+  hasReligiousRestriction?: boolean;
+  religiousRestrictionNotes?: string;
 }
 
 /** Campos que o Aluno NÃO pode alterar — apenas Coordenação. */
@@ -55,6 +59,10 @@ export class Student extends Entity<StudentProps> {
   get cpf(): string | undefined { return this.props.cpf; }
   get rg(): string | undefined { return this.props.rg; }
   get photoPath(): string | undefined { return this.props.photoPath; }
+  get religion(): string | undefined { return this.props.religion; }
+  get religionOther(): string | undefined { return this.props.religionOther; }
+  get hasReligiousRestriction(): boolean | undefined { return this.props.hasReligiousRestriction; }
+  get religiousRestrictionNotes(): string | undefined { return this.props.religiousRestrictionNotes; }
 
   updateProfile(partial: Partial<Omit<StudentProps, StudentReadonlyField>>): void {
     this.props = { ...this.props, ...partial };

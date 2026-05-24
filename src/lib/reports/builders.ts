@@ -227,7 +227,7 @@ export async function buildSaudeWorkbook(
     .from("students")
     .select(
       `student_number, war_name, full_name, sex,
-       health_restrictions(operational_summary, restrictions, uses_medication, validation_status)`,
+       health_restrictions(operational_summary, allergies, continuous_medication, chronic_disease, physical_restriction, validation_status)`,
     )
     .order("student_number");
 
@@ -242,27 +242,45 @@ export async function buildSaudeWorkbook(
     "Nome Completo",
     "Sexo",
     "Resumo Operacional",
-    "Restrições",
-    "Usa Medicação",
+    "Alergias",
+    "Medicação Contínua",
+    "Doença Crônica",
+    "Restrição Física",
     "Validação",
   ];
   applyHeaderRow(ws.addRow([]), columns);
 
-  (data ?? []).forEach((s: any, i) => {
+  let rowIndex = 0;
+  (data ?? []).forEach((s: any) => {
     const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
-    if (!h?.operational_summary && !h?.restrictions) return; // sem restrição: omite
+    if (
+      !h?.operational_summary &&
+      !h?.allergies &&
+      !h?.continuous_medication &&
+      !h?.chronic_disease &&
+      !h?.physical_restriction
+    ) {
+      return; // sem restrição: omite
+    }
     const row = ws.addRow([
       s.student_number ?? "",
       s.war_name,
       s.full_name,
       s.sex ?? "",
       h?.operational_summary ?? "",
-      h?.restrictions ?? "",
-      h?.uses_medication ? "Sim" : "Não",
+      h?.allergies ?? "",
+      h?.continuous_medication ?? "",
+      h?.chronic_disease ?? "",
+      h?.physical_restriction ?? "",
       h?.validation_status?.replace(/_/g, " ") ?? "",
     ]);
-    applyDataRow(row, i);
+    applyDataRow(row, rowIndex++);
   });
+
+  if (rowIndex === 0) {
+    const row = ws.addRow(["Sem registros de restrições de saúde no momento."]);
+    ws.mergeCells(row.number, 1, row.number, columns.length);
+  }
 
   autoWidth(ws);
   return wb.xlsx.writeBuffer();

@@ -37,6 +37,10 @@ export interface StudentDetailRow extends StudentListRow {
   father_name: string | null;
   mother_name: string | null;
   presentation_date: string | null;
+  religion: string | null;
+  religion_other: string | null;
+  has_religious_restriction: boolean | null;
+  religious_restriction_notes: string | null;
 }
 
 export interface StudentContactRow {

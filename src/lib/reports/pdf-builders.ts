@@ -82,6 +82,8 @@ function createInstitutionalDoc(opts: RenderOptions): PDFKit.PDFDocument {
 
     // ── Rodapé ──
     const footerY = doc.page.height - 30;
+    const bottomM = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
     doc
       .save()
       .fillColor(COLORS.muted)
@@ -100,6 +102,7 @@ function createInstitutionalDoc(opts: RenderOptions): PDFKit.PDFDocument {
         { width: 64, align: "right", lineBreak: false },
       )
       .restore();
+    doc.page.margins.bottom = bottomM;
   };
 
   // Hook em todas as páginas novas
@@ -220,7 +223,37 @@ function pdfToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
 // =====================================================================
 // 1. Ficha Completa da Turma
 // =====================================================================
-export async function buildFichaCompletaPDF(supabase: SupabaseClient<any, any, any>): Promise<Buffer> {
+interface FichaColumn {
+  id: string;
+  header: string;
+  width: number;
+  accessor: (s: any, ctx: { contact: any; addr: any }) => string | number | null | undefined;
+}
+
+const FICHA_COLUMNS: FichaColumn[] = [
+  { id: "fc_numero", header: "Nº", width: 0.05, accessor: (s) => s.student_number },
+  { id: "fc_nome_guerra", header: "Nome de Guerra", width: 0.12, accessor: (s) => s.war_name },
+  { id: "fc_nome_completo", header: "Nome Completo", width: 0.18, accessor: (s) => s.full_name },
+  { id: "fc_cpf", header: "CPF", width: 0.09, accessor: (s) => s.cpf },
+  { id: "fc_rg", header: "RG", width: 0.08, accessor: (s) => s.rg },
+  {
+    id: "fc_nasc",
+    header: "Nasc.",
+    width: 0.07,
+    accessor: (s) => (s.birth_date ? new Date(s.birth_date).toLocaleDateString("pt-BR") : null),
+  },
+  { id: "fc_fase", header: "Pelotão/Fase", width: 0.08, accessor: (s) => s.pelotao },
+  { id: "fc_sexo", header: "Sexo", width: 0.05, accessor: (s) => s.sex },
+  { id: "fc_whatsapp", header: "WhatsApp", width: 0.11, accessor: (_s, ctx) => ctx.contact?.whatsapp },
+  { id: "fc_email", header: "E-mail", width: 0.14, accessor: (_s, ctx) => ctx.contact?.email_personal },
+  { id: "fc_cidade", header: "Cidade", width: 0.1, accessor: (_s, ctx) => ctx.addr?.city },
+  { id: "fc_estado", header: "UF", width: 0.04, accessor: (_s, ctx) => ctx.addr?.state },
+];
+
+export async function buildFichaCompletaPDF(
+  supabase: SupabaseClient<any, any, any>,
+  selectedFields?: string[],
+): Promise<Buffer> {
   const { data: students } = await supabase
     .from("students")
     .select(
@@ -233,34 +266,26 @@ export async function buildFichaCompletaPDF(supabase: SupabaseClient<any, any, a
 
   const doc = createInstitutionalDoc({ title: "Ficha Completa da Turma" });
 
-  const headers = [
-    "Nº",
-    "Nome de Guerra",
-    "Nome Completo",
-    "Sexo",
-    "Nasc.",
-    "Pelotão",
-    "WhatsApp",
-    "Cidade/UF",
-    "Situação",
-  ];
+  const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
+  const activeColumns = selected
+    ? FICHA_COLUMNS.filter((c) => selected.has(c.id))
+    : FICHA_COLUMNS;
+
+  const fallbackColumns = activeColumns.length > 0 ? activeColumns : FICHA_COLUMNS;
+  const totalWeight = fallbackColumns.reduce((sum, c) => sum + c.width, 0);
+  const widthFractions = fallbackColumns.map((c) => c.width / totalWeight);
+  const headers = fallbackColumns.map((c) => c.header);
+
   const rows = (students ?? []).map((s: any) => {
     const contact = Array.isArray(s.student_contacts) ? s.student_contacts[0] : s.student_contacts;
     const addr = Array.isArray(s.student_addresses) ? s.student_addresses[0] : s.student_addresses;
-    return [
-      s.student_number ?? "—",
-      s.war_name ?? "—",
-      s.full_name ?? "—",
-      s.sex ?? "—",
-      s.birth_date ? new Date(s.birth_date).toLocaleDateString("pt-BR") : "—",
-      s.pelotao ?? "—",
-      contact?.whatsapp ?? "—",
-      addr ? `${addr.city ?? ""}${addr.state ? "/" + addr.state : ""}` : "—",
-      s.situation ?? "—",
-    ];
+    return fallbackColumns.map((col) => {
+      const value = col.accessor(s, { contact, addr });
+      return value === null || value === undefined || value === "" ? "—" : value;
+    });
   });
 
-  renderTable(doc, headers, rows, [0.05, 0.13, 0.22, 0.05, 0.08, 0.08, 0.13, 0.16, 0.1]);
+  renderTable(doc, headers, rows, widthFractions);
 
   return pdfToBuffer(doc);
 }

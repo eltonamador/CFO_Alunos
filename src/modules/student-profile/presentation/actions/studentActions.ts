@@ -611,6 +611,29 @@ const identificationSchema = z.object({
     (v) => v === undefined || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
     "E-mail inválido.",
   ),
+  religion: optionalTrimmed(),
+  religion_other: optionalTrimmed(),
+  has_religious_restriction: z.enum(["true", "false"]).optional(),
+  religious_restriction_notes: optionalTrimmed(),
+}).superRefine((data, ctx) => {
+  const isAdventist = data.religion === "Adventista";
+  const hasRestriction = data.has_religious_restriction === "true";
+
+  if (data.religion === "Outra" && !data.religion_other) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["religion_other"],
+      message: "Por favor, informe qual a religião/crença.",
+    });
+  }
+
+  if ((isAdventist || hasRestriction) && !data.religious_restriction_notes) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["religious_restriction_notes"],
+      message: "Por favor, detalhe as considerações ou restrições operacionais associadas.",
+    });
+  }
 });
 
 export async function updateIdentificationAction(
@@ -646,10 +669,21 @@ export async function updateIdentificationAction(
     cpf,
     rg,
     pis,
+    religion,
+    religion_other,
+    has_religious_restriction,
+    religious_restriction_notes,
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
+
+  // Lê valor anterior para comparar ou registrar na pendência
+  const { data: previousStudent } = await supabase
+    .from("students")
+    .select("*")
+    .eq("id", studentId)
+    .maybeSingle();
 
   const { error: studentError } = await supabase
     .from("students")
@@ -672,11 +706,54 @@ export async function updateIdentificationAction(
       cpf: cpf ? maskCPF(cpf) : null,
       rg: nullIfEmpty(rg),
       pis: nullIfEmpty(pis),
+      religion: nullIfEmpty(religion),
+      religion_other: nullIfEmpty(religion_other),
+      has_religious_restriction: has_religious_restriction === "true" ? true : has_religious_restriction === "false" ? false : null,
+      religious_restriction_notes: nullIfEmpty(religious_restriction_notes),
       updated_by: session.userId,
     })
-    .eq("id", studentId);
+    .eq("id", studentId)
+    .select()
+    .single();
 
   if (studentError) return { ok: false, error: studentError.message };
+
+  // Verifica se o aluno declarou restrição ou religião Adventista para gerar pendência
+  const isAdventistNow = religion === "Adventista";
+  const hasRestrictionNow = has_religious_restriction === "true";
+  
+  // Condição para gerar pendência:
+  // Se o usuário que atualizou é Aluno e ele recém declarou restrição/adventista (ou modificou).
+  if (session.role === "aluno" && (isAdventistNow || hasRestrictionNow)) {
+    const wasAdventistBefore = previousStudent?.religion === "Adventista";
+    const hadRestrictionBefore = previousStudent?.has_religious_restriction === true;
+    
+    // Gera a pendência se os campos relevantes mudaram
+    if (
+      !wasAdventistBefore || 
+      !hadRestrictionBefore || 
+      previousStudent?.religious_restriction_notes !== religious_restriction_notes
+    ) {
+      await supabase.from("pending_changes").insert({
+        student_id: studentId,
+        context: "identification",
+        entity: "students",
+        field: "religious_info",
+        previous_value: {
+          religion: previousStudent?.religion,
+          has_religious_restriction: previousStudent?.has_religious_restriction,
+          religious_restriction_notes: previousStudent?.religious_restriction_notes,
+        },
+        new_value: {
+          religion,
+          has_religious_restriction: has_religious_restriction === "true",
+          religious_restriction_notes,
+        },
+        requested_by: session.userId,
+        status: "pendente",
+      });
+    }
+  }
 
   if (email_personal !== undefined) {
     const { error: contactError } = await supabase.from("student_contacts").upsert({
