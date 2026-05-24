@@ -99,18 +99,27 @@ export function EnderecoTab({
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold">Naturalidade</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Município</p>
-            <p className="text-sm font-medium">{naturalityCity ?? "—"}</p>
+          <div className="space-y-2">
+            <Label htmlFor="naturality_city">Município de nascimento</Label>
+            <Input
+              id="naturality_city"
+              name="naturality_city"
+              defaultValue={naturalityCity ?? ""}
+              placeholder="Ex: Macapá"
+            />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Estado (UF)</p>
-            <p className="text-sm font-medium">{naturalityState ?? "—"}</p>
+          <div className="space-y-2">
+            <Label htmlFor="naturality_state">Naturalidade — UF</Label>
+            <Input
+              id="naturality_state"
+              name="naturality_state"
+              defaultValue={naturalityState ?? ""}
+              placeholder="Ex: AP"
+              maxLength={2}
+              className="uppercase"
+            />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Para alterar a naturalidade, entre em contato com a Coordenação.
-        </p>
       </fieldset>
 
       {state?.ok === false && <Alert variant="destructive">{state.error}</Alert>}

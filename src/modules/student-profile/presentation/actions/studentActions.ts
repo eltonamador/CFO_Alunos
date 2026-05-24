@@ -76,6 +76,8 @@ const addressSchema = z.object({
   from_other_state: z.enum(["true", "false"]).optional(),
   origin_state: z.string().optional(),
   origin_city: z.string().optional(),
+  naturality_city: z.string().optional(),
+  naturality_state: z.string().optional(),
 });
 
 export async function updateAddressAction(
@@ -88,18 +90,30 @@ export async function updateAddressAction(
   const parsed = addressSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, origin_in_amapa, from_other_state, ...rest } = parsed.data;
+  const { studentId, origin_in_amapa, from_other_state, naturality_city, naturality_state, ...rest } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
-  const { error } = await supabase.from("student_addresses").upsert({
+  const { error: addressError } = await supabase.from("student_addresses").upsert({
     student_id: studentId,
     ...rest,
     origin_in_amapa: origin_in_amapa === "true",
     from_other_state: from_other_state === "true",
     updated_by: session.userId,
   });
-  if (error) return { ok: false, error: error.message };
+  if (addressError) return { ok: false, error: addressError.message };
+
+  if (naturality_city !== undefined || naturality_state !== undefined) {
+    const { error: studentError } = await supabase
+      .from("students")
+      .update({
+        naturality_city: naturality_city || null,
+        naturality_state: naturality_state || null,
+        updated_by: session.userId,
+      })
+      .eq("id", studentId);
+    if (studentError) return { ok: false, error: studentError.message };
+  }
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
   revalidatePath("/aluno/ficha");
