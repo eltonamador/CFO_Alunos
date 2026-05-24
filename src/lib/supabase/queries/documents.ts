@@ -26,7 +26,7 @@ export interface DocumentRow {
 }
 
 export interface DocumentWithStudent extends DocumentRow {
-  student: { id: string; war_name: string; student_number: number | null } | null;
+  student: { id: string; war_name: string; student_number: number | null; sex: "M" | "F" | null } | null;
 }
 
 export const DOCUMENT_TYPES: { value: DocumentType; label: string; required: boolean }[] = [
@@ -68,7 +68,7 @@ export async function listDocumentsPendingValidation(
 ): Promise<DocumentWithStudent[]> {
   let q = supabase
     .from("documents")
-    .select("*, student:students!inner(id, war_name, student_number)")
+    .select("*, student:students!inner(id, war_name, student_number, sex)")
     .order("created_at", { ascending: false });
   if (filter.status) q = q.eq("status", filter.status);
   else q = q.in("status", ["enviado", "em_analise"]);

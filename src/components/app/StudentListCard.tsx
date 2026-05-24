@@ -33,22 +33,18 @@ export function StudentListCard({
       href={href}
       className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-card-sm transition-all hover:-translate-y-px hover:border-brand-red-100 hover:shadow-card-md"
     >
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex shrink-0 items-center justify-center">
         <Avatar
           src={photoUrl ?? undefined}
           alt={warName}
           initials={getStudentSigla(studentNumber, warName)}
           size="lg"
         />
-
-        <span className="num-mono text-[11px] font-semibold text-muted-foreground">
-          Nº {numberLabel}
-        </span>
       </div>
 
       <div className="min-w-0 flex-1 space-y-1">
         <p className="truncate font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground">
-          {warName}
+          {warName} — {numberLabel}
         </p>
         {fullName && fullName !== warName && (
           <p className="truncate text-xs text-muted-foreground">{fullName}</p>

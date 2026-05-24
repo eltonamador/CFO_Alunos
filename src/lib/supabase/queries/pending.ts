@@ -18,7 +18,7 @@ export interface PendingChangeRow {
 }
 
 export interface PendingChangeWithStudent extends PendingChangeRow {
-  student: { id: string; war_name: string; student_number: number | null } | null;
+  student: { id: string; war_name: string; student_number: number | null; sex: "M" | "F" | null } | null;
 }
 
 export async function listPendingChanges(
@@ -27,7 +27,7 @@ export async function listPendingChanges(
 ): Promise<PendingChangeWithStudent[]> {
   let q = supabase
     .from("pending_changes")
-    .select("*, student:students!inner(id, war_name, student_number)")
+    .select("*, student:students!inner(id, war_name, student_number, sex)")
     .order("created_at", { ascending: false });
 
   if (filter.status) q = q.eq("status", filter.status);
