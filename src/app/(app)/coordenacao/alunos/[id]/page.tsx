@@ -20,6 +20,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
+import { getStudentSigla } from "@/lib/utils";
 import { ResumoTab } from "./tabs/ResumoTab";
 import { IdentificacaoTab } from "./tabs/IdentificacaoTab";
 import { ContatoTab } from "./tabs/ContatoTab";
@@ -93,11 +94,7 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
         <Avatar
           src={photoUrl ?? undefined}
           alt={student.war_name}
-          initials={
-            student.student_number
-              ? String(student.student_number).padStart(2, "0")
-              : student.war_name.slice(0, 2).toUpperCase()
-          }
+          initials={getStudentSigla(student.student_number, student.war_name)}
           size="xl"
         />
         <div className="min-w-0 flex-1">

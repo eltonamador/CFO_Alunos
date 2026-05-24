@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { getStudentSigla } from "@/lib/utils";
 
 interface Props {
   href: string;
@@ -14,15 +15,6 @@ interface Props {
     label: string;
     variant?: "default" | "primary" | "warning" | "success" | "destructive" | "info" | "gold";
   }[];
-}
-
-function initialsFrom(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "??";
-  const first = parts[0] ?? "";
-  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
-  const last = parts[parts.length - 1] ?? "";
-  return ((first[0] ?? "") + (last[0] ?? "")).toUpperCase();
 }
 
 export function StudentListCard({
@@ -45,9 +37,10 @@ export function StudentListCard({
         <Avatar
           src={photoUrl ?? undefined}
           alt={warName}
-          initials={initialsFrom(warName)}
+          initials={getStudentSigla(studentNumber, warName)}
           size="lg"
         />
+
         <span className="num-mono text-[11px] font-semibold text-muted-foreground">
           Nº {numberLabel}
         </span>
