@@ -9,7 +9,34 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { DiffTable } from "./DiffTable";
 import type { PendingChangeWithStudent } from "@/lib/supabase/queries/pending";
+
+const CONTEXT_LABELS: Record<
+  string,
+  { label: string; variant: "warning" | "outline" | "gold" | "success" }
+> = {
+  health: { label: "Saúde", variant: "warning" },
+  contato: { label: "Contato", variant: "outline" },
+  endereco: { label: "Endereço", variant: "outline" },
+  identificacao: { label: "Identificação", variant: "gold" },
+  emergencia: { label: "Emergência", variant: "warning" },
+};
+
+function formatDateTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 function SubmitVariant({ decision, label }: { decision: "validar" | "recusar"; label: string }) {
   const { pending } = useFormStatus();
@@ -34,29 +61,27 @@ export function PendingChangeRow({ pending }: { pending: PendingChangeWithStuden
     null,
   );
 
+  const ctx = CONTEXT_LABELS[pending.context] ?? {
+    label: pending.context,
+    variant: "outline" as const,
+  };
+
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="pendingId" value={pending.id} />
 
-      <details className="rounded-md border bg-muted/30 p-3 text-xs">
-        <summary className="cursor-pointer text-sm font-medium">
-          Ver alteração (antes / depois)
-        </summary>
-        <div className="mt-2 grid gap-3 md:grid-cols-2">
-          <div>
-            <p className="mb-1 text-muted-foreground">Antes</p>
-            <pre className="overflow-auto rounded bg-background p-2">
-              {JSON.stringify(pending.previous_value, null, 2)}
-            </pre>
-          </div>
-          <div>
-            <p className="mb-1 text-muted-foreground">Depois</p>
-            <pre className="overflow-auto rounded bg-background p-2">
-              {JSON.stringify(pending.new_value, null, 2)}
-            </pre>
-          </div>
+      {/* Cabeçalho com contexto e timestamp */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={ctx.variant}>{ctx.label}</Badge>
+          <span className="text-muted-foreground">
+            Solicitado em <span className="num-mono">{formatDateTime(pending.created_at)}</span>
+          </span>
         </div>
-      </details>
+      </div>
+
+      {/* Diff visual destacando campos alterados */}
+      <DiffTable previous={pending.previous_value} next={pending.new_value} />
 
       {showReason && (
         <Input

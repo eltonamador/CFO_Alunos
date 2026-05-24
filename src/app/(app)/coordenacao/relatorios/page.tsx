@@ -1,11 +1,11 @@
-import { Download } from "lucide-react";
+import { Download, FileText, FileSpreadsheet } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { Badge } from "@/components/ui/Badge";
 
 export const metadata = {
   title: "Relatórios — CFO 2026.1",
-  description: "Exportação de relatórios em Excel para a turma CFO 2026.1.",
+  description: "Exportação de relatórios em Excel e PDF para a turma CFO 2026.1.",
 };
 
 interface Report {
@@ -22,7 +22,7 @@ const REPORTS: Report[] = [
     slug: "ficha-completa",
     title: "Ficha Completa da Turma",
     description:
-      "Todos os 30 alunos com dados pessoais, contato, endereço e logística em uma planilha consolidada.",
+      "Todos os alunos com dados pessoais, contato, endereço e logística em um relatório consolidado.",
     icon: "👥",
     roles: ["coordenacao", "secretaria"],
   },
@@ -62,21 +62,20 @@ export default async function RelatoriosPage() {
       <header className="space-y-1">
         <SectionEyebrow>Central de relatórios</SectionEyebrow>
         <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-          Relatórios Excel
+          Relatórios da Turma
         </h1>
         <p className="text-sm text-muted-foreground">
-          Clique em um relatório para baixar o arquivo <span className="num-mono">.xlsx</span> gerado
-          em tempo real com os dados atuais do banco.
+          Baixe relatórios atualizados em tempo real do banco. Use{" "}
+          <span className="font-semibold">XLSX</span> para análise em planilha e{" "}
+          <span className="font-semibold">PDF</span> para impressão, despacho e reuniões.
         </p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {available.map((report) => (
-          <a
+          <article
             key={report.slug}
-            href={`/api/reports/${report.slug}`}
-            download
-            className="group flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-card-sm transition-all hover:-translate-y-px hover:border-brand-red-100 hover:shadow-card-md"
+            className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-card-sm transition-all hover:border-brand-red-100 hover:shadow-card-md"
           >
             <div className="flex items-start gap-3">
               <span aria-hidden className="text-3xl leading-none">
@@ -84,7 +83,7 @@ export default async function RelatoriosPage() {
               </span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground group-hover:text-primary">
+                  <h2 className="font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground">
                     {report.title}
                   </h2>
                   {report.sensitive && <Badge variant="warning">LGPD</Badge>}
@@ -92,16 +91,33 @@ export default async function RelatoriosPage() {
                 <p className="text-sm text-muted-foreground">{report.description}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-primary">
-              <Download className="h-4 w-4" />
-              <span>Baixar .xlsx</span>
+
+            <div className="mt-auto flex flex-wrap gap-2 pt-1">
+              <a
+                href={`/api/reports/${report.slug}?format=xlsx`}
+                download
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-foreground transition-colors hover:border-primary hover:text-primary"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Baixar XLSX
+              </a>
+              <a
+                href={`/api/reports/${report.slug}?format=pdf`}
+                download
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <FileText className="h-4 w-4" />
+                Baixar PDF
+              </a>
             </div>
-          </a>
+          </article>
         ))}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        * O relatório de Saúde é exclusivo da Coordenação por conter dados sensíveis (LGPD).
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Download className="h-3.5 w-3.5" />
+        Os relatórios são gerados em tempo real com os dados atuais do Supabase. O relatório de Saúde é
+        exclusivo da Coordenação (LGPD — Lei 13.709/2018).
       </p>
     </div>
   );

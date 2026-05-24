@@ -8,31 +8,46 @@ import {
   buildSaudeWorkbook,
   buildEmergenciaWorkbook,
 } from "@/lib/reports/builders";
+import {
+  buildFichaCompletaPDF,
+  buildPendenciasEnxovalPDF,
+  buildSaudePDF,
+  buildEmergenciaPDF,
+} from "@/lib/reports/pdf-builders";
 
 type Builder = (supabase: ReturnType<typeof createSupabaseServerClient>) => Promise<any>;
 
-// Slugs disponíveis e seus metadados
-const REPORTS: Record<string, { label: string; build: Builder }> = {
+interface ReportSpec {
+  label: string;
+  xlsx: Builder;
+  pdf: Builder;
+}
+
+const REPORTS: Record<string, ReportSpec> = {
   "ficha-completa": {
     label: "Ficha_Completa_CFO2026.1",
-    build: buildFichaCompletaWorkbook as Builder,
+    xlsx: buildFichaCompletaWorkbook as Builder,
+    pdf: buildFichaCompletaPDF as Builder,
   },
   "pendencias-enxoval": {
     label: "Pendencias_Enxoval_CFO2026.1",
-    build: buildPendenciasEnxovalWorkbook as Builder,
+    xlsx: buildPendenciasEnxovalWorkbook as Builder,
+    pdf: buildPendenciasEnxovalPDF as Builder,
   },
   saude: {
     label: "Restricoes_Saude_CFO2026.1",
-    build: buildSaudeWorkbook as Builder,
+    xlsx: buildSaudeWorkbook as Builder,
+    pdf: buildSaudePDF as Builder,
   },
   emergencia: {
     label: "Contatos_Emergencia_CFO2026.1",
-    build: buildEmergenciaWorkbook as Builder,
+    xlsx: buildEmergenciaWorkbook as Builder,
+    pdf: buildEmergenciaPDF as Builder,
   },
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { slug: string } },
 ) {
   // 1. Autenticação
@@ -52,20 +67,45 @@ export async function GET(
     return NextResponse.json({ error: "Relatório não encontrado" }, { status: 404 });
   }
 
-  // 4. Gera o workbook
+  // 4. Saúde é restrito à Coordenação (LGPD)
+  if (params.slug === "saude" && session.role !== "coordenacao") {
+    return NextResponse.json({ error: "Acesso restrito à Coordenação" }, { status: 403 });
+  }
+
+  // 5. Formato (?format=pdf|xlsx — default xlsx)
+  const format = (req.nextUrl.searchParams.get("format") ?? "xlsx").toLowerCase();
+  if (format !== "xlsx" && format !== "pdf") {
+    return NextResponse.json({ error: "Formato inválido (use xlsx ou pdf)" }, { status: 400 });
+  }
+
+  // 6. Gera o arquivo
   const supabase = createSupabaseServerClient();
-  const buffer = await report.build(supabase as any);
 
-  const date = new Date().toISOString().slice(0, 10);
-  const filename = `${report.label}_${date}.xlsx`;
+  try {
+    const buffer =
+      format === "pdf" ? await report.pdf(supabase as any) : await report.xlsx(supabase as any);
 
-  return new NextResponse(buffer as unknown as BodyInit, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store",
-    },
-  });
+    const date = new Date().toISOString().slice(0, 10);
+    const ext = format === "pdf" ? "pdf" : "xlsx";
+    const filename = `${report.label}_${date}.${ext}`;
+    const contentType =
+      format === "pdf"
+        ? "application/pdf"
+        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    return new NextResponse(buffer as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err: any) {
+    console.error(`[reports/${params.slug}/${format}] erro:`, err);
+    return NextResponse.json(
+      { error: "Falha ao gerar relatório", detail: err?.message ?? String(err) },
+      { status: 500 },
+    );
+  }
 }
