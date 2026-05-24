@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Home,
   Users,
@@ -108,9 +109,19 @@ export function AppShell({
             <p className="font-display text-sm font-bold uppercase tracking-[0.12em] text-white">
               CFO Alunos
             </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
-              CBMAP · ABM
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Image
+                src="/brasao-abm.png"
+                alt="ABM"
+                width={16}
+                height={16}
+                className="object-contain opacity-70"
+                draggable={false}
+              />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                CBMAP · ABM
+              </p>
+            </div>
           </div>
         </div>
 

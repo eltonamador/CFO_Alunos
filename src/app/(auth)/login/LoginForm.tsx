@@ -22,7 +22,7 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">E-mail</Label>
+        <Label htmlFor="email" className="text-white/70">E-mail</Label>
         <Input
           id="email"
           name="email"
@@ -30,16 +30,18 @@ export function LoginForm() {
           autoComplete="email"
           required
           placeholder="seu.email@cbmap.local"
+          className="border-white/15 bg-white/8 text-white placeholder:text-white/30 focus:border-primary"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <Label htmlFor="password" className="text-white/70">Senha</Label>
         <Input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
+          className="border-white/15 bg-white/8 text-white placeholder:text-white/30 focus:border-primary"
         />
       </div>
 
@@ -47,9 +49,10 @@ export function LoginForm() {
 
       <SubmitButton />
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-white/30">
         Acesso restrito aos alunos e equipe do CFO.
       </p>
     </form>
   );
 }
+

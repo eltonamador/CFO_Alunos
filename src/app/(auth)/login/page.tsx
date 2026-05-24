@@ -12,9 +12,12 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="rounded-lg border bg-card p-6 shadow-sm">
-      <h2 className="mb-6 text-xl font-semibold">Entrar</h2>
+    <div className="p-6">
+      <h2 className="mb-6 font-display text-lg font-semibold uppercase tracking-wide text-white/90">
+        Entrar
+      </h2>
       <LoginForm />
     </div>
   );
 }
+

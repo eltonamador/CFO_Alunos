@@ -10,12 +10,15 @@ export default async function PrimeiroAcessoPage() {
   if (!session.isFirstAccess) redirect(homePathForRole(session.role));
 
   return (
-    <div className="rounded-lg border bg-card p-6 shadow-sm">
-      <h2 className="mb-2 text-xl font-semibold">Bem-vindo, {session.fullName}</h2>
-      <p className="mb-6 text-sm text-muted-foreground">
+    <div className="p-6">
+      <h2 className="mb-2 font-display text-lg font-semibold uppercase tracking-wide text-white/90">
+        Bem-vindo, {session.fullName}
+      </h2>
+      <p className="mb-6 text-sm text-white/50">
         Este é seu primeiro acesso. Defina uma nova senha para continuar.
       </p>
       <FirstAccessForm />
     </div>
   );
 }
+
