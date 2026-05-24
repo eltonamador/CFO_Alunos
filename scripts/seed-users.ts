@@ -1,10 +1,17 @@
 /**
  * Cria usuários iniciais em auth.users e vincula a profiles.
  *
- * Uso:
+ * Uso (DEV LOCAL):
  *   1. Rodar `supabase db reset` para aplicar migrations
- *   2. Rodar `supabase db execute --file supabase/seed.sql` para popular alunos/equipamentos
+ *   2. Rodar `supabase db execute --file supabase/seed.sql`
  *   3. Rodar este script:  pnpm tsx scripts/seed-users.ts
+ *
+ * Uso (PRODUÇÃO — Supabase Cloud):
+ *   1. Garantir que .env.local aponta para o projeto cloud
+ *   2. Aplicar migrations: pnpm exec supabase db push
+ *   3. Aplicar seed via psql (ver docs/DEPLOY_SUPABASE.md)
+ *   4. Rodar este script com flag --confirm-prod:
+ *      pnpm tsx scripts/seed-users.ts --confirm-prod
  *
  * Requer SUPABASE_SERVICE_ROLE_KEY no .env.local.
  */
@@ -19,6 +26,29 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 if (!url || !serviceKey) {
   console.error("❌ Faltam NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY");
   process.exit(1);
+}
+
+// ===== GUARDA DE PRODUÇÃO =====
+// Se a URL aponta pra supabase.co (Cloud) e não veio a flag --confirm-prod,
+// aborta imediatamente para evitar criar usuários por engano em produção.
+const isProd = /\.supabase\.co/i.test(url);
+const hasConfirm = process.argv.includes("--confirm-prod");
+
+if (isProd && !hasConfirm) {
+  console.error("\n🔴 ALERTA: NEXT_PUBLIC_SUPABASE_URL aponta para PRODUÇÃO");
+  console.error(`   URL: ${url}`);
+  console.error("");
+  console.error("   Este script criará usuários reais em auth.users do projeto cloud.");
+  console.error("   Se for intencional, rode novamente com a flag --confirm-prod:");
+  console.error("");
+  console.error("      pnpm tsx scripts/seed-users.ts --confirm-prod");
+  console.error("");
+  process.exit(2);
+}
+
+if (isProd && hasConfirm) {
+  console.log("⚠  Executando contra PRODUÇÃO (confirmado via --confirm-prod)");
+  console.log(`   URL: ${url}\n`);
 }
 
 const supa = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
