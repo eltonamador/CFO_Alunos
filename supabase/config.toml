@@ -1,5 +1,16 @@
-# Supabase local development config
+# =====================================================================
+# Supabase LOCAL development config
 # https://supabase.com/docs/guides/local-development/cli/config
+#
+# ATENÇÃO: este arquivo configura APENAS o stack Supabase local (docker).
+# Em produção (Supabase Cloud) a configuração é feita pelo painel web.
+#
+# Antes do deploy em produção, garantir no painel:
+#   - Auth → Site URL = https://<dominio-vercel>
+#   - Auth → Redirect URLs = inclui https://<dominio-vercel>/auth/callback
+#   - Auth → Enable signup = FALSE (Coord cria usuários via service_role)
+#   - Email templates traduzidos para PT-BR
+# =====================================================================
 
 project_id = "cfo-alunos"
 
@@ -28,9 +39,11 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000/auth/callback"]
 jwt_expiry = 3600
-enable_signup = false
+# DEV: signup aberto para facilitar criação de usuários de teste locais.
+# Em produção manter FALSE no painel do Supabase Cloud.
+enable_signup = true
 
 [auth.email]
-enable_signup = false
+enable_signup = true
 double_confirm_changes = false
 enable_confirmations = false
