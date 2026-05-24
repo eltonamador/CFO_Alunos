@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+build
+public/sw.js
+public/swe-worker-*.js
+pnpm-lock.yaml
+playwright-report
+test-results
+coverage

@@ -1,0 +1,33 @@
+{
+  "name": "CFO Alunos — CBMAP",
+  "short_name": "CFO Alunos",
+  "description": "Gestão dos alunos do Curso de Formação de Oficiais — Corpo de Bombeiros Militar do Amapá.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#B91C1C",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Meus dados",
+      "url": "/aluno",
+      "description": "Acesso rápido ao portal do aluno"
+    }
+  ]
+}

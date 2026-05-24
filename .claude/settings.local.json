@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(not exist *)",
+      "Bash(dir \"C:\\\\Projetos\\\\CFO_Alunos\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Projetos\\\\CFO_Alunos\\\\docs\")"
+    ]
+  }
+}
