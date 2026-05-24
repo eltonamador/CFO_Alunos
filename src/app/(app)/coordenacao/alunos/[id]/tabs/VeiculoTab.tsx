@@ -82,6 +82,22 @@ export function VeiculoTab({
                 </Select>
               </div>
 
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="vehicle_brand_model">
+                  Marca e modelo do veículo<RequiredMark />
+                </Label>
+                <Input
+                  id="vehicle_brand_model"
+                  name="vehicle_brand_model"
+                  defaultValue={vehicle?.vehicle_brand_model ?? ""}
+                  placeholder="Ex: Fiat Uno, Ford Ka, Honda CG 160"
+                  required
+                  minLength={3}
+                  maxLength={80}
+                />
+                <FieldHint>Marca seguida do modelo, ex: “Volkswagen Gol”.</FieldHint>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="plate">
                   Placa<RequiredMark />
@@ -105,6 +121,7 @@ export function VeiculoTab({
           {!hasVehicle && (
             <>
               <input type="hidden" name="vehicle_type" value="" />
+              <input type="hidden" name="vehicle_brand_model" value="" />
               <input type="hidden" name="plate" value="" />
             </>
           )}

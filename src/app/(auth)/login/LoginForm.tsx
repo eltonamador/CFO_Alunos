@@ -30,7 +30,7 @@ export function LoginForm() {
           autoComplete="email"
           required
           placeholder="seu.email@cbmap.local"
-          className="border-white/15 bg-white/8 text-white placeholder:text-white/30 focus:border-primary"
+          className="input-on-dark"
         />
       </div>
       <div className="space-y-2">
@@ -41,7 +41,8 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="border-white/15 bg-white/8 text-white placeholder:text-white/30 focus:border-primary"
+          placeholder="••••••••"
+          className="input-on-dark"
         />
       </div>
 

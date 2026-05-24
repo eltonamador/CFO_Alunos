@@ -685,6 +685,7 @@ const vehicleSchema = z
     studentId: z.string().uuid(),
     has_vehicle: z.enum(["true", "false"]).optional(),
     vehicle_type: optionalTrimmed(),
+    vehicle_brand_model: optionalTrimmed(),
     plate: optionalTrimmed(),
     has_cnh: z.enum(["true", "false"]).optional(),
     cnh_category: optionalTrimmed(),
@@ -696,6 +697,12 @@ const vehicleSchema = z
     if (data.has_vehicle === "true") {
       if (!data.vehicle_type)
         ctx.addIssue({ code: "custom", path: ["vehicle_type"], message: "Informe o tipo de veículo." });
+      if (!data.vehicle_brand_model || cleanSpaces(data.vehicle_brand_model).length < 3)
+        ctx.addIssue({
+          code: "custom",
+          path: ["vehicle_brand_model"],
+          message: "Informe a marca e o modelo do veículo (mín. 3 caracteres).",
+        });
       if (!data.plate || !isValidPlate(data.plate))
         ctx.addIssue({
           code: "custom",
@@ -730,6 +737,7 @@ export async function updateVehicleAction(
     cnh_attached,
     cnh_valid_until,
     vehicle_type,
+    vehicle_brand_model,
     plate,
     cnh_category,
     notes,
@@ -746,6 +754,7 @@ export async function updateVehicleAction(
     has_cnh: boolOrNull(has_cnh),
     cnh_attached: boolOrNull(cnh_attached),
     vehicle_type: nullIfEmpty(vehicle_type),
+    vehicle_brand_model: vehicle_brand_model ? cleanSpaces(vehicle_brand_model) : null,
     plate: plate ? maskPlate(plate) : null,
     cnh_category: nullIfEmpty(cnh_category),
     cnh_valid_until: nullIfEmpty(cnh_valid_until),

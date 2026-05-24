@@ -110,4 +110,48 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
   }
+
+  /* ─── Inputs sobre fundo escuro (tela de login) ───────────────────
+     Resolve o problema clássico do autofill do Chrome/Edge que aplica
+     fundo amarelo + texto preto sobre nosso fundo escuro, deixando
+     o input ilegível. Também garante contraste no estado preenchido,
+     foco e hover.                                                    */
+  .input-on-dark {
+    color: #ffffff;
+    caret-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .input-on-dark::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+    opacity: 1;
+  }
+  .input-on-dark:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  .input-on-dark:focus,
+  .input-on-dark:focus-visible {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: hsl(var(--primary));
+    outline: none;
+  }
+  /* Autofill Chrome/Edge — força texto branco + fundo escuro via inset shadow.
+     A pseudo-classe roda mesmo quando o navegador injeta sua própria UA style. */
+  .input-on-dark:-webkit-autofill,
+  .input-on-dark:-webkit-autofill:hover,
+  .input-on-dark:-webkit-autofill:focus,
+  .input-on-dark:-webkit-autofill:active {
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 1000px #2a261f inset !important;
+    box-shadow: 0 0 0 1000px #2a261f inset !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    transition: background-color 9999s ease-in-out 0s; /* impede o flash amarelo */
+  }
+  /* Erro */
+  .input-on-dark[aria-invalid="true"] {
+    border-color: hsl(var(--destructive));
+  }
 }

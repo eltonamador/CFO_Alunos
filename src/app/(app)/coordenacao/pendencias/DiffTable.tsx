@@ -83,6 +83,7 @@ const FIELD_LABELS: Record<string, string> = {
   // Veículo / CNH
   has_vehicle: "Possui veículo",
   vehicle_type: "Tipo de veículo",
+  vehicle_brand_model: "Marca e modelo do veículo",
   plate: "Placa",
   has_cnh: "Possui CNH",
   cnh_category: "Categoria CNH",

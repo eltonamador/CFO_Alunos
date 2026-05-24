@@ -361,6 +361,7 @@ export interface StudentVehicleRow {
   student_id: string;
   has_vehicle: boolean | null;
   vehicle_type: string | null;
+  vehicle_brand_model: string | null;
   plate: string | null;
   has_cnh: boolean | null;
   cnh_category: string | null;
