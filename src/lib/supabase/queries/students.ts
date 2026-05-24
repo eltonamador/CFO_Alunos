@@ -25,6 +25,7 @@ export interface StudentDetailRow extends StudentListRow {
   marital_status: string | null;
   education_level: string | null;
   graduation_type: string | null;
+  graduation_name: string | null;
   enrollment_id: string | null;
   cpf: string | null;
   rg: string | null;

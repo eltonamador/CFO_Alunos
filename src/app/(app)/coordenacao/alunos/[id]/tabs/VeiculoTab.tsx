@@ -86,23 +86,6 @@ export function VeiculoTab({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="available_for_deployment">
-                  Disponível para apoio operacional?
-                </Label>
-                <Select
-                  id="available_for_deployment"
-                  name="available_for_deployment"
-                  defaultValue={
-                    vehicle?.available_for_deployment == null
-                      ? "false"
-                      : String(vehicle.available_for_deployment)
-                  }
-                >
-                  <option value="false">Não</option>
-                  <option value="true">Sim</option>
-                </Select>
-              </div>
             </>
           )}
 
@@ -111,7 +94,6 @@ export function VeiculoTab({
             <>
               <input type="hidden" name="vehicle_type" value="" />
               <input type="hidden" name="plate" value="" />
-              <input type="hidden" name="available_for_deployment" value="false" />
             </>
           )}
         </div>

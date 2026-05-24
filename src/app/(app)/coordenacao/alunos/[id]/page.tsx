@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { ResumoTab } from "./tabs/ResumoTab";
+import { IdentificacaoTab } from "./tabs/IdentificacaoTab";
 import { ContatoTab } from "./tabs/ContatoTab";
 import { EnderecoTab } from "./tabs/EnderecoTab";
 import { EmergenciaTab } from "./tabs/EmergenciaTab";
@@ -33,6 +34,7 @@ import { DocumentsTab } from "@/components/app/documents/DocumentsTab";
 
 const TABS = [
   { value: "resumo", label: "Resumo" },
+  { value: "identificacao", label: "Identificação" },
   { value: "contato", label: "Contato" },
   { value: "endereco", label: "Endereço/Origem" },
   { value: "emergencia", label: "Emergência" },
@@ -134,6 +136,9 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
             allStudents={allStudents}
             sessionRole={session.role}
           />
+        )}
+        {tab === "identificacao" && (
+          <IdentificacaoTab studentId={student.id} student={student} contact={contact} />
         )}
         {tab === "contato" && <ContatoTab studentId={student.id} contact={contact} />}
         {tab === "endereco" && (

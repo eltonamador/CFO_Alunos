@@ -59,21 +59,6 @@ export function LogisticaTab({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="needs_housing">Necessita de alojamento no quartel?</Label>
-            <Select
-              id="needs_housing"
-              name="needs_housing"
-              defaultValue={
-                logistics?.needs_housing == null ? "" : String(logistics.needs_housing)
-              }
-            >
-              <option value="">Não informado</option>
-              <option value="true">Sim</option>
-              <option value="false">Não</option>
-            </Select>
-          </div>
-
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="course_address">Endereço durante o curso (se diferente)</Label>
             <Input

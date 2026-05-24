@@ -424,7 +424,6 @@ const logisticsSchema = z.object({
   studentId: z.string().uuid(),
   has_fixed_residence_macapa: z.enum(["true", "false"]).optional(),
   course_address: z.string().optional(),
-  needs_housing: z.enum(["true", "false"]).optional(),
   has_family_in_ap: z.enum(["true", "false"]).optional(),
   local_contact: z.string().optional(),
 });
@@ -439,8 +438,7 @@ export async function updateLogisticsAction(
   const parsed = logisticsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, has_fixed_residence_macapa, needs_housing, has_family_in_ap, ...rest } =
-    parsed.data;
+  const { studentId, has_fixed_residence_macapa, has_family_in_ap, ...rest } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
@@ -448,11 +446,74 @@ export async function updateLogisticsAction(
     student_id: studentId,
     ...rest,
     has_fixed_residence_macapa: has_fixed_residence_macapa === "true" ? true : has_fixed_residence_macapa === "false" ? false : null,
-    needs_housing: needs_housing === "true" ? true : needs_housing === "false" ? false : null,
     has_family_in_ap: has_family_in_ap === "true" ? true : has_family_in_ap === "false" ? false : null,
     updated_by: session.userId,
   });
   if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
+// =====================================================================
+// Identificação pessoal — Aluno (própria) ou Admin
+// =====================================================================
+const identificationSchema = z.object({
+  studentId: z.string().uuid(),
+  sex: z.enum(["M", "F"]).or(z.literal("")).optional(),
+  birth_date: z.string().optional(),
+  nationality: z.string().optional(),
+  naturality_state: z.string().optional(),
+  naturality_city: z.string().optional(),
+  marital_status: z.string().optional(),
+  education_level: z.string().optional(),
+  graduation_type: z.string().optional(),
+  graduation_name: z.string().optional(),
+  voter_id: z.string().optional(),
+  voter_zone: z.string().optional(),
+  voter_section: z.string().optional(),
+  father_name: z.string().optional(),
+  mother_name: z.string().optional(),
+  email_personal: z.string().email().or(z.literal("")).optional(),
+});
+
+export async function updateIdentificationAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessão expirada" };
+
+  const parsed = identificationSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+
+  const { studentId, sex, birth_date, email_personal, ...rest } = parsed.data;
+  if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+
+  const supabase = createServerClientUntyped();
+
+  const { error: studentError } = await supabase
+    .from("students")
+    .update({
+      sex: sex || null,
+      birth_date: birth_date || null,
+      ...rest,
+      updated_by: session.userId,
+    })
+    .eq("id", studentId);
+
+  if (studentError) return { ok: false, error: studentError.message };
+
+  if (email_personal !== undefined) {
+    const { error: contactError } = await supabase.from("student_contacts").upsert({
+      student_id: studentId,
+      email_personal: email_personal || null,
+    });
+    if (contactError) return { ok: false, error: contactError.message };
+  }
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
   revalidatePath("/aluno/ficha");
@@ -471,7 +532,6 @@ const vehicleSchema = z.object({
   cnh_category: z.string().optional(),
   cnh_valid_until: z.string().optional(),
   cnh_attached: z.enum(["true", "false"]).optional(),
-  available_for_deployment: z.enum(["true", "false"]).optional(),
   notes: z.string().optional(),
 });
 
@@ -485,15 +545,7 @@ export async function updateVehicleAction(
   const parsed = vehicleSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const {
-    studentId,
-    has_vehicle,
-    has_cnh,
-    cnh_attached,
-    available_for_deployment,
-    cnh_valid_until,
-    ...rest
-  } = parsed.data;
+  const { studentId, has_vehicle, has_cnh, cnh_attached, cnh_valid_until, ...rest } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const boolOrNull = (v: "true" | "false" | undefined) =>
@@ -506,7 +558,6 @@ export async function updateVehicleAction(
     has_vehicle: boolOrNull(has_vehicle),
     has_cnh: boolOrNull(has_cnh),
     cnh_attached: boolOrNull(cnh_attached),
-    available_for_deployment: boolOrNull(available_for_deployment),
     cnh_valid_until: cnh_valid_until || null,
   });
   if (error) return { ok: false, error: error.message };

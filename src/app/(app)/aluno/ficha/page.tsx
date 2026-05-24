@@ -13,6 +13,7 @@ import {
 } from "@/lib/supabase/queries/students";
 import { Tabs } from "@/components/ui/Tabs";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
+import { IdentificacaoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/IdentificacaoTab";
 import { ContatoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/ContatoTab";
 import { EnderecoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/EnderecoTab";
 import { EmergenciaTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/EmergenciaTab";
@@ -27,6 +28,7 @@ export const metadata = { title: "Minha ficha" };
 
 const TABS = [
   { value: "resumo", label: "Resumo" },
+  { value: "identificacao", label: "Identificação" },
   { value: "contato", label: "Contato" },
   { value: "endereco", label: "Endereço/Origem" },
   { value: "emergencia", label: "Emergência" },
@@ -95,6 +97,9 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
             allStudents={[]}
             sessionRole={session.role}
           />
+        )}
+        {tab === "identificacao" && (
+          <IdentificacaoTab studentId={session.studentId} student={student} contact={contact} />
         )}
         {tab === "contato" && <ContatoTab studentId={session.studentId} contact={contact} />}
         {tab === "endereco" && (

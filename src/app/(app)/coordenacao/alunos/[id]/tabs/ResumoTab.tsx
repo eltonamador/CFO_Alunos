@@ -234,6 +234,27 @@ export function ResumoTab({
             <Field label="RG" value={student.rg} mono />
             <Field label="PIS" value={student.pis} mono />
             <Field label="Título eleitoral" value={student.voter_id} mono />
+            <Field label="Zona eleitoral" value={student.voter_zone} mono />
+            <Field label="Seção eleitoral" value={student.voter_section} mono />
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Dados pessoais</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-3">
+            <Field label="Nacionalidade" value={student.nationality} />
+            <Field label="Estado civil" value={student.marital_status} />
+            <Field label="Naturalidade" value={
+              student.naturality_city && student.naturality_state
+                ? `${student.naturality_city} / ${student.naturality_state}`
+                : (student.naturality_city ?? student.naturality_state)
+            } />
+            <Field label="Nome do pai" value={student.father_name} />
+            <Field label="Nome da mãe" value={student.mother_name} />
+            <Field label="Escolaridade" value={student.education_level} />
+            <Field label="Graduação" value={student.graduation_name} />
           </dl>
         </CardContent>
       </Card>
