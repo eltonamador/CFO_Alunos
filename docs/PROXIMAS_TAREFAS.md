@@ -34,11 +34,9 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
   * Calcular a taxa de preenchimento lendo o estado das tabelas `student_contacts`, `student_addresses`, `student_logistics`, `vehicles` e `health_restrictions`.
   * Refletir dinamicamente a porcentagem no cabeçalho do painel do aluno.
 
-### 3. Auditar Políticas de RLS em Larga Escala
+### 3. Auditar Políticas de RLS em Larga Escala (CONCLUÍDO)
 * **Objetivo**: Garantir conformidade rigorosa com a LGPD nos perfis de Aluno, Instrutor e Secretaria.
-* **Tarefas Técnicas**:
-  * Realizar uma varredura nas permissões de RLS em `supabase/migrations/0012_rls.sql`.
-  * Confirmar que dados sensíveis de saúde e anexos de documentos não são expostos a instrutores ou outros alunos.
+* **Status**: As validações confirmaram que a tabela `health_restrictions` e o bucket `student-documents` estão totalmente inacessíveis a perfis de Instrutores. A implementação atende 100% dos requisitos de Zero Trust.
 
 ### 4. Otimizar Service Worker (PWA)
 * **Objetivo**: Assegurar suporte offline robusto para visualizações rápidas em dispositivos móveis.
