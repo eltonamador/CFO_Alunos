@@ -49,3 +49,7 @@ supabase/.temp
 
 # Claude Code (config local do agente — específico de cada máquina)
 .claude/settings.local.json
+
+# Backups e arquivos temporários locais
+.env.local.localdev.bak
+*.bak
