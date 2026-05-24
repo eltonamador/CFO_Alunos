@@ -9,6 +9,8 @@ export interface EquipmentCategoryRow {
   ordinal: number;
   name: string;
   description: string | null;
+  section_ordinal: number;
+  section_name: string;
 }
 
 export interface EquipmentRequirementRow {
@@ -63,7 +65,7 @@ export async function fetchEquipmentChecklist(
   const [catsRes, reqsRes, statusRes] = await Promise.all([
     supabase
       .from("equipment_categories")
-      .select("id, ordinal, name, description")
+      .select("id, ordinal, name, description, section_ordinal, section_name")
       .order("ordinal"),
     supabase
       .from("equipment_requirements")

@@ -233,6 +233,26 @@ function EquipmentItem({
 }
 
 // =====================================================================
+// Agrupamento por seção (section_ordinal / section_name)
+// =====================================================================
+type SectionGroup = {
+  sectionOrdinal: number;
+  sectionName: string;
+  groups: CategoryWithItems[];
+};
+
+function buildSections(checklist: CategoryWithItems[]): SectionGroup[] {
+  const map = new Map<number, SectionGroup>();
+  for (const group of checklist) {
+    const ord = group.category.section_ordinal ?? 0;
+    const name = group.category.section_name ?? "Outros";
+    if (!map.has(ord)) map.set(ord, { sectionOrdinal: ord, sectionName: name, groups: [] });
+    map.get(ord)!.groups.push(group);
+  }
+  return Array.from(map.values()).sort((a, b) => a.sectionOrdinal - b.sectionOrdinal);
+}
+
+// =====================================================================
 // Grupo de categoria
 // =====================================================================
 function CategoryGroup({
@@ -349,6 +369,8 @@ export function MateriaisTab({
     );
   }
 
+  const sections = buildSections(checklist);
+
   return (
     <div className="space-y-4">
       {/* Progresso */}
@@ -356,16 +378,31 @@ export function MateriaisTab({
         <ProgressBar done={doneReqs.length} total={allReqs.length} />
       </div>
 
-      {/* Categorias */}
-      <div className="space-y-3">
-        {checklist.map((group) => (
-          <CategoryGroup
-            key={group.category.id}
-            group={group}
-            studentId={studentId}
-            studentSex={studentSex}
-            canValidate={canValidate ?? false}
-          />
+      {/* Seções */}
+      <div className="space-y-6">
+        {sections.map((section) => (
+          <div key={section.sectionOrdinal} className="space-y-2">
+            {/* Cabeçalho da seção */}
+            <div className="flex items-center gap-3 pt-1">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+                {section.sectionOrdinal}. {section.sectionName}
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            {/* Categorias da seção */}
+            <div className="space-y-2">
+              {section.groups.map((group) => (
+                <CategoryGroup
+                  key={group.category.id}
+                  group={group}
+                  studentId={studentId}
+                  studentSex={studentSex}
+                  canValidate={canValidate ?? false}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
