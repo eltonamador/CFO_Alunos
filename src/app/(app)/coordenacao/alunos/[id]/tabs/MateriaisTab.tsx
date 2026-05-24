@@ -233,13 +233,32 @@ function EquipmentItem({
 }
 
 // =====================================================================
-// Agrupamento por seção (section_ordinal / section_name)
+// Agrupamento por seção e por fase (quarentena vs enxoval)
 // =====================================================================
 type SectionGroup = {
   sectionOrdinal: number;
   sectionName: string;
   groups: CategoryWithItems[];
 };
+
+type PhaseGroup = "quarentena" | "enxoval";
+
+/** Filtra requirements de cada CategoryWithItems pela fase. */
+function filterByPhase(
+  checklist: CategoryWithItems[],
+  phaseGroup: PhaseGroup,
+): CategoryWithItems[] {
+  return checklist
+    .map((g) => ({
+      ...g,
+      requirements: g.requirements.filter((r) =>
+        phaseGroup === "quarentena"
+          ? r.phase === "quarentena"
+          : r.phase === "inicio" || r.phase === "posterior",
+      ),
+    }))
+    .filter((g) => g.requirements.length > 0);
+}
 
 function buildSections(checklist: CategoryWithItems[]): SectionGroup[] {
   const map = new Map<number, SectionGroup>();
@@ -331,6 +350,94 @@ function CategoryGroup({
 }
 
 // =====================================================================
+// Bloco de fase (Quarentena / Enxoval do Curso)
+// =====================================================================
+function SectionCategories({
+  sections,
+  studentId,
+  studentSex,
+  canValidate,
+}: {
+  sections: SectionGroup[];
+  studentId: string;
+  studentSex: "M" | "F" | null;
+  canValidate: boolean;
+}) {
+  if (sections.length === 0) {
+    return (
+      <p className="py-4 text-center text-sm text-muted-foreground">
+        Nenhum item disponível nesta seção.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-5">
+      {sections.map((section) => (
+        <div key={section.sectionOrdinal} className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              {section.sectionOrdinal}. {section.sectionName}
+            </h4>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="space-y-2">
+            {section.groups.map((group) => (
+              <CategoryGroup
+                key={group.category.id}
+                group={group}
+                studentId={studentId}
+                studentSex={studentSex}
+                canValidate={canValidate}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PhaseSection({
+  title,
+  description,
+  accent,
+  sections,
+  studentId,
+  studentSex,
+  canValidate,
+}: {
+  title: string;
+  description: string;
+  accent: "primary" | "muted";
+  sections: SectionGroup[];
+  studentId: string;
+  studentSex: "M" | "F" | null;
+  canValidate: boolean;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-3">
+        <h2
+          className={`text-base font-semibold font-display uppercase tracking-wide whitespace-nowrap ${
+            accent === "primary" ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          {title}
+        </h2>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+      <SectionCategories
+        sections={sections}
+        studentId={studentId}
+        studentSex={studentSex}
+        canValidate={canValidate}
+      />
+    </section>
+  );
+}
+
+// =====================================================================
 // Tab principal exportada
 // =====================================================================
 export function MateriaisTab({
@@ -369,42 +476,39 @@ export function MateriaisTab({
     );
   }
 
-  const sections = buildSections(checklist);
+  const quarentenaList = filterByPhase(checklist, "quarentena");
+  const enxovalList    = filterByPhase(checklist, "enxoval");
+  const quarentenaSections = buildSections(quarentenaList);
+  const enxovalSections    = buildSections(enxovalList);
 
   return (
     <div className="space-y-4">
-      {/* Progresso */}
+      {/* Progresso agregado */}
       <div className="rounded-lg border bg-card p-4">
         <ProgressBar done={doneReqs.length} total={allReqs.length} />
       </div>
 
-      {/* Seções */}
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <div key={section.sectionOrdinal} className="space-y-2">
-            {/* Cabeçalho da seção */}
-            <div className="flex items-center gap-3 pt-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
-                {section.sectionOrdinal}. {section.sectionName}
-              </h3>
-              <div className="h-px flex-1 bg-border" />
-            </div>
+      {/* ── QUARENTENA ─────────────────────────────────────────────── */}
+      <PhaseSection
+        title="Quarentena"
+        description="Itens necessários antes do início do curso — providencie com antecedência."
+        accent="primary"
+        sections={quarentenaSections}
+        studentId={studentId}
+        studentSex={studentSex}
+        canValidate={canValidate ?? false}
+      />
 
-            {/* Categorias da seção */}
-            <div className="space-y-2">
-              {section.groups.map((group) => (
-                <CategoryGroup
-                  key={group.category.id}
-                  group={group}
-                  studentId={studentId}
-                  studentSex={studentSex}
-                  canValidate={canValidate ?? false}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* ── ENXOVAL DO CURSO ───────────────────────────────────────── */}
+      <PhaseSection
+        title="Enxoval do Curso"
+        description="Itens adquiridos conforme cronograma e disciplinas do curso."
+        accent="muted"
+        sections={enxovalSections}
+        studentId={studentId}
+        studentSex={studentSex}
+        canValidate={canValidate ?? false}
+      />
 
       <p className="text-xs text-muted-foreground">
         * Itens marcados como &quot;OK&quot; ou &quot;Não se aplica&quot; e validados pela Coordenação não contam como pendência.
