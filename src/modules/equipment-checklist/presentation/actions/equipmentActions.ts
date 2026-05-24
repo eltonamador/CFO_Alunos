@@ -64,6 +64,8 @@ export async function upsertEquipmentStatusAction(
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
   revalidatePath("/aluno/ficha");
+  revalidatePath("/aluno/materiais");
+  revalidatePath("/aluno");
   return { ok: true };
 }
 
