@@ -33,7 +33,7 @@ export default async function AlunoHome() {
   const numLabel = studentNumber ? String(studentNumber).padStart(2, "0") : null;
   const greetingId = warName
     ? numLabel
-      ? `${warName} — Nº ${numLabel}`
+      ? `${warName} — ${numLabel}`
       : warName
     : session.fullName;
 

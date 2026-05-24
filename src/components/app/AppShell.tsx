@@ -75,7 +75,7 @@ function getUserDisplayName(session: SessionProfile): string {
     const num = session.studentNumber
       ? String(session.studentNumber).padStart(2, "0")
       : null;
-    return num ? `${session.warName} — Nº ${num}` : session.warName;
+    return num ? `${session.warName} — ${num}` : session.warName;
   }
   return session.fullName;
 }
