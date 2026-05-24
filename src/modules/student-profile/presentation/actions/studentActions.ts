@@ -4,6 +4,46 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
 import { getSession } from "@/modules/identity/presentation/session";
+import {
+  maskPhone,
+  maskCEP,
+  maskUF,
+  maskPlate,
+  maskVoter,
+  isValidPhone,
+  isValidCEP,
+  isValidUF,
+  isValidPlate,
+  nullIfEmpty,
+  cleanSpaces,
+  normalizeName,
+  hasAtLeastTwoWords,
+} from "@/lib/masks";
+
+// Zod helper: campo string opcional com trim e "" → undefined.
+const optionalTrimmed = () =>
+  z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.trim() === "" ? undefined : v.trim()));
+
+const optionalPhone = () =>
+  optionalTrimmed().refine(
+    (v) => v === undefined || isValidPhone(v),
+    "Telefone deve ter 10 ou 11 dígitos (DDD + número).",
+  );
+
+const optionalCEP = () =>
+  optionalTrimmed().refine(
+    (v) => v === undefined || isValidCEP(v),
+    "CEP deve ter 8 dígitos.",
+  );
+
+const optionalUF = () =>
+  optionalTrimmed().refine(
+    (v) => v === undefined || isValidUF(v),
+    "UF inválida.",
+  );
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -22,10 +62,17 @@ function canEditOwn(session: { role: string; studentId: string | null }, student
 // =====================================================================
 const contactSchema = z.object({
   studentId: z.string().uuid(),
-  whatsapp: z.string().optional(),
-  phone_secondary: z.string().optional(),
-  email_personal: z.string().email().or(z.literal("")).optional(),
-  notes: z.string().optional(),
+  whatsapp: optionalPhone(),
+  phone_secondary: optionalPhone(),
+  email_personal: z
+    .string()
+    .optional()
+    .transform((v) => (v == null || v.trim() === "" ? undefined : v.trim()))
+    .refine(
+      (v) => v === undefined || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+      "E-mail inválido.",
+    ),
+  notes: optionalTrimmed(),
 });
 
 export async function updateContactAction(
@@ -45,13 +92,16 @@ export async function updateContactAction(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
-  const { studentId, ...payload } = parsed.data;
+  const { studentId, whatsapp, phone_secondary, email_personal, notes } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
   const { error } = await supabase.from("student_contacts").upsert({
     student_id: studentId,
-    ...payload,
+    whatsapp: whatsapp ? maskPhone(whatsapp) : null,
+    phone_secondary: phone_secondary ? maskPhone(phone_secondary) : null,
+    email_personal: nullIfEmpty(email_personal),
+    notes: nullIfEmpty(notes),
     updated_by: session.userId,
   });
   if (error) return { ok: false, error: error.message };
@@ -66,18 +116,18 @@ export async function updateContactAction(
 // =====================================================================
 const addressSchema = z.object({
   studentId: z.string().uuid(),
-  street: z.string().optional(),
-  district: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip: z.string().optional(),
-  landmark: z.string().optional(),
+  street: optionalTrimmed(),
+  district: optionalTrimmed(),
+  city: optionalTrimmed(),
+  state: optionalUF(),
+  zip: optionalCEP(),
+  landmark: optionalTrimmed(),
   origin_in_amapa: z.enum(["true", "false"]).optional(),
   from_other_state: z.enum(["true", "false"]).optional(),
-  origin_state: z.string().optional(),
-  origin_city: z.string().optional(),
-  naturality_city: z.string().optional(),
-  naturality_state: z.string().optional(),
+  origin_state: optionalUF(),
+  origin_city: optionalTrimmed(),
+  naturality_city: optionalTrimmed(),
+  naturality_state: optionalUF(),
 });
 
 export async function updateAddressAction(
@@ -88,15 +138,38 @@ export async function updateAddressAction(
   if (!session) return { ok: false, error: "Sessão expirada" };
 
   const parsed = addressSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: "Dados inválidos" };
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
 
-  const { studentId, origin_in_amapa, from_other_state, naturality_city, naturality_state, ...rest } = parsed.data;
+  const {
+    studentId,
+    origin_in_amapa,
+    from_other_state,
+    naturality_city,
+    naturality_state,
+    street,
+    district,
+    city,
+    state,
+    zip,
+    landmark,
+    origin_state,
+    origin_city,
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
   const { error: addressError } = await supabase.from("student_addresses").upsert({
     student_id: studentId,
-    ...rest,
+    street: nullIfEmpty(street),
+    district: nullIfEmpty(district),
+    city: nullIfEmpty(city),
+    state: state ? maskUF(state) : null,
+    zip: zip ? maskCEP(zip) : null,
+    landmark: nullIfEmpty(landmark),
+    origin_state: origin_state ? maskUF(origin_state) : null,
+    origin_city: nullIfEmpty(origin_city),
     origin_in_amapa: origin_in_amapa === "true",
     from_other_state: from_other_state === "true",
     updated_by: session.userId,
@@ -107,8 +180,8 @@ export async function updateAddressAction(
     const { error: studentError } = await supabase
       .from("students")
       .update({
-        naturality_city: naturality_city || null,
-        naturality_state: naturality_state || null,
+        naturality_city: nullIfEmpty(naturality_city),
+        naturality_state: naturality_state ? maskUF(naturality_state) : null,
         updated_by: session.userId,
       })
       .eq("id", studentId);
@@ -126,11 +199,21 @@ export async function updateAddressAction(
 const emergencySchema = z.object({
   studentId: z.string().uuid(),
   priority: z.coerce.number().refine((n) => n === 1 || n === 2),
-  full_name: z.string().min(2, "Nome obrigatório"),
-  relationship: z.string().optional(),
-  phone: z.string().min(8, "Telefone obrigatório"),
-  address: z.string().optional(),
-  notes: z.string().optional(),
+  full_name: z
+    .string()
+    .transform((v) => cleanSpaces(v))
+    .refine((v) => v.length >= 3, "Nome obrigatório.")
+    .refine(hasAtLeastTwoWords, "Informe nome e pelo menos um sobrenome."),
+  relationship: optionalTrimmed(),
+  phone: z
+    .string()
+    .transform((v) => v?.trim() ?? "")
+    .refine(
+      (v) => isValidPhone(v),
+      "Telefone deve ter 10 ou 11 dígitos (DDD + número).",
+    ),
+  address: optionalTrimmed(),
+  notes: optionalTrimmed(),
 });
 
 export async function upsertEmergencyContactAction(
@@ -144,13 +227,22 @@ export async function upsertEmergencyContactAction(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
-  const { studentId, priority, ...rest } = parsed.data;
+  const { studentId, priority, full_name, relationship, phone, address, notes } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
-  const { error } = await supabase
-    .from("emergency_contacts")
-    .upsert({ student_id: studentId, priority, ...rest }, { onConflict: "student_id,priority" });
+  const { error } = await supabase.from("emergency_contacts").upsert(
+    {
+      student_id: studentId,
+      priority,
+      full_name: normalizeName(full_name),
+      relationship: nullIfEmpty(relationship),
+      phone: maskPhone(phone),
+      address: nullIfEmpty(address),
+      notes: nullIfEmpty(notes),
+    },
+    { onConflict: "student_id,priority" },
+  );
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
@@ -162,22 +254,36 @@ export async function upsertEmergencyContactAction(
 // Saúde / Restrições — Política A (write-then-validate): grava direto
 // mas marca validation_status='pendente' e gera PendingChange (D-005).
 // =====================================================================
-const healthSchema = z.object({
-  studentId: z.string().uuid(),
-  blood_type: z.enum(["A", "B", "AB", "O"]).optional().or(z.literal("")),
-  rh_factor: z.enum(["+", "-"]).optional().or(z.literal("")),
-  altura_cm: z.coerce.number().int().positive().optional().or(z.literal("")),
-  peso_kg: z.coerce.number().positive().optional().or(z.literal("")),
-  cirurgia_ocular: z.enum(["true", "false"]).optional(),
-  cirurgia_ocular_obs: z.string().optional(),
-  allergies: z.string().optional(),
-  continuous_medication: z.string().optional(),
-  chronic_disease: z.string().optional(),
-  physical_restriction: z.string().optional(),
-  dietary_restriction: z.string().optional(),
-  uses_glasses: z.enum(["true", "false"]).optional(),
-  medical_notes: z.string().optional(),
-});
+const healthSchema = z
+  .object({
+    studentId: z.string().uuid(),
+    blood_type: z.enum(["A", "B", "AB", "O"]).optional().or(z.literal("")),
+    rh_factor: z.enum(["+", "-"]).optional().or(z.literal("")),
+    altura_cm: z
+      .union([z.literal(""), z.coerce.number().int().min(100, "Altura entre 100 e 250 cm.").max(250, "Altura entre 100 e 250 cm.")])
+      .optional(),
+    peso_kg: z
+      .union([z.literal(""), z.coerce.number().min(30, "Peso entre 30 e 200 kg.").max(200, "Peso entre 30 e 200 kg.")])
+      .optional(),
+    cirurgia_ocular: z.enum(["true", "false"]).optional(),
+    cirurgia_ocular_obs: optionalTrimmed(),
+    allergies: optionalTrimmed(),
+    continuous_medication: optionalTrimmed(),
+    chronic_disease: optionalTrimmed(),
+    physical_restriction: optionalTrimmed(),
+    dietary_restriction: optionalTrimmed(),
+    uses_glasses: z.enum(["true", "false"]).optional(),
+    medical_notes: optionalTrimmed(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.cirurgia_ocular === "true" && !data.cirurgia_ocular_obs) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["cirurgia_ocular_obs"],
+        message: "Descreva a cirurgia ocular realizada.",
+      });
+    }
+  });
 
 export async function updateHealthAction(
   _prev: ActionResult | null,
@@ -476,21 +582,27 @@ export async function updateLogisticsAction(
 const identificationSchema = z.object({
   studentId: z.string().uuid(),
   sex: z.enum(["M", "F"]).or(z.literal("")).optional(),
-  birth_date: z.string().optional(),
-  nationality: z.string().optional(),
-  naturality_state: z.string().optional(),
-  naturality_city: z.string().optional(),
-  marital_status: z.string().optional(),
-  education_level: z.string().optional(),
-  graduation_type: z.string().optional(),
-  graduation_name: z.string().optional(),
-  professional_experience: z.string().optional(),
-  voter_id: z.string().optional(),
-  voter_zone: z.string().optional(),
-  voter_section: z.string().optional(),
-  father_name: z.string().optional(),
-  mother_name: z.string().optional(),
-  email_personal: z.string().email().or(z.literal("")).optional(),
+  birth_date: optionalTrimmed().refine(
+    (v) => v === undefined || !Number.isNaN(Date.parse(v)),
+    "Data de nascimento inválida.",
+  ),
+  nationality: optionalTrimmed(),
+  naturality_state: optionalUF(),
+  naturality_city: optionalTrimmed(),
+  marital_status: optionalTrimmed(),
+  education_level: optionalTrimmed(),
+  graduation_type: optionalTrimmed(),
+  graduation_name: optionalTrimmed(),
+  professional_experience: optionalTrimmed(),
+  voter_id: optionalTrimmed(),
+  voter_zone: optionalTrimmed(),
+  voter_section: optionalTrimmed(),
+  father_name: optionalTrimmed(),
+  mother_name: optionalTrimmed(),
+  email_personal: optionalTrimmed().refine(
+    (v) => v === undefined || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    "E-mail inválido.",
+  ),
 });
 
 export async function updateIdentificationAction(
@@ -505,7 +617,25 @@ export async function updateIdentificationAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const { studentId, sex, birth_date, email_personal, ...rest } = parsed.data;
+  const {
+    studentId,
+    sex,
+    birth_date,
+    email_personal,
+    nationality,
+    naturality_state,
+    naturality_city,
+    marital_status,
+    education_level,
+    graduation_type,
+    graduation_name,
+    professional_experience,
+    voter_id,
+    voter_zone,
+    voter_section,
+    father_name,
+    mother_name,
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
@@ -514,8 +644,20 @@ export async function updateIdentificationAction(
     .from("students")
     .update({
       sex: sex || null,
-      birth_date: birth_date || null,
-      ...rest,
+      birth_date: nullIfEmpty(birth_date),
+      nationality: nullIfEmpty(nationality),
+      naturality_state: naturality_state ? maskUF(naturality_state) : null,
+      naturality_city: nullIfEmpty(naturality_city),
+      marital_status: nullIfEmpty(marital_status),
+      education_level: nullIfEmpty(education_level),
+      graduation_type: nullIfEmpty(graduation_type),
+      graduation_name: nullIfEmpty(graduation_name),
+      professional_experience: nullIfEmpty(professional_experience),
+      voter_id: voter_id ? maskVoter(voter_id) : null,
+      voter_zone: nullIfEmpty(voter_zone),
+      voter_section: nullIfEmpty(voter_section),
+      father_name: father_name ? normalizeName(father_name) : null,
+      mother_name: mother_name ? normalizeName(mother_name) : null,
       updated_by: session.userId,
     })
     .eq("id", studentId);
@@ -525,7 +667,7 @@ export async function updateIdentificationAction(
   if (email_personal !== undefined) {
     const { error: contactError } = await supabase.from("student_contacts").upsert({
       student_id: studentId,
-      email_personal: email_personal || null,
+      email_personal: nullIfEmpty(email_personal),
     });
     if (contactError) return { ok: false, error: contactError.message };
   }
@@ -538,17 +680,36 @@ export async function updateIdentificationAction(
 // =====================================================================
 // Veículo / CNH — Aluno (próprio) ou Admin
 // =====================================================================
-const vehicleSchema = z.object({
-  studentId: z.string().uuid(),
-  has_vehicle: z.enum(["true", "false"]).optional(),
-  vehicle_type: z.string().optional(),
-  plate: z.string().optional(),
-  has_cnh: z.enum(["true", "false"]).optional(),
-  cnh_category: z.string().optional(),
-  cnh_valid_until: z.string().optional(),
-  cnh_attached: z.enum(["true", "false"]).optional(),
-  notes: z.string().optional(),
-});
+const vehicleSchema = z
+  .object({
+    studentId: z.string().uuid(),
+    has_vehicle: z.enum(["true", "false"]).optional(),
+    vehicle_type: optionalTrimmed(),
+    plate: optionalTrimmed(),
+    has_cnh: z.enum(["true", "false"]).optional(),
+    cnh_category: optionalTrimmed(),
+    cnh_valid_until: optionalTrimmed(),
+    cnh_attached: z.enum(["true", "false"]).optional(),
+    notes: optionalTrimmed(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.has_vehicle === "true") {
+      if (!data.vehicle_type)
+        ctx.addIssue({ code: "custom", path: ["vehicle_type"], message: "Informe o tipo de veículo." });
+      if (!data.plate || !isValidPlate(data.plate))
+        ctx.addIssue({
+          code: "custom",
+          path: ["plate"],
+          message: "Placa inválida. Use AAA-0000 ou AAA-0A00.",
+        });
+    }
+    if (data.has_cnh === "true") {
+      if (!data.cnh_category)
+        ctx.addIssue({ code: "custom", path: ["cnh_category"], message: "Selecione a categoria da CNH." });
+      if (!data.cnh_valid_until)
+        ctx.addIssue({ code: "custom", path: ["cnh_valid_until"], message: "Informe a validade da CNH." });
+    }
+  });
 
 export async function updateVehicleAction(
   _prev: ActionResult | null,
@@ -558,9 +719,21 @@ export async function updateVehicleAction(
   if (!session) return { ok: false, error: "Sessão expirada" };
 
   const parsed = vehicleSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, error: "Dados inválidos" };
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
 
-  const { studentId, has_vehicle, has_cnh, cnh_attached, cnh_valid_until, ...rest } = parsed.data;
+  const {
+    studentId,
+    has_vehicle,
+    has_cnh,
+    cnh_attached,
+    cnh_valid_until,
+    vehicle_type,
+    plate,
+    cnh_category,
+    notes,
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const boolOrNull = (v: "true" | "false" | undefined) =>
@@ -569,11 +742,14 @@ export async function updateVehicleAction(
   const supabase = createServerClientUntyped();
   const { error } = await supabase.from("vehicles").upsert({
     student_id: studentId,
-    ...rest,
     has_vehicle: boolOrNull(has_vehicle),
     has_cnh: boolOrNull(has_cnh),
     cnh_attached: boolOrNull(cnh_attached),
-    cnh_valid_until: cnh_valid_until || null,
+    vehicle_type: nullIfEmpty(vehicle_type),
+    plate: plate ? maskPlate(plate) : null,
+    cnh_category: nullIfEmpty(cnh_category),
+    cnh_valid_until: nullIfEmpty(cnh_valid_until),
+    notes: nullIfEmpty(notes),
   });
   if (error) return { ok: false, error: error.message };
 

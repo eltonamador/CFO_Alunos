@@ -7,11 +7,15 @@ import {
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Alert } from "@/components/ui/Alert";
 import { Textarea } from "@/components/ui/Textarea";
+import { FieldHint } from "@/components/ui/FieldHint";
 import type { StudentDetailRow, StudentContactRow } from "@/lib/supabase/queries/students";
+
+const TODAY = new Date().toISOString().slice(0, 10);
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -60,6 +64,7 @@ export function IdentificacaoTab({
               name="birth_date"
               type="date"
               defaultValue={student.birth_date ?? ""}
+              max={TODAY}
             />
           </div>
 
@@ -90,14 +95,14 @@ export function IdentificacaoTab({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="naturality_state">Naturalidade — UF</Label>
-            <Input
+            <MaskedInput
               id="naturality_state"
               name="naturality_state"
-              defaultValue={student.naturality_state ?? ""}
-              placeholder="Ex: AP"
-              maxLength={2}
+              mask="uf"
+              defaultValue={student.naturality_state}
+              placeholder="AP"
               className="uppercase"
             />
           </div>
@@ -204,34 +209,40 @@ export function IdentificacaoTab({
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold">Dados eleitorais</legend>
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2 sm:col-span-1">
+          <div className="space-y-1.5 sm:col-span-1">
             <Label htmlFor="voter_zone">Zona eleitoral</Label>
             <Input
               id="voter_zone"
               name="voter_zone"
               defaultValue={student.voter_zone ?? ""}
-              placeholder="Ex: 001"
+              placeholder="001"
+              inputMode="numeric"
+              maxLength={4}
             />
           </div>
 
-          <div className="space-y-2 sm:col-span-1">
+          <div className="space-y-1.5 sm:col-span-1">
             <Label htmlFor="voter_section">Seção eleitoral</Label>
             <Input
               id="voter_section"
               name="voter_section"
               defaultValue={student.voter_section ?? ""}
-              placeholder="Ex: 0001"
+              placeholder="0001"
+              inputMode="numeric"
+              maxLength={5}
             />
           </div>
 
-          <div className="space-y-2 sm:col-span-1">
+          <div className="space-y-1.5 sm:col-span-1">
             <Label htmlFor="voter_id">Título de eleitor</Label>
-            <Input
+            <MaskedInput
               id="voter_id"
               name="voter_id"
-              defaultValue={student.voter_id ?? ""}
-              placeholder="Número do título"
+              mask="voter"
+              defaultValue={student.voter_id}
+              placeholder="000000000000"
             />
+            <FieldHint>12 dígitos.</FieldHint>
           </div>
         </div>
       </fieldset>

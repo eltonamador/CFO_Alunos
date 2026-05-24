@@ -7,9 +7,11 @@ import {
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Label } from "@/components/ui/Label";
 import { Alert } from "@/components/ui/Alert";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { FieldHint, RequiredMark } from "@/components/ui/FieldHint";
 import type { EmergencyContactRow } from "@/lib/supabase/queries/students";
 
 function SubmitButton({ label }: { label: string }) {
@@ -41,41 +43,51 @@ function EmergencyForm({
       <input type="hidden" name="priority" value={priority} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={`em${priority}-name`}>Nome completo</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor={`em${priority}-name`}>
+            Nome completo<RequiredMark />
+          </Label>
           <Input
             id={`em${priority}-name`}
             name="full_name"
             defaultValue={contact?.full_name ?? ""}
             required
             minLength={2}
+            placeholder="Nome e sobrenome"
           />
+          <FieldHint>Informe nome e pelo menos um sobrenome.</FieldHint>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor={`em${priority}-rel`}>Parentesco / vínculo</Label>
           <Input
             id={`em${priority}-rel`}
             name="relationship"
             defaultValue={contact?.relationship ?? ""}
             placeholder="Pai, Mãe, Esposa, ..."
+            maxLength={40}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor={`em${priority}-phone`}>Telefone / WhatsApp</Label>
-          <Input
+        <div className="space-y-1.5">
+          <Label htmlFor={`em${priority}-phone`}>
+            Telefone / WhatsApp<RequiredMark />
+          </Label>
+          <MaskedInput
             id={`em${priority}-phone`}
             name="phone"
-            defaultValue={contact?.phone ?? ""}
+            mask="phone"
+            defaultValue={contact?.phone}
             required
-            minLength={8}
+            placeholder="(96) 9XXXX-XXXX"
           />
+          <FieldHint>DDD + número (10 a 11 dígitos).</FieldHint>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor={`em${priority}-address`}>Endereço</Label>
           <Input
             id={`em${priority}-address`}
             name="address"
             defaultValue={contact?.address ?? ""}
+            placeholder="Rua, número, bairro"
           />
         </div>
       </div>

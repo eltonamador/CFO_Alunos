@@ -8,10 +8,14 @@ import {
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Label } from "@/components/ui/Label";
 import { Alert } from "@/components/ui/Alert";
 import { Select } from "@/components/ui/Select";
+import { FieldHint, RequiredMark } from "@/components/ui/FieldHint";
 import type { StudentVehicleRow } from "@/lib/supabase/queries/students";
+
+const TODAY = new Date().toISOString().slice(0, 10);
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -60,12 +64,15 @@ export function VeiculoTab({
 
           {hasVehicle && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="vehicle_type">Tipo de veículo</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="vehicle_type">
+                  Tipo de veículo<RequiredMark />
+                </Label>
                 <Select
                   id="vehicle_type"
                   name="vehicle_type"
                   defaultValue={vehicle?.vehicle_type ?? ""}
+                  required
                 >
                   <option value="">Selecione</option>
                   <option value="carro">Carro</option>
@@ -75,15 +82,20 @@ export function VeiculoTab({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="plate">Placa</Label>
-                <Input
+              <div className="space-y-1.5">
+                <Label htmlFor="plate">
+                  Placa<RequiredMark />
+                </Label>
+                <MaskedInput
                   id="plate"
                   name="plate"
-                  defaultValue={vehicle?.plate ?? ""}
-                  placeholder="AAA-0000 ou AAA0A00"
+                  mask="plate"
+                  defaultValue={vehicle?.plate}
+                  placeholder="AAA-0A00"
                   className="uppercase"
+                  required
                 />
+                <FieldHint>Formato antigo (AAA-0000) ou Mercosul (AAA-0A00).</FieldHint>
               </div>
 
             </>
@@ -118,12 +130,15 @@ export function VeiculoTab({
 
           {hasCnh && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="cnh_category">Categoria</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="cnh_category">
+                  Categoria<RequiredMark />
+                </Label>
                 <Select
                   id="cnh_category"
                   name="cnh_category"
                   defaultValue={vehicle?.cnh_category ?? ""}
+                  required
                 >
                   <option value="">Selecione</option>
                   <option value="A">A — Moto</option>
@@ -135,14 +150,19 @@ export function VeiculoTab({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cnh_valid_until">Validade da CNH</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="cnh_valid_until">
+                  Validade da CNH<RequiredMark />
+                </Label>
                 <Input
                   id="cnh_valid_until"
                   name="cnh_valid_until"
                   type="date"
                   defaultValue={vehicle?.cnh_valid_until ?? ""}
+                  min={TODAY}
+                  required
                 />
+                <FieldHint>Data de validade futura conforme o documento.</FieldHint>
               </div>
 
               <div className="space-y-2">

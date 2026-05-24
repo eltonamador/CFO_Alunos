@@ -7,9 +7,11 @@ import {
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Label } from "@/components/ui/Label";
 import { Alert } from "@/components/ui/Alert";
 import { Select } from "@/components/ui/Select";
+import { FieldHint } from "@/components/ui/FieldHint";
 import type { StudentAddressRow } from "@/lib/supabase/queries/students";
 
 function SubmitButton() {
@@ -49,17 +51,31 @@ export function EnderecoTab({
             <Label htmlFor="district">Bairro</Label>
             <Input id="district" name="district" defaultValue={address?.district ?? ""} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="zip">CEP</Label>
-            <Input id="zip" name="zip" defaultValue={address?.zip ?? ""} />
+            <MaskedInput
+              id="zip"
+              name="zip"
+              mask="cep"
+              defaultValue={address?.zip}
+              placeholder="00000-000"
+            />
+            <FieldHint>8 dígitos.</FieldHint>
           </div>
           <div className="space-y-2">
             <Label htmlFor="city">Cidade</Label>
-            <Input id="city" name="city" defaultValue={address?.city ?? ""} />
+            <Input id="city" name="city" defaultValue={address?.city ?? ""} placeholder="Ex: Macapá" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="state">UF</Label>
-            <Input id="state" name="state" defaultValue={address?.state ?? ""} maxLength={2} />
+            <MaskedInput
+              id="state"
+              name="state"
+              mask="uf"
+              defaultValue={address?.state}
+              placeholder="AP"
+              className="uppercase"
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="landmark">Ponto de referência</Label>
@@ -85,9 +101,16 @@ export function EnderecoTab({
               <option value="true">Sim</option>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="origin_state">Estado de origem</Label>
-            <Input id="origin_state" name="origin_state" defaultValue={address?.origin_state ?? ""} maxLength={2} />
+            <MaskedInput
+              id="origin_state"
+              name="origin_state"
+              mask="uf"
+              defaultValue={address?.origin_state}
+              placeholder="UF"
+              className="uppercase"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="origin_city">Cidade de origem</Label>
@@ -108,14 +131,14 @@ export function EnderecoTab({
               placeholder="Ex: Macapá"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="naturality_state">Naturalidade — UF</Label>
-            <Input
+            <MaskedInput
               id="naturality_state"
               name="naturality_state"
-              defaultValue={naturalityState ?? ""}
-              placeholder="Ex: AP"
-              maxLength={2}
+              mask="uf"
+              defaultValue={naturalityState}
+              placeholder="AP"
               className="uppercase"
             />
           </div>
