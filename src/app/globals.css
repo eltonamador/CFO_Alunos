@@ -4,44 +4,60 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Paper background + ink (warm institutional) */
+    --background: 48 35% 97%;          /* paper #fafaf3 */
+    --foreground: 43 18% 7%;           /* ink-900 #16140f */
+
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 0 74% 42%; /* CBMAP red */
+    --card-foreground: 43 18% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 43 18% 7%;
+
+    /* Brand red — primary */
+    --primary: 358 69% 32%;            /* brand-red-700 #8b1a1f */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
+
+    /* Warm secondary (ink-50) */
+    --secondary: 45 36% 93%;           /* ink-50 #f5f2e6 */
+    --secondary-foreground: 43 18% 7%;
+
+    --muted: 45 30% 88%;               /* ink-100 */
+    --muted-foreground: 42 9% 32%;     /* ink-600 */
+
+    --accent: 45 36% 93%;
+    --accent-foreground: 43 18% 7%;
+
+    --destructive: 355 68% 41%;        /* danger-500 #b22234 */
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 0 74% 42%;
+
+    --border: 45 23% 83%;              /* ink-200 #ddd9c9 */
+    --input: 45 23% 83%;
+    --ring: 358 69% 32%;
+
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 0 0% 98%;
-    --primary: 0 74% 50%;
+    --background: 43 18% 7%;
+    --foreground: 48 35% 97%;
+    --card: 40 16% 12%;
+    --card-foreground: 48 35% 97%;
+    --popover: 40 16% 12%;
+    --popover-foreground: 48 35% 97%;
+    --primary: 357 57% 46%;            /* brand-red-500 — mais visível no escuro */
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 0 74% 50%;
+    --secondary: 40 14% 20%;
+    --secondary-foreground: 48 35% 97%;
+    --muted: 40 14% 20%;
+    --muted-foreground: 45 10% 72%;
+    --accent: 40 14% 20%;
+    --accent-foreground: 48 35% 97%;
+    --destructive: 355 68% 41%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 14% 20%;
+    --input: 40 14% 20%;
+    --ring: 357 57% 46%;
   }
 
   * {
@@ -51,13 +67,35 @@
   body {
     @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "ss01", "tnum";
   }
 
-  /* Mobile-first: aumenta alvos de toque */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), "Barlow Condensed", system-ui, sans-serif;
+    letter-spacing: 0.01em;
+  }
+
   button,
   [role="button"],
   a {
     @apply min-h-[44px];
     touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .section-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-primary;
+    font-family: var(--font-display), "Barlow Condensed", system-ui, sans-serif;
+  }
+
+  .sensitive-banner {
+    @apply flex items-center gap-2.5 rounded-md border-l-[3px] border-amber-500 bg-amber-100 px-3.5 py-2.5 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300;
+  }
+
+  .num-mono {
+    font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
   }
 }

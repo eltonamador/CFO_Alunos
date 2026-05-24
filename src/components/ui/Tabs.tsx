@@ -25,7 +25,7 @@ export function Tabs({ items, param = "tab", defaultValue }: TabsProps) {
   const current = searchParams.get(param) ?? defaultValue;
 
   return (
-    <div className="-mx-4 flex gap-1 overflow-x-auto border-b px-4 md:mx-0 md:px-0">
+    <div className="-mx-4 flex gap-0 overflow-x-auto border-b border-border bg-card/40 px-4 md:mx-0 md:rounded-t-md md:px-2">
       {items.map((item) => {
         const params = new URLSearchParams(searchParams);
         params.set(param, item.value);
@@ -36,10 +36,11 @@ export function Tabs({ items, param = "tab", defaultValue }: TabsProps) {
             href={`${pathname}?${params.toString()}`}
             scroll={false}
             className={cn(
-              "whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              "relative whitespace-nowrap px-3 py-2.5 font-display text-sm font-semibold uppercase tracking-[0.06em] transition-colors",
+              "after:absolute after:inset-x-2 after:-bottom-px after:h-[3px] after:rounded-t-sm after:transition-colors",
               isActive
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground",
+                ? "text-primary after:bg-primary"
+                : "text-muted-foreground hover:text-foreground after:bg-transparent",
             )}
           >
             {item.label}
