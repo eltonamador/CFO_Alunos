@@ -100,7 +100,7 @@ Em **Settings → Domains** na Vercel:
 ## Passo 7 — Smoke test em produção
 
 1. Acessa a URL Vercel
-2. Loga como Coordenação (`coordenacao@cbmap.local` / `ChangeMe!2026`)
+2. Loga como Coordenação (`coordenacao@abm.br` / `ChangeMe!2026`)
 3. Verifica:
    - [ ] Lista dos 30 alunos carrega
    - [ ] Avatar/Barlow Condensed/cores institucionais aparecem
@@ -109,7 +109,7 @@ Em **Settings → Domains** na Vercel:
    - [ ] Aba **Histórico** mostra logs (mesmo que vazia)
    - [ ] Download de **Relatórios → Ficha Completa** baixa um `.xlsx`
 4. Logout
-5. Loga como aluno (`aluno01@cbmap.local` / `ChangeMe!2026`)
+5. Loga como aluno (ex.: `silva@abm.br` / `ChangeMe!2026`)
 6. Verifica:
    - [ ] Vai pra `/aluno/ficha`
    - [ ] Edita WhatsApp em **Contato** → salva

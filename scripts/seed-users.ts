@@ -62,10 +62,26 @@ type SeedUser = {
 };
 
 const ADMINS: SeedUser[] = [
-  { email: "coordenacao@cbmap.local", password: "ChangeMe!2026", fullName: "Coordenação CFO", role: "coordenacao" },
-  { email: "secretaria@cbmap.local",  password: "ChangeMe!2026", fullName: "Secretaria Acad.", role: "secretaria" },
-  { email: "instrutor@cbmap.local",   password: "ChangeMe!2026", fullName: "Instrutor Teste",  role: "instrutor" },
+  { email: "coordenacao@abm.br", password: "ChangeMe!2026", fullName: "Coordenação CFO", role: "coordenacao" },
+  { email: "secretaria@abm.br",  password: "ChangeMe!2026", fullName: "Secretaria Acad.", role: "secretaria" },
+  { email: "instrutor@abm.br",   password: "ChangeMe!2026", fullName: "Instrutor Teste",  role: "instrutor" },
 ];
+
+/** Normaliza o nome de guerra para uso em e-mail:
+ *  - converte para minúsculas
+ *  - remove acentos/diacríticos
+ *  - substitui espaços e caracteres não-alfanuméricos por ponto
+ *  - remove pontos duplicados/iniciais/finais
+ */
+function warNameToEmail(warName: string): string {
+  return warName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")   // remove diacríticos
+    .replace(/[^a-z0-9]+/g, ".")       // não-alfanumérico → ponto
+    .replace(/^\.+|\.+$/g, "")         // remove pontos nas bordas
+    .replace(/\.{2,}/g, ".");           // pontos duplos → simples
+}
 
 async function upsertUser(u: SeedUser, studentId?: string) {
   // Cria (ou ignora se já existe) o auth.user
@@ -106,7 +122,7 @@ async function main() {
   // 30 alunos — vinculando por student_number
   const { data: students } = await supa
     .from("students")
-    .select("id, student_number, full_name")
+    .select("id, student_number, full_name, war_name")
     .order("student_number");
 
   if (!students || students.length === 0) {
@@ -115,10 +131,10 @@ async function main() {
   }
 
   for (const s of students) {
-    const num = String(s.student_number).padStart(2, "0");
+    const emailLocal = warNameToEmail(s.war_name as string);
     await upsertUser(
       {
-        email: `aluno${num}@cbmap.local`,
+        email: `${emailLocal}@abm.br`,
         password: "ChangeMe!2026",
         fullName: s.full_name,
         role: "aluno",
@@ -128,8 +144,8 @@ async function main() {
   }
 
   console.log("\n✅ Seed de usuários concluído.");
-  console.log("    Login admin:    coordenacao@cbmap.local / ChangeMe!2026");
-  console.log("    Login alunoXX:  aluno01@cbmap.local     / ChangeMe!2026");
+  console.log("    Login admin:  coordenacao@abm.br / ChangeMe!2026");
+  console.log("    Login aluno:  <nomeguerra>@abm.br / ChangeMe!2026");
 }
 
 main().catch((e) => {

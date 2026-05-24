@@ -89,8 +89,8 @@ pnpm tsx scripts/seed-users.ts
 ```
 
 Esse script lê o `.env.local`, conecta via service-role e:
-- Cria 3 usuários admin: `coordenacao@cbmap.local`, `secretaria@cbmap.local`, `instrutor@cbmap.local` (senha padrão `ChangeMe!2026` — **trocar no primeiro acesso**)
-- Cria os 30 usuários de alunos (emails determinísticos por número, ex.: `aluno01@cbmap.local`)
+- Cria 3 usuários admin: `coordenacao@abm.br`, `secretaria@abm.br`, `instrutor@abm.br` (senha padrão `ChangeMe!2026` — **trocar no primeiro acesso**)
+- Cria os 30 usuários de alunos com e-mail baseado no nome de guerra (ex.: `silva@abm.br`)
 - Vincula cada `auth.users.id` ao `students.id` correspondente via `profiles`
 
 > 🔐 **OBRIGATÓRIO**: trocar todas as senhas iniciais no primeiro acesso. Coord deve avisar cada aluno.
@@ -144,10 +144,10 @@ Plano Free = sem backup automático. Plano Pro ($25/mês) habilita:
 ## Passo 9 — Smoke test
 
 1. Acessa `https://SEU_DOMINIO_VERCEL.vercel.app/login`
-2. Loga como `coordenacao@cbmap.local` / `ChangeMe!2026`
+2. Loga como `coordenacao@abm.br` / `ChangeMe!2026`
 3. Vai em **Alunos** → confere se aparecem os 30
 4. Abre 1 ficha → confere abas Resumo, Saúde, Materiais
-5. Loga como aluno (`aluno01@cbmap.local` / `ChangeMe!2026`)
+5. Loga como aluno (ex.: `silva@abm.br` / `ChangeMe!2026`)
 6. Edita um campo → salva → confere na ficha da Coord
 
 Se passou: produção operante. ✅
