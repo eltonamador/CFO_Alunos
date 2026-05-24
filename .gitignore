@@ -46,3 +46,6 @@ public/workbox-*.js
 # supabase
 supabase/.branches
 supabase/.temp
+
+# Claude Code (config local do agente — específico de cada máquina)
+.claude/settings.local.json
