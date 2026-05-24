@@ -22,10 +22,11 @@ Cada contexto é uma pasta isolada em `src/modules/<context>/{domain,application
 ## 2. Course Management Context
 **Tipo:** Supporting.
 **Responsabilidades:**
-- CRUD de `Course`, `Class`, `Pelotão`.
-- Atribuição/alteração de **número de aluno** dentro da turma (com unicidade).
+- Definição curricular do curso e da turma.
+- Atribuição/alteração de **número de aluno** dentro da turma (com unicidade rígida).
 - Mudança da **situação no curso** (matriculado, apresentado, afastado, desligado, concluído).
-- `CangaAssignment` — designação atual e histórica.
+- Controle da **Fase do CFO** (mapeada internamente na coluna `pelotao` no banco de dados, exposta exclusivamente como **Fase do CFO** no front-end, aceitando `CFO I`, `CFO II` ou `CFO III`).
+- `CangaAssignment` — designação atual e histórica (exibida diretamente no card de Identificação do aluno, na aba Resumo).
 
 **Atores que podem mutar:** somente Coordenação.
 
@@ -41,15 +42,16 @@ Cada contexto é uma pasta isolada em `src/modules/<context>/{domain,application
 ## 3. Student Profile Context
 **Tipo:** Core.
 **Responsabilidades:**
-- Dados pessoais (nome civil, nome de guerra, CPF, RG, naturalidade, etc.).
+- Dados pessoais (nome civil, nome de guerra, CPF, RG, foto de perfil, etc.).
+- Histórico anterior: **Graduação militar anterior** (`graduation_name`) e **Experiência Profissional anterior** (`professional_experience`), permitindo o mapeamento de habilidades.
+- Origem e Naturalidade: cidade e estado de nascimento do aluno (`naturality_city` e `naturality_state`), editáveis de forma integrada pelo próprio Aluno.
 - Contatos (whatsapp, e-mails, telefone secundário).
 - Endereço atual + origem (AP / outro estado) + dados de logística (precisa alojamento, residência fixa, familiares no AP).
 - Contatos de emergência (lista de 2).
 - Veículo / CNH.
-- Foto de perfil.
 
 **Atores que podem mutar:**
-- Aluno: tudo, *exceto* o que pertence a Course Management.
+- Aluno: tudo, *exceto* o que pertence a Course Management (bloqueados: *Número, Nome Completo, Nome de Guerra, Curso, Fase do CFO, Canga*).
 - Coordenação: tudo.
 - Secretaria: dados administrativos (não-saúde).
 

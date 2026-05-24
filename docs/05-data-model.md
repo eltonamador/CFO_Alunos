@@ -114,6 +114,8 @@ create table students (
   mother_name text,
   presentation_date date,
   photo_path text,                     -- caminho no Storage
+  graduation_name text,                -- posto/graduação militar anterior (se aplicável)
+  professional_experience text,        -- experiência profissional anterior (civil/militar)
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   created_by uuid,

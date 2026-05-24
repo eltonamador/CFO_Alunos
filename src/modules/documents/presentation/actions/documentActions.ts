@@ -4,7 +4,6 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
 import { getSession } from "@/modules/identity/presentation/session";
-import type { DocumentType } from "@/lib/supabase/queries/documents";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 

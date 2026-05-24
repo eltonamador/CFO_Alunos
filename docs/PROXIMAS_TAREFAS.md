@@ -1,6 +1,6 @@
 # 12 — Backlog e Próximas Tarefas (PROXIMAS_TAREFAS.md)
 
-Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **23 de Maio de 2026** e as tarefas remanescentes organizadas em ordem prioritária para a continuidade do projeto.
+Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **24 de Maio de 2026** e as tarefas remanescentes organizadas em ordem prioritária para a continuidade do projeto.
 
 ---
 
@@ -13,6 +13,10 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 - `[x]` **Tarefa 5: Implementar Checklist de Materiais (Enxoval)** (CONCLUÍDO)
 - `[x]` **Tarefa 6: Implementar Relatórios Excel** (CONCLUÍDO)
 - `[x]` **Tarefa 7: Implementar Histórico Visual/Auditoria** (CONCLUÍDO)
+- `[x]` **Tarefa 8: Eliminar Dados Mocks/Locais e Integrar Dashboards Reais** (CONCLUÍDO)
+- `[x]` **Tarefa 9: Implementar Hub Consolidado de Validações da Coordenação** (CONCLUÍDO)
+- `[x]` **Tarefa 10: Padronizar Identificação Unificada (Nome — Número)** (CONCLUÍDO)
+- `[x]` **Tarefa 11: Implementar Experiência Profissional e Fluxo de Naturalidade** (CONCLUÍDO)
 
 ---
 
@@ -22,7 +26,7 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 * **Objetivo**: Garantir que as interações do usuário estejam perfeitas através de testes de navegador automatizados.
 * **Tarefas Técnicas**:
   * Executar a suite de testes atual usando `pnpm exec playwright test`.
-  * Corrigir quaisquer seletores desalinhados após a remoção da aba exclusiva de canga e a introdução da "Fase do CFO".
+  * Corrigir quaisquer seletores desalinhados após as atualizações de layout do Hub de Validações e Identificação Unificada.
 
 ### 2. Refinar a Barra de Progresso do Aluno
 * **Objetivo**: Integrar a barra de progresso no Portal do Aluno com a lógica real de preenchimento de tabelas.
