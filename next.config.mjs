@@ -14,6 +14,9 @@ const nextConfig = {
   poweredByHeader: false,
   experimental: {
     typedRoutes: true,
+    serverActions: {
+      bodySizeLimit: "11mb", // documentos até 10 MB + overhead multipart
+    },
   },
   images: {
     remotePatterns: [
