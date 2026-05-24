@@ -124,6 +124,9 @@ function EquipmentItem({
   const validationStatus = status?.validation_status;
   const statusId = status?.id;
 
+  const [selectedStatus, setSelectedStatus] = React.useState(currentStatus);
+  const showNotesField = selectedStatus === "em_duvida";
+
   const pending = isPending(req, status);
 
   return (
@@ -170,25 +173,46 @@ function EquipmentItem({
           )}
 
           {/* Status form */}
-          <form action={statusAction} className="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="studentId" value={studentId} />
-            <input type="hidden" name="requirementId" value={req.id} />
-            <select
-              name="status"
-              defaultValue={currentStatus}
-              className="rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <SubmitItemButton />
-            {statusState?.ok === false && (
-              <span className="text-xs text-destructive">{statusState.error}</span>
+          <form action={statusAction} className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="hidden" name="studentId" value={studentId} />
+              <input type="hidden" name="requirementId" value={req.id} />
+              <select
+                name="status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as typeof currentStatus)}
+                className="rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <SubmitItemButton />
+              {statusState?.ok === false && (
+                <span className="text-xs text-destructive">{statusState.error}</span>
+              )}
+            </div>
+
+            {showNotesField && (
+              <textarea
+                name="studentNotes"
+                defaultValue={status?.student_notes ?? ""}
+                placeholder="Descreva sua dúvida sobre este item..."
+                rows={2}
+                className="w-full rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              />
             )}
           </form>
+
+          {/* Dúvida registrada — visível para a Coordenação */}
+          {canValidate && currentStatus === "em_duvida" && status?.student_notes && (
+            <div className="rounded bg-purple-50 px-2 py-1.5 text-xs text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
+              <span className="font-medium">Dúvida do aluno: </span>
+              {status.student_notes}
+            </div>
+          )}
 
           {/* Validar / Reprovar (coord only, quando item tem status informado) */}
           {canValidate && statusId && (

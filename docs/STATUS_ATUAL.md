@@ -47,6 +47,10 @@ Todas as inconsistências encontradas no diagnóstico inicial de banco de dados 
 ### 1.9 Histórico de Auditoria Visual
 * **Agora**: Substituído o antigo placeholder pela aba de linha do tempo interativa `HistoricoTab.tsx` sob o perfil de Coordenação. O componente lê diretamente os registros imutáveis da tabela `public.audit_logs`, exibe os dados do autor da alteração, ações tomadas e uma tabela comparativa visual de diff de campos (antes x depois) para qualquer modificação ocorrida.
 
+### 1.10 Configuração de Autenticação Local do Supabase (Corrigido)
+* **Antes**: Tentativas de login local resultavam no erro `Email logins are disabled 422`.
+* **Agora**: O arquivo `supabase/config.toml` foi atualizado com `enable_signup = true` em `[auth]` e `[auth.email]`. O login local por e-mail e senha está funcionando perfeitamente (validado com sucesso).
+
 ---
 
 ## 2. Resumo das Regras de Domínio Ativas
@@ -61,4 +65,12 @@ Com as implementações efetuadas, o sistema CFO Alunos respeita rigorosamente a
    * Somente a **Coordenação** pode alterar *Número, Fase do CFO* e a designação de *Canga*, o que é feito por meio de um formulário de edição em linha (Inline Edit Form) seguro e integrado na aba Resumo da visualização da Coordenação.
 6. **Controle de Exportações**: Relatórios gerados em Excel via servidor limitados aos papéis autorizados.
 7. **Append-Only logs**: Toda alteração cadastral, de saúde ou canga, e visualização de contatos de emergência é registrada de forma imutável com snapshot granular `before` e `after`.
+
+---
+
+## 3. Validação de Integridade Geral
+Todas as seguintes verificações foram executadas e passaram com sucesso no ambiente local:
+* **`pnpm run check`**: lint, typecheck e testes de Vitest com **100% de sucesso**.
+* **`pnpm exec supabase db reset`**: aplicado na ordem correta com sucesso absoluto.
+* **`pnpm run db:seed-users`**: provisionamento de perfis de autenticação local concluído sem erros.
 

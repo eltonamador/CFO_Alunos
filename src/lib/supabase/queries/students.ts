@@ -75,6 +75,10 @@ export interface HealthRestrictionRow {
   student_id: string;
   blood_type: "A" | "B" | "AB" | "O" | null;
   rh_factor: "+" | "-" | null;
+  altura_cm: number | null;
+  peso_kg: number | null;
+  cirurgia_ocular: boolean | null;
+  cirurgia_ocular_obs: string | null;
   allergies: string | null;
   continuous_medication: string | null;
   chronic_disease: string | null;

@@ -93,7 +93,14 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
           />
         )}
         {tab === "contato" && <ContatoTab studentId={session.studentId} contact={contact} />}
-        {tab === "endereco" && <EnderecoTab studentId={session.studentId} address={address} />}
+        {tab === "endereco" && (
+          <EnderecoTab
+            studentId={session.studentId}
+            address={address}
+            naturalityCity={student.naturality_city}
+            naturalityState={student.naturality_state}
+          />
+        )}
         {tab === "emergencia" && (
           <EmergenciaTab studentId={session.studentId} contacts={emergency} />
         )}

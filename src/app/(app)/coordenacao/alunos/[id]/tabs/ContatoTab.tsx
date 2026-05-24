@@ -46,10 +46,6 @@ export function ContatoTab({ studentId, contact }: Props) {
           <Label htmlFor="email_personal">E-mail pessoal</Label>
           <Input id="email_personal" name="email_personal" type="email" defaultValue={contact?.email_personal ?? ""} />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="email_institutional">E-mail institucional</Label>
-          <Input id="email_institutional" name="email_institutional" type="email" defaultValue={contact?.email_institutional ?? ""} />
-        </div>
       </div>
 
       <div className="space-y-2">

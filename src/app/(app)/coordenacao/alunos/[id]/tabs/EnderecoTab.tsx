@@ -24,9 +24,13 @@ function SubmitButton() {
 export function EnderecoTab({
   studentId,
   address,
+  naturalityCity,
+  naturalityState,
 }: {
   studentId: string;
   address: StudentAddressRow | null;
+  naturalityCity?: string | null;
+  naturalityState?: string | null;
 }) {
   const [state, formAction] = useFormState<ActionResult | null, FormData>(updateAddressAction, null);
 
@@ -90,6 +94,23 @@ export function EnderecoTab({
             <Input id="origin_city" name="origin_city" defaultValue={address?.origin_city ?? ""} />
           </div>
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold">Naturalidade</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Município</p>
+            <p className="text-sm font-medium">{naturalityCity ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Estado (UF)</p>
+            <p className="text-sm font-medium">{naturalityState ?? "—"}</p>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Para alterar a naturalidade, entre em contato com a Coordenação.
+        </p>
       </fieldset>
 
       {state?.ok === false && <Alert variant="destructive">{state.error}</Alert>}

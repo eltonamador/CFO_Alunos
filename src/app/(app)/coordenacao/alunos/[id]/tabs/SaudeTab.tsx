@@ -84,7 +84,35 @@ export function SaudeTab({ studentId, health, canCurate = false }: Props) {
                   <option value="-">-</option>
                 </Select>
               </div>
-              <div className="space-y-2 sm:col-span-2">
+              <div className="space-y-2">
+                <Label htmlFor="altura_cm">Altura (cm)</Label>
+                <Input
+                  id="altura_cm"
+                  name="altura_cm"
+                  type="number"
+                  min={100}
+                  max={230}
+                  placeholder="Ex: 175"
+                  defaultValue={health?.altura_cm ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="peso_kg">Peso (kg)</Label>
+                <Input
+                  id="peso_kg"
+                  name="peso_kg"
+                  type="number"
+                  min={30}
+                  max={300}
+                  step="0.1"
+                  placeholder="Ex: 72.5"
+                  defaultValue={health?.peso_kg ?? ""}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="uses_glasses">Usa óculos / lente?</Label>
                 <Select
                   id="uses_glasses"
@@ -95,6 +123,28 @@ export function SaudeTab({ studentId, health, canCurate = false }: Props) {
                   <option value="true">Sim</option>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="cirurgia_ocular">Fez cirurgia ocular de grau?</Label>
+                <Select
+                  id="cirurgia_ocular"
+                  name="cirurgia_ocular"
+                  defaultValue={health?.cirurgia_ocular == null ? "" : String(health.cirurgia_ocular)}
+                >
+                  <option value="">—</option>
+                  <option value="false">Não</option>
+                  <option value="true">Sim</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cirurgia_ocular_obs">Observação sobre cirurgia ocular</Label>
+              <Textarea
+                id="cirurgia_ocular_obs"
+                name="cirurgia_ocular_obs"
+                placeholder="Descreva o tipo, data ou outras informações relevantes"
+                defaultValue={health?.cirurgia_ocular_obs ?? ""}
+              />
             </div>
 
             <div className="space-y-2">

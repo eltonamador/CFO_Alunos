@@ -25,7 +25,6 @@ const contactSchema = z.object({
   whatsapp: z.string().optional(),
   phone_secondary: z.string().optional(),
   email_personal: z.string().email().or(z.literal("")).optional(),
-  email_institutional: z.string().email().or(z.literal("")).optional(),
   notes: z.string().optional(),
 });
 
@@ -41,7 +40,6 @@ export async function updateContactAction(
     whatsapp: formData.get("whatsapp") ?? undefined,
     phone_secondary: formData.get("phone_secondary") ?? undefined,
     email_personal: formData.get("email_personal") ?? undefined,
-    email_institutional: formData.get("email_institutional") ?? undefined,
     notes: formData.get("notes") ?? undefined,
   });
   if (!parsed.success) {
@@ -154,6 +152,10 @@ const healthSchema = z.object({
   studentId: z.string().uuid(),
   blood_type: z.enum(["A", "B", "AB", "O"]).optional().or(z.literal("")),
   rh_factor: z.enum(["+", "-"]).optional().or(z.literal("")),
+  altura_cm: z.coerce.number().int().positive().optional().or(z.literal("")),
+  peso_kg: z.coerce.number().positive().optional().or(z.literal("")),
+  cirurgia_ocular: z.enum(["true", "false"]).optional(),
+  cirurgia_ocular_obs: z.string().optional(),
   allergies: z.string().optional(),
   continuous_medication: z.string().optional(),
   chronic_disease: z.string().optional(),
@@ -173,7 +175,7 @@ export async function updateHealthAction(
   const parsed = healthSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, blood_type, rh_factor, uses_glasses, ...rest } = parsed.data;
+  const { studentId, blood_type, rh_factor, uses_glasses, cirurgia_ocular, altura_cm, peso_kg, ...rest } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
@@ -189,6 +191,9 @@ export async function updateHealthAction(
     student_id: studentId,
     blood_type: blood_type || null,
     rh_factor: rh_factor || null,
+    altura_cm: altura_cm !== "" && altura_cm !== undefined ? Number(altura_cm) : null,
+    peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : null,
+    cirurgia_ocular: cirurgia_ocular === "true" ? true : cirurgia_ocular === "false" ? false : null,
     uses_glasses: uses_glasses === "true",
     ...rest,
     validation_status: "pendente",

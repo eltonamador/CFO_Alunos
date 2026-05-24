@@ -16,34 +16,28 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 
 ---
 
-## Próximos Passos Detalhados
+### Novos Próximos Passos (Refinamento e Testes)
 
-### 4. Implementar Abas Pendentes: Logística e Veículo/CNH
-* **Objetivo**: Criar as telas e fluxos de preenchimento para as informações de logística (estadia/alojamento) e dados de veículos.
+### 1. Validar e Executar Testes E2E (Playwright)
+* **Objetivo**: Garantir que as interações do usuário estejam perfeitas através de testes de navegador automatizados.
 * **Tarefas Técnicas**:
-  * Substituir os placeholders correspondentes em `page.tsx` pelas abas funcionais:
-    * `LogisticaTab.tsx` conectada à tabela `public.student_logistics` (endereço no curso, necessidade de alojamento, fone de contato no Amapá).
-    * `VeiculoTab.tsx` conectada à tabela `public.vehicles` (posse de veículo, tipo, placa, posse e validade da CNH, anexo de CNH).
-  * Criar os respectivos formulários utilizando `react-hook-form` e validações `zod` mapeadas contra a infraestrutura do Supabase.
+  * Executar a suite de testes atual usando `pnpm exec playwright test`.
+  * Corrigir quaisquer seletores desalinhados após a remoção da aba exclusiva de canga e a introdução da "Fase do CFO".
 
-### 5. Implementar Checklist de Materiais (Enxoval)
-* **Objetivo**: Viabilizar o fluxo de conferência de enxovais, materiais e equipamentos (18 categorias, priorizando itens de quarentena).
+### 2. Refinar a Barra de Progresso do Aluno
+* **Objetivo**: Integrar a barra de progresso no Portal do Aluno com a lógica real de preenchimento de tabelas.
 * **Tarefas Técnicas**:
-  * Criar a aba `MateriaisTab.tsx` (substituindo o placeholder).
-  * Implementar interface visual dinâmica dividida pelas 18 categorias de equipamentos registradas na tabela `public.equipment_categories`.
-  * Permitir que o Aluno marque os itens possuídos e tire dúvidas sobre os requisitos.
-  * Permitir que a Coordenação valide visualmente o checklist individual ou geral de cada aluno.
+  * Calcular a taxa de preenchimento lendo o estado das tabelas `student_contacts`, `student_addresses`, `student_logistics`, `vehicles` e `health_restrictions`.
+  * Refletir dinamicamente a porcentagem no cabeçalho do painel do aluno.
 
-### 6. Implementar Relatórios Excel
-* **Objetivo**: Desenvolver o motor de exportação de dados analíticos para a coordenação em formato Excel estruturado.
+### 3. Auditar Políticas de RLS em Larga Escala
+* **Objetivo**: Garantir conformidade rigorosa com a LGPD nos perfis de Aluno, Instrutor e Secretaria.
 * **Tarefas Técnicas**:
-  * Utilizar a biblioteca `exceljs` na infraestrutura para construir as planilhas.
-  * Criar os Route Handlers no Next.js (`src/app/api/reports/...`) protegidos por autenticação e restritos a perfil de Coordenação e Secretaria.
-  * Implementar os relatórios-chave: Ficha Completa da Turma, Pendências de Enxoval, Restrições Médicas/Saúde, e Contatos de Emergência.
+  * Realizar uma varredura nas permissões de RLS em `supabase/migrations/0012_rls.sql`.
+  * Confirmar que dados sensíveis de saúde e anexos de documentos não são expostos a instrutores ou outros alunos.
 
-### 7. Implementar Histórico Visual/Auditoria
-* **Objetivo**: Renderizar a trilha de auditoria e pendências diretamente na aba de histórico do aluno na Coordenação.
+### 4. Otimizar Service Worker (PWA)
+* **Objetivo**: Assegurar suporte offline robusto para visualizações rápidas em dispositivos móveis.
 * **Tarefas Técnicas**:
-  * Substituir o placeholder `Historico` pela aba `HistoricoTab.tsx`.
-  * Realizar query em `public.audit_logs` filtrando pelo `entity_id` correspondente ao UUID do aluno.
-  * Exibir timeline contendo: data da modificação, autor da alteração (quem alterou), ação realizada, e a comparação visual (*antes* x *depois*) para alterações de número, fase do CFO e canga.
+  * Testar o comportamento do `@serwist/next` com o modo offline do navegador.
+  * Garantir cache local de listagens operacionais essenciais para os instrutores.

@@ -7,6 +7,10 @@ export type ValidationStatus = "pendente" | "validado" | "recusado";
 interface HealthRestrictionProps {
   studentId: string;
   bloodType?: BloodType;
+  alturaCm?: number;
+  pesoKg?: number;
+  cirurgiaOcular?: boolean;
+  cirurgiaOcularObs?: string;
   allergies?: string;
   continuousMedication?: string;
   chronicDisease?: string;
@@ -37,6 +41,10 @@ export const CLINICAL_FIELDS = [
 export class HealthRestriction extends Entity<HealthRestrictionProps> {
   get studentId(): string { return this.props.studentId; }
   get bloodType(): BloodType | undefined { return this.props.bloodType; }
+  get alturaCm(): number | undefined { return this.props.alturaCm; }
+  get pesoKg(): number | undefined { return this.props.pesoKg; }
+  get cirurgiaOcular(): boolean | undefined { return this.props.cirurgiaOcular; }
+  get cirurgiaOcularObs(): string | undefined { return this.props.cirurgiaOcularObs; }
   get validationStatus(): ValidationStatus { return this.props.validationStatus; }
   get operationalSummary(): string | undefined { return this.props.operationalSummary; }
   get allergies(): string | undefined { return this.props.allergies; }
@@ -67,7 +75,8 @@ export class HealthRestriction extends Entity<HealthRestrictionProps> {
    */
   updateClinicalData(
     data: Partial<Pick<HealthRestrictionProps,
-      "bloodType" | "allergies" | "continuousMedication" | "chronicDisease" |
+      "bloodType" | "alturaCm" | "pesoKg" | "cirurgiaOcular" | "cirurgiaOcularObs" |
+      "allergies" | "continuousMedication" | "chronicDisease" |
       "physicalRestriction" | "dietaryRestriction" | "usesGlasses" | "medicalNotes"
     >>
   ): void {

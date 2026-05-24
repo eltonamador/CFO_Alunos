@@ -189,8 +189,6 @@ export function ResumoTab({
           <dl className="grid grid-cols-2 gap-3">
             <Field label="WhatsApp" value={contact?.whatsapp} />
             <Field label="Telefone sec." value={contact?.phone_secondary} />
-            <Field label="E-mail" value={contact?.email_personal} />
-            <Field label="E-mail inst." value={contact?.email_institutional} />
           </dl>
         </CardContent>
       </Card>
