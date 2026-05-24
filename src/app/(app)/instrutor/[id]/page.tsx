@@ -56,13 +56,10 @@ export default async function InstrutorCardPage({ params }: PageProps) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="tabular-nums text-muted-foreground">
-                {card.student_number ? String(card.student_number).padStart(2, "0") : "—"}
-              </span>
-              <CardTitle className="truncate">{card.war_name}</CardTitle>
-            </div>
-            <CardDescription className="truncate">{card.full_name}</CardDescription>
+            <CardTitle className="truncate font-display uppercase">
+              {card.war_name} — {card.student_number ? String(card.student_number).padStart(2, "0") : "—"}
+            </CardTitle>
+            <CardDescription className="truncate mt-0.5">{card.full_name}</CardDescription>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {card.pelotao && <Badge variant="outline">{card.pelotao}</Badge>}
               {card.has_restriction && <Badge variant="warning">Restrição</Badge>}

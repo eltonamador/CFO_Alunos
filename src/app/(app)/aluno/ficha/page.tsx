@@ -86,14 +86,10 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
         />
         <div className="min-w-0 flex-1">
           <SectionEyebrow className="mb-0.5">
-            Nº{" "}
-            <span className="num-mono">
-              {student.student_number ? String(student.student_number).padStart(2, "0") : "—"}
-            </span>{" "}
-            · Minha ficha
+            Minha ficha
           </SectionEyebrow>
           <h1 className="font-display text-2xl font-bold uppercase tracking-[0.02em] text-foreground">
-            {student.war_name}
+            {student.war_name} — {student.student_number ? String(student.student_number).padStart(2, "0") : "—"}
           </h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {student.pelotao && <Badge variant="gold" dot>{student.pelotao}</Badge>}
