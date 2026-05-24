@@ -68,95 +68,9 @@ on conflict (id) do update set
   sex = excluded.sex,
   situation = excluded.situation;
 
--- Catálogo de categorias de equipamentos (18, conforme prompt §9)
-insert into public.equipment_categories (ordinal, name) values
-  (1,  'Quarentena — Prioridade Inicial'),
-  (2,  'Fardamento / Uniformes'),
-  (3,  'Pernoite, Higiene e Estadia'),
-  (4,  'Material Escolar e Administrativo'),
-  (5,  'Material Operacional Básico'),
-  (6,  'EPI e Equipamentos de Instrução'),
-  (7,  'Salvamento Terrestre'),
-  (8,  'Salvamento em Altura'),
-  (9,  'Salvamento Aquático'),
-  (10, 'Salvamento Veicular'),
-  (11, 'Combate a Incêndio'),
-  (12, 'Incêndio Florestal'),
-  (13, 'Armamento e Tiro'),
-  (14, 'Instrução Militar'),
-  (15, 'Uniforme Histórico'),
-  (16, 'Itens Opcionais / Condicionais'),
-  (17, 'Itens Posteriores / Não Priorizados na Quarentena'),
-  (18, 'Dúvidas e Pendências')
-on conflict (name) do nothing;
-
--- Itens prioritários da quarentena (conforme prompt §9)
-with cat as (
-  select id from public.equipment_categories where name = 'Quarentena — Prioridade Inicial'
-)
-insert into public.equipment_requirements (category_id, name, quantity, unit, mandatory, applicability, phase)
-select cat.id, item.name, item.qty, item.unit, true, item.appl, 'quarentena'
-from cat,
-  (values
-    ('Terno preto',                    1::numeric, 'un',  'masculino'::text),
-    ('Blazer feminino preto',          1, 'un',  'feminino'),
-    ('Camisa social branca',           2, 'un',  'todos'),
-    ('Gravata/fita laranja',           1, 'un',  'todos'),
-    ('Sapato social preto',            1, 'par', 'todos'),
-    ('Camisa vermelha M1',             2, 'un',  'todos'),
-    ('Calça jeans azul escuro',        1, 'un',  'todos'),
-    ('Gorro cáqui',                    1, 'un',  'todos'),
-    ('Cinto vermelho',                 1, 'un',  'todos'),
-    ('Camiseta/regata branca',         3, 'un',  'todos'),
-    ('Short vermelho',                 2, 'un',  'todos'),
-    ('Tênis',                          1, 'par', 'todos'),
-    ('Meias',                          5, 'par', 'todos'),
-    ('Sunga/maiô',                     1, 'un',  'todos'),
-    ('Camisa térmica CBMAP',           1, 'un',  'todos'),
-    ('Toalha vermelha',                1, 'un',  'todos'),
-    ('Lençol',                         2, 'un',  'todos'),
-    ('Travesseiro',                    1, 'un',  'todos'),
-    ('Fronha',                         2, 'un',  'todos'),
-    ('Cobertor',                       1, 'un',  'todos'),
-    ('Kit higiene',                    1, 'kit', 'todos'),
-    ('Protetor solar',                 1, 'un',  'todos'),
-    ('Repelente',                      1, 'un',  'todos'),
-    ('Colchonete/isolante',            1, 'un',  'todos'),
-    ('Cantil',                         1, 'un',  'todos'),
-    ('Mochila tática',                 1, 'un',  'todos'),
-    ('Bolsa operacional',              1, 'un',  'todos'),
-    ('Lanterna',                       1, 'un',  'todos'),
-    ('Lanterna de cabeça',             1, 'un',  'todos'),
-    ('Apito',                          1, 'un',  'todos'),
-    ('Capa de chuva',                  1, 'un',  'todos'),
-    ('Capacete de salvamento',         1, 'un',  'todos'),
-    ('Cabo da vida',                   1, 'un',  'todos'),
-    ('Caderno',                        2, 'un',  'todos'),
-    ('Bloco de anotações',             2, 'un',  'todos'),
-    ('Canetas',                        4, 'un',  'todos'),
-    ('Lápis/lapiseira',                2, 'un',  'todos'),
-    ('Prancheta',                      1, 'un',  'todos')
-  ) as item(name, qty, unit, appl);
-
--- Alguns itens de outras categorias (amostra — Coordenação completa via UI)
-with cat as (
-  select id, name from public.equipment_categories
-)
-insert into public.equipment_requirements (category_id, name, quantity, unit, mandatory, applicability, phase)
-select c.id, v.name, v.qty, v.unit, v.mand, 'todos', v.phase
-from (values
-  ('Salvamento em Altura', 'Cadeirinha de rapel', 1::numeric, 'un', true, 'inicio'::text),
-  ('Salvamento em Altura', 'Mosquetão com trava', 4, 'un', true, 'inicio'),
-  ('Salvamento Aquático',  'Nadadeira',          1, 'par', true, 'inicio'),
-  ('Salvamento Aquático',  'Óculos de mergulho', 1, 'un', true, 'inicio'),
-  ('Combate a Incêndio',   'Capa de bombeiro',   1, 'un', true, 'inicio'),
-  ('Combate a Incêndio',   'Luva estruturada',   1, 'par', true, 'inicio'),
-  ('Armamento e Tiro',     'Protetor auricular', 1, 'un', true, 'inicio'),
-  ('Armamento e Tiro',     'Óculos balístico',   1, 'un', true, 'inicio'),
-  ('Instrução Militar',    'Apito de comando',   1, 'un', false, 'posterior'),
-  ('Uniforme Histórico',   'Uniforme histórico CBMAP', 1, 'un', false, 'posterior')
-) as v(cat_name, name, qty, unit, mand, phase)
-join cat c on c.name = v.cat_name;
+-- Catálogo de equipamentos: gerenciado pela migration 0016_reorganize_equipment_categories.sql
+-- (15 categorias, 116 itens conforme PDF "ENXOVAL - CFO COMPLETO - CBMAP_Atualizado_")
+-- Não inserir aqui — a migration já popula categories + requirements ao rodar.
 
 -- ---------------------------------------------------------------------
 -- Mensagem final
@@ -168,5 +82,5 @@ declare
 begin
   select count(*) into c_alunos from public.students;
   select count(*) into c_eq from public.equipment_requirements;
-  raise notice 'Seed concluído: % alunos, % itens de equipamento, 18 categorias.', c_alunos, c_eq;
+  raise notice 'Seed concluído: % alunos, % itens de equipamento (15 categorias via migration 0016).', c_alunos, c_eq;
 end $$;
