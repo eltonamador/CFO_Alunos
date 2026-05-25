@@ -42,6 +42,12 @@ function emptyBundle(): StudentProfileBundle {
       has_religious_restriction: null,
       religious_restriction_notes: null,
       enrollment_status: "pendente",
+      had_prior_military_service: null,
+      prior_military_branch: null,
+      prior_military_institution: null,
+      prior_military_rank: null,
+      prior_military_duration: null,
+      prior_military_notes: null,
     },
     contact: null,
     address: null,
@@ -88,6 +94,12 @@ function fullBundle(): StudentProfileBundle {
       has_religious_restriction: false,
       religious_restriction_notes: null,
       enrollment_status: "confirmada",
+      had_prior_military_service: false,
+      prior_military_branch: null,
+      prior_military_institution: null,
+      prior_military_rank: null,
+      prior_military_duration: null,
+      prior_military_notes: null,
     },
     contact: {
       student_id: "s-1",
@@ -303,6 +315,42 @@ describe("calculateStudentProfileProgress", () => {
     expect(rPending.status).toBe("completa");
     expect(rPending.percent).toBe(100);
     expect(rPending.total).toBe(rConfirmed.total - 1);
+  });
+
+  it("had_prior_military_service=false libera os complementares (excluídos do total)", () => {
+    const yes = fullBundle();
+    yes.student.had_prior_military_service = true;
+    yes.student.prior_military_branch = "policia_militar";
+    yes.student.prior_military_institution = "PMAP";
+    yes.student.prior_military_duration = "3 anos";
+
+    const no = fullBundle();
+    no.student.had_prior_military_service = false;
+
+    const rYes = calculateStudentProfileProgress(yes);
+    const rNo = calculateStudentProfileProgress(no);
+
+    expect(rYes.total).toBe(rNo.total + 3);
+    expect(rNo.status).toBe("completa");
+    expect(rYes.status).toBe("completa");
+  });
+
+  it("had_prior_military_service=true sem complementares marca missing", () => {
+    const b = fullBundle();
+    b.student.had_prior_military_service = true;
+    b.student.prior_military_branch = null;
+    b.student.prior_military_institution = null;
+    b.student.prior_military_duration = null;
+
+    const r = calculateStudentProfileProgress(b);
+    expect(r.missing).toEqual(
+      expect.arrayContaining([
+        "prior_military_branch",
+        "prior_military_institution",
+        "prior_military_duration",
+      ]),
+    );
+    expect(r.status).not.toBe("completa");
   });
 
   it("matrícula confirmada sem número conta como campo faltante", () => {

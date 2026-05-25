@@ -46,6 +46,14 @@ export function IdentificacaoTab({
     student.has_religious_restriction === true ? "true" : student.has_religious_restriction === false ? "false" : ""
   );
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
+  const [hadPriorMilitary, setHadPriorMilitary] = useState(
+    student.had_prior_military_service === true
+      ? "true"
+      : student.had_prior_military_service === false
+        ? "false"
+        : "",
+  );
+  const showPriorMilitaryDetails = hadPriorMilitary === "true";
 
   const age = (() => {
     if (!birthDate) return null;
@@ -386,6 +394,97 @@ export function IdentificacaoTab({
             </div>
           )}
         </div>
+      </fieldset>
+
+      {/* ── Experiência militar anterior ── */}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold">Experiência militar anterior</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="had_prior_military_service">
+              Já foi militar antes de ingressar no CFO?
+            </Label>
+            <Select
+              id="had_prior_military_service"
+              name="had_prior_military_service"
+              value={hadPriorMilitary}
+              onChange={(e) => setHadPriorMilitary(e.target.value)}
+            >
+              <option value="">Não informar</option>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </Select>
+          </div>
+
+          {showPriorMilitaryDetails && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="prior_military_branch">Instituição/Força</Label>
+                <Select
+                  id="prior_military_branch"
+                  name="prior_military_branch"
+                  defaultValue={student.prior_military_branch ?? ""}
+                >
+                  <option value="">Selecione…</option>
+                  <option value="corpo_de_bombeiros_militar">
+                    Corpo de Bombeiros Militar
+                  </option>
+                  <option value="policia_militar">Polícia Militar</option>
+                  <option value="forcas_armadas">Forças Armadas</option>
+                  <option value="outra">Outra</option>
+                </Select>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="prior_military_institution">
+                  Nome da instituição/corporação
+                </Label>
+                <Input
+                  id="prior_military_institution"
+                  name="prior_military_institution"
+                  defaultValue={student.prior_military_institution ?? ""}
+                  placeholder="Ex: CBMAP, PMAP, Exército Brasileiro…"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="prior_military_rank">
+                  Posto/Graduação anterior (se houver)
+                </Label>
+                <Input
+                  id="prior_military_rank"
+                  name="prior_military_rank"
+                  defaultValue={student.prior_military_rank ?? ""}
+                  placeholder="Ex: Soldado, 3º Sargento, Cabo…"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="prior_military_duration">Tempo aproximado de serviço</Label>
+                <Input
+                  id="prior_military_duration"
+                  name="prior_military_duration"
+                  defaultValue={student.prior_military_duration ?? ""}
+                  placeholder="Ex: 2 anos e 6 meses"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="prior_military_notes">Observações</Label>
+                <Textarea
+                  id="prior_military_notes"
+                  name="prior_military_notes"
+                  defaultValue={student.prior_military_notes ?? ""}
+                  placeholder="Ex: unidade, funções desempenhadas, motivo de saída…"
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
+        </div>
+        <FieldHint>
+          Os campos complementares só aparecem quando você responder &quot;Sim&quot;.
+        </FieldHint>
       </fieldset>
 
       {state?.ok === false && <Alert variant="destructive">{state.error}</Alert>}

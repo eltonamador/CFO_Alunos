@@ -42,6 +42,17 @@ export interface StudentDetailRow extends StudentListRow {
   has_religious_restriction: boolean | null;
   religious_restriction_notes: string | null;
   enrollment_status: "pendente" | "confirmada";
+  had_prior_military_service: boolean | null;
+  prior_military_branch:
+    | "corpo_de_bombeiros_militar"
+    | "policia_militar"
+    | "forcas_armadas"
+    | "outra"
+    | null;
+  prior_military_institution: string | null;
+  prior_military_rank: string | null;
+  prior_military_duration: string | null;
+  prior_military_notes: string | null;
 }
 
 export interface StudentContactRow {

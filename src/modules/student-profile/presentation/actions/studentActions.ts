@@ -615,6 +615,20 @@ const identificationSchema = z.object({
   religion_other: optionalTrimmed(),
   has_religious_restriction: z.enum(["true", "false"]).optional(),
   religious_restriction_notes: optionalTrimmed(),
+  had_prior_military_service: z.enum(["true", "false"]).optional(),
+  prior_military_branch: z
+    .enum([
+      "corpo_de_bombeiros_militar",
+      "policia_militar",
+      "forcas_armadas",
+      "outra",
+    ])
+    .or(z.literal(""))
+    .optional(),
+  prior_military_institution: optionalTrimmed(),
+  prior_military_rank: optionalTrimmed(),
+  prior_military_duration: optionalTrimmed(),
+  prior_military_notes: optionalTrimmed(),
 }).superRefine((data, ctx) => {
   const isAdventist = data.religion === "Adventista";
   const hasRestriction = data.has_religious_restriction === "true";
@@ -633,6 +647,31 @@ const identificationSchema = z.object({
       path: ["religious_restriction_notes"],
       message: "Por favor, detalhe as considerações ou restrições operacionais associadas.",
     });
+  }
+
+  // Experiência militar anterior: complementares só são exigidos quando "Sim".
+  if (data.had_prior_military_service === "true") {
+    if (!data.prior_military_branch) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["prior_military_branch"],
+        message: "Selecione a instituição/força.",
+      });
+    }
+    if (!data.prior_military_institution) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["prior_military_institution"],
+        message: "Informe o nome da instituição/corporação.",
+      });
+    }
+    if (!data.prior_military_duration) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["prior_military_duration"],
+        message: "Informe o tempo aproximado de serviço.",
+      });
+    }
   }
 });
 
@@ -673,8 +712,27 @@ export async function updateIdentificationAction(
     religion_other,
     has_religious_restriction,
     religious_restriction_notes,
+    had_prior_military_service,
+    prior_military_branch,
+    prior_military_institution,
+    prior_military_rank,
+    prior_military_duration,
+    prior_military_notes,
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+
+  // Quando "Não", limpa quaisquer complementares previamente preenchidos.
+  const hadPrior =
+    had_prior_military_service === "true"
+      ? true
+      : had_prior_military_service === "false"
+        ? false
+        : null;
+  const priorBranchValue = hadPrior === true ? (prior_military_branch || null) : null;
+  const priorInstitutionValue = hadPrior === true ? nullIfEmpty(prior_military_institution) : null;
+  const priorRankValue = hadPrior === true ? nullIfEmpty(prior_military_rank) : null;
+  const priorDurationValue = hadPrior === true ? nullIfEmpty(prior_military_duration) : null;
+  const priorNotesValue = hadPrior === true ? nullIfEmpty(prior_military_notes) : null;
 
   const supabase = createServerClientUntyped();
 
@@ -710,6 +768,12 @@ export async function updateIdentificationAction(
       religion_other: nullIfEmpty(religion_other),
       has_religious_restriction: has_religious_restriction === "true" ? true : has_religious_restriction === "false" ? false : null,
       religious_restriction_notes: nullIfEmpty(religious_restriction_notes),
+      had_prior_military_service: hadPrior,
+      prior_military_branch: priorBranchValue,
+      prior_military_institution: priorInstitutionValue,
+      prior_military_rank: priorRankValue,
+      prior_military_duration: priorDurationValue,
+      prior_military_notes: priorNotesValue,
       updated_by: session.userId,
     })
     .eq("id", studentId)

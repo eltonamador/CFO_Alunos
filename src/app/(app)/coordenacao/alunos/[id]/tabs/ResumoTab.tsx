@@ -21,6 +21,13 @@ import type {
   StudentListRow,
 } from "@/lib/supabase/queries/students";
 
+const MILITARY_BRANCH_LABELS: Record<string, string> = {
+  corpo_de_bombeiros_militar: "Corpo de Bombeiros Militar",
+  policia_militar: "Polícia Militar",
+  forcas_armadas: "Forças Armadas",
+  outra: "Outra",
+};
+
 function formatBirthDateWithAge(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -280,6 +287,34 @@ export function ResumoTab({
             <Field label="Zona eleitoral" value={student.voter_zone} mono />
             <Field label="Seção eleitoral" value={student.voter_section} mono />
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Experiência militar anterior</CardTitle></CardHeader>
+        <CardContent>
+          {student.had_prior_military_service == null ? (
+            <p className="text-sm text-muted-foreground">Não informado.</p>
+          ) : student.had_prior_military_service === false ? (
+            <p className="text-sm font-medium text-foreground">
+              Nunca foi militar antes do CFO.
+            </p>
+          ) : (
+            <dl className="grid grid-cols-2 gap-3">
+              <Field
+                label="Instituição/Força"
+                value={MILITARY_BRANCH_LABELS[student.prior_military_branch ?? ""] ?? null}
+              />
+              <Field label="Corporação" value={student.prior_military_institution} />
+              <Field label="Posto/Graduação" value={student.prior_military_rank} />
+              <Field label="Tempo de serviço" value={student.prior_military_duration} />
+              {student.prior_military_notes && (
+                <div className="col-span-2">
+                  <Field label="Observações" value={student.prior_military_notes} />
+                </div>
+              )}
+            </dl>
+          )}
         </CardContent>
       </Card>
 

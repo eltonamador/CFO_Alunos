@@ -103,6 +103,35 @@ export const REQUIRED_FIELDS: ReadonlyArray<RequiredField> = [
     get: (b) => b.student.has_religious_restriction,
   },
 
+  // ── Experiência militar anterior (students) ──────────────────────
+  // Campo principal sempre conta; complementares só quando "Sim".
+  {
+    id: "had_prior_military_service",
+    kind: "boolean",
+    get: (b) => (b.student as { had_prior_military_service?: unknown }).had_prior_military_service,
+  },
+  {
+    id: "prior_military_branch",
+    kind: "text",
+    get: (b) => (b.student as { prior_military_branch?: unknown }).prior_military_branch,
+    appliesWhen: (b) =>
+      (b.student as { had_prior_military_service?: unknown }).had_prior_military_service === true,
+  },
+  {
+    id: "prior_military_institution",
+    kind: "text",
+    get: (b) => (b.student as { prior_military_institution?: unknown }).prior_military_institution,
+    appliesWhen: (b) =>
+      (b.student as { had_prior_military_service?: unknown }).had_prior_military_service === true,
+  },
+  {
+    id: "prior_military_duration",
+    kind: "text",
+    get: (b) => (b.student as { prior_military_duration?: unknown }).prior_military_duration,
+    appliesWhen: (b) =>
+      (b.student as { had_prior_military_service?: unknown }).had_prior_military_service === true,
+  },
+
   // ── Contato (student_contacts) ────────────────────────────────────
   { id: "whatsapp", kind: "text", get: (b) => b.contact?.whatsapp ?? null },
   { id: "email_personal", kind: "text", get: (b) => b.contact?.email_personal ?? null },
