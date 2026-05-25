@@ -28,7 +28,7 @@ export function FirstAccessForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="password">Nova senha</Label>
+        <Label htmlFor="password" className="text-white font-semibold">Nova senha</Label>
         <Input
           id="password"
           name="password"
@@ -37,12 +37,12 @@ export function FirstAccessForm() {
           required
           minLength={8}
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-slate-200 font-medium">
           Mínimo 8 caracteres, com ao menos 1 maiúscula e 1 número.
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="confirm">Confirmar senha</Label>
+        <Label htmlFor="confirm" className="text-white font-semibold">Confirmar senha</Label>
         <Input id="confirm" name="confirm" type="password" autoComplete="new-password" required />
       </div>
 

@@ -17,6 +17,21 @@ import type {
   StudentListRow,
 } from "@/lib/supabase/queries/students";
 
+function formatBirthDateWithAge(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const now = new Date();
+  let age = now.getFullYear() - year;
+  const m = now.getMonth() - d.getUTCMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getUTCDate())) age--;
+  const ageStr = age >= 0 && age < 130 ? ` (${age} anos)` : "";
+  return `${day}/${month}/${year}${ageStr}`;
+}
+
 function Field({
   label,
   value,
@@ -185,7 +200,7 @@ export function ResumoTab({
                 label="Sexo"
                 value={student.sex === "M" ? "Masculino" : student.sex === "F" ? "Feminino" : null}
               />
-              <Field label="Data de nasc." value={student.birth_date} mono />
+              <Field label="Data de nasc." value={formatBirthDateWithAge(student.birth_date)} mono />
               <Field label="Fase do CFO" value={student.pelotao} />
               <Field
                 label="Canga"

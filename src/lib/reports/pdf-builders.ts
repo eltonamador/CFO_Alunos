@@ -293,8 +293,36 @@ export async function buildFichaCompletaPDF(
 // =====================================================================
 // 2. Pendências de Enxoval
 // =====================================================================
+interface PendenciaColumn {
+  id: string;
+  header: string;
+  width: number;
+  accessor: (r: any, ctx: { st: any; req: any }) => string | number | null | undefined;
+}
+
+const PENDENCIA_COLUMNS: PendenciaColumn[] = [
+  { id: "pe_numero", header: "Nº", width: 0.06, accessor: (_r, ctx) => ctx.st?.student_number },
+  { id: "pe_nome_guerra", header: "Nome de Guerra", width: 0.16, accessor: (_r, ctx) => ctx.st?.war_name },
+  { id: "pe_sexo", header: "Sexo", width: 0.06, accessor: (_r, ctx) => ctx.st?.sex },
+  { id: "pe_item", header: "Item", width: 0.34, accessor: (_r, ctx) => ctx.req?.name },
+  {
+    id: "pe_qtd",
+    header: "Qtd",
+    width: 0.08,
+    accessor: (_r, ctx) => (ctx.req ? `${ctx.req.quantity} ${ctx.req.unit ?? ""}`.trim() : null),
+  },
+  { id: "pe_status", header: "Status", width: 0.15, accessor: (r) => (r.status ?? "").replace(/_/g, " ") },
+  {
+    id: "pe_validacao",
+    header: "Validação",
+    width: 0.15,
+    accessor: (r) => (r.validation_status ?? "").replace(/_/g, " "),
+  },
+];
+
 export async function buildPendenciasEnxovalPDF(
   supabase: SupabaseClient<any, any, any>,
+  selectedFields?: string[],
 ): Promise<Buffer> {
   const { data } = await supabase
     .from("equipment_checklist")
@@ -308,22 +336,25 @@ export async function buildPendenciasEnxovalPDF(
 
   const doc = createInstitutionalDoc({ title: "Pendências de Enxoval" });
 
-  const headers = ["Nº", "Nome de Guerra", "Sexo", "Item", "Qtd", "Status", "Validação"];
+  const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
+  const activeColumns = selected
+    ? PENDENCIA_COLUMNS.filter((c) => selected.has(c.id))
+    : PENDENCIA_COLUMNS;
+  const cols = activeColumns.length > 0 ? activeColumns : PENDENCIA_COLUMNS;
+  const totalWeight = cols.reduce((sum, c) => sum + c.width, 0);
+  const widthFractions = cols.map((c) => c.width / totalWeight);
+  const headers = cols.map((c) => c.header);
+
   const rows = (data ?? []).map((r: any) => {
     const st = Array.isArray(r.student) ? r.student[0] : r.student;
     const req = Array.isArray(r.requirement) ? r.requirement[0] : r.requirement;
-    return [
-      st?.student_number ?? "—",
-      st?.war_name ?? "—",
-      st?.sex ?? "—",
-      req?.name ?? "—",
-      req ? `${req.quantity} ${req.unit ?? ""}`.trim() : "—",
-      (r.status ?? "").replace(/_/g, " "),
-      (r.validation_status ?? "").replace(/_/g, " "),
-    ];
+    return cols.map((col) => {
+      const value = col.accessor(r, { st, req });
+      return value === null || value === undefined || value === "" ? "—" : value;
+    });
   });
 
-  renderTable(doc, headers, rows, [0.06, 0.16, 0.06, 0.34, 0.08, 0.15, 0.15]);
+  renderTable(doc, headers, rows, widthFractions);
 
   return pdfToBuffer(doc);
 }
@@ -331,12 +362,72 @@ export async function buildPendenciasEnxovalPDF(
 // =====================================================================
 // 3. Restrições de Saúde (LGPD)
 // =====================================================================
-export async function buildSaudePDF(supabase: SupabaseClient<any, any, any>): Promise<Buffer> {
+interface SaudeColumn {
+  id: string;
+  header: string;
+  width: number;
+  accessor: (s: any, h: any) => string | number | null | undefined;
+}
+
+const SAUDE_COLUMNS: SaudeColumn[] = [
+  { id: "sa_numero", header: "Nº", width: 0.05, accessor: (s) => s.student_number },
+  { id: "sa_nome", header: "Nome de Guerra", width: 0.14, accessor: (s) => s.war_name },
+  {
+    id: "sa_sangue",
+    header: "Sangue/RH",
+    width: 0.07,
+    accessor: (_s, h) => (h?.blood_type ? `${h.blood_type}${h.rh_factor ?? ""}` : null),
+  },
+  {
+    id: "sa_oculos",
+    header: "Óculos",
+    width: 0.05,
+    accessor: (_s, h) => (h?.uses_glasses === true ? "Sim" : h?.uses_glasses === false ? "Não" : null),
+  },
+  { id: "sa_alergias", header: "Alergias", width: 0.14, accessor: (_s, h) => h?.allergies },
+  { id: "sa_medicacao", header: "Medicação contínua", width: 0.14, accessor: (_s, h) => h?.continuous_medication },
+  {
+    id: "sa_restricao_fisica",
+    header: "Restrição física / Doença",
+    width: 0.14,
+    accessor: (_s, h) => {
+      const parts = [h?.physical_restriction, h?.chronic_disease].filter(Boolean);
+      return parts.length > 0 ? parts.join(" · ") : null;
+    },
+  },
+  { id: "sa_restricao_alimentar", header: "Restr. alimentar", width: 0.1, accessor: (_s, h) => h?.dietary_restriction },
+  {
+    id: "sa_cirurgia_ocular",
+    header: "Cirurgia ocular",
+    width: 0.08,
+    accessor: (_s, h) => {
+      if (h?.cirurgia_ocular === true) return h?.cirurgia_ocular_obs ? `Sim · ${h.cirurgia_ocular_obs}` : "Sim";
+      if (h?.cirurgia_ocular === false) return "Não";
+      return null;
+    },
+  },
+  { id: "sa_observacoes", header: "Resumo operacional", width: 0.16, accessor: (_s, h) => h?.operational_summary },
+  {
+    id: "sa_validacao",
+    header: "Validação",
+    width: 0.08,
+    accessor: (_s, h) => (h?.validation_status ?? "").replace(/_/g, " "),
+  },
+];
+
+export async function buildSaudePDF(
+  supabase: SupabaseClient<any, any, any>,
+  selectedFields?: string[],
+): Promise<Buffer> {
   const { data } = await supabase
     .from("students")
     .select(
       `student_number, war_name, full_name, sex,
-       health_restrictions(blood_type, rh_factor, allergies, continuous_medication, chronic_disease, physical_restriction, validation_status, operational_summary)`,
+       health_restrictions(
+         blood_type, rh_factor, allergies, continuous_medication, chronic_disease,
+         physical_restriction, dietary_restriction, uses_glasses, cirurgia_ocular,
+         cirurgia_ocular_obs, validation_status, operational_summary
+       )`,
     )
     .order("student_number");
 
@@ -354,25 +445,29 @@ export async function buildSaudePDF(supabase: SupabaseClient<any, any, any>): Pr
         h.continuous_medication ||
         h.chronic_disease ||
         h.physical_restriction ||
+        h.dietary_restriction ||
+        h.uses_glasses ||
+        h.cirurgia_ocular ||
         h.operational_summary)
     );
   });
 
-  const headers = ["Nº", "Nome de Guerra", "Sangue", "Alergias", "Medicação", "Doença crônica", "Resumo operacional"];
+  const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
+  const activeColumns = selected ? SAUDE_COLUMNS.filter((c) => selected.has(c.id)) : SAUDE_COLUMNS;
+  const cols = activeColumns.length > 0 ? activeColumns : SAUDE_COLUMNS;
+  const totalWeight = cols.reduce((sum, c) => sum + c.width, 0);
+  const widthFractions = cols.map((c) => c.width / totalWeight);
+  const headers = cols.map((c) => c.header);
+
   const rows = filtered.map((s: any) => {
     const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
-    return [
-      s.student_number ?? "—",
-      s.war_name ?? "—",
-      h?.blood_type ? `${h.blood_type}${h.rh_factor ?? ""}` : "—",
-      h?.allergies ?? "—",
-      h?.continuous_medication ?? "—",
-      h?.chronic_disease ?? "—",
-      h?.operational_summary ?? "—",
-    ];
+    return cols.map((col) => {
+      const value = col.accessor(s, h);
+      return value === null || value === undefined || value === "" ? "—" : value;
+    });
   });
 
-  renderTable(doc, headers, rows, [0.05, 0.15, 0.08, 0.18, 0.18, 0.16, 0.2]);
+  renderTable(doc, headers, rows, widthFractions);
 
   return pdfToBuffer(doc);
 }
@@ -380,7 +475,30 @@ export async function buildSaudePDF(supabase: SupabaseClient<any, any, any>): Pr
 // =====================================================================
 // 4. Contatos de Emergência
 // =====================================================================
-export async function buildEmergenciaPDF(supabase: SupabaseClient<any, any, any>): Promise<Buffer> {
+interface EmergenciaColumn {
+  id: string;
+  header: string;
+  width: number;
+  accessor: (s: any, ctx: { c1: any; c2: any }) => string | number | null | undefined;
+}
+
+const EMERGENCIA_COLUMNS: EmergenciaColumn[] = [
+  { id: "em_numero", header: "Nº", width: 0.05, accessor: (s) => s.student_number },
+  { id: "em_nome_guerra", header: "Nome de Guerra", width: 0.12, accessor: (s) => s.war_name },
+  { id: "em_c1_nome", header: "Contato 1", width: 0.12, accessor: (_s, ctx) => ctx.c1?.full_name },
+  { id: "em_c1_parentesco", header: "Parentesco 1", width: 0.08, accessor: (_s, ctx) => ctx.c1?.relationship },
+  { id: "em_c1_telefone", header: "Telefone 1", width: 0.1, accessor: (_s, ctx) => ctx.c1?.phone },
+  { id: "em_c1_endereco", header: "Endereço 1", width: 0.13, accessor: (_s, ctx) => ctx.c1?.address },
+  { id: "em_c2_nome", header: "Contato 2", width: 0.12, accessor: (_s, ctx) => ctx.c2?.full_name },
+  { id: "em_c2_parentesco", header: "Parentesco 2", width: 0.08, accessor: (_s, ctx) => ctx.c2?.relationship },
+  { id: "em_c2_telefone", header: "Telefone 2", width: 0.1, accessor: (_s, ctx) => ctx.c2?.phone },
+  { id: "em_c2_endereco", header: "Endereço 2", width: 0.13, accessor: (_s, ctx) => ctx.c2?.address },
+];
+
+export async function buildEmergenciaPDF(
+  supabase: SupabaseClient<any, any, any>,
+  selectedFields?: string[],
+): Promise<Buffer> {
   const { data } = await supabase
     .from("students")
     .select(
@@ -391,30 +509,30 @@ export async function buildEmergenciaPDF(supabase: SupabaseClient<any, any, any>
 
   const doc = createInstitutionalDoc({ title: "Contatos de Emergência" });
 
-  const headers = ["Nº", "Nome de Guerra", "Prio", "Contato", "Parentesco", "Telefone", "Endereço"];
-  const rows: (string | number)[][] = [];
-  for (const s of data ?? []) {
-    const contacts: any[] = Array.isArray((s as any).emergency_contacts)
-      ? (s as any).emergency_contacts
-      : (s as any).emergency_contacts
-      ? [(s as any).emergency_contacts]
-      : [];
-    contacts
-      .sort((a, b) => (a.priority ?? 9) - (b.priority ?? 9))
-      .forEach((c) => {
-        rows.push([
-          (s as any).student_number ?? "—",
-          (s as any).war_name ?? "—",
-          String(c.priority ?? "—"),
-          c.full_name ?? "—",
-          c.relationship ?? "—",
-          c.phone ?? "—",
-          c.address ?? "—",
-        ]);
-      });
-  }
+  const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
+  const activeColumns = selected
+    ? EMERGENCIA_COLUMNS.filter((c) => selected.has(c.id))
+    : EMERGENCIA_COLUMNS;
+  const cols = activeColumns.length > 0 ? activeColumns : EMERGENCIA_COLUMNS;
+  const totalWeight = cols.reduce((sum, c) => sum + c.width, 0);
+  const widthFractions = cols.map((c) => c.width / totalWeight);
+  const headers = cols.map((c) => c.header);
 
-  renderTable(doc, headers, rows, [0.05, 0.14, 0.05, 0.2, 0.12, 0.14, 0.3]);
+  const rows = (data ?? []).map((s: any) => {
+    const contacts: any[] = Array.isArray(s.emergency_contacts)
+      ? s.emergency_contacts
+      : s.emergency_contacts
+      ? [s.emergency_contacts]
+      : [];
+    const c1 = contacts.find((c) => c.priority === 1) ?? null;
+    const c2 = contacts.find((c) => c.priority === 2) ?? null;
+    return cols.map((col) => {
+      const value = col.accessor(s, { c1, c2 });
+      return value === null || value === undefined || value === "" ? "—" : value;
+    });
+  });
+
+  renderTable(doc, headers, rows, widthFractions);
 
   return pdfToBuffer(doc);
 }
