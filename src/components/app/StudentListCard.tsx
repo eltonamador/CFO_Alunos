@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
-import { getStudentSigla } from "@/lib/utils";
+import { getStudentSigla, cn } from "@/lib/utils";
+import { STATUS_META, type ProgressResult } from "@/lib/student-progress";
 
 interface Props {
   href: string;
@@ -15,6 +16,7 @@ interface Props {
     label: string;
     variant?: "default" | "primary" | "warning" | "success" | "destructive" | "info" | "gold";
   }[];
+  progress?: ProgressResult;
 }
 
 export function StudentListCard({
@@ -25,8 +27,10 @@ export function StudentListCard({
   pelotao,
   photoUrl,
   badges = [],
+  progress,
 }: Props) {
   const numberLabel = studentNumber ? String(studentNumber).padStart(2, "0") : "—";
+  const meta = progress ? STATUS_META[progress.status] : null;
 
   return (
     <Link
@@ -60,7 +64,39 @@ export function StudentListCard({
               {b.label}
             </Badge>
           ))}
+          {progress && meta && (
+            <Badge variant={meta.badgeVariant} aria-label={`Ficha ${meta.label}`}>
+              {meta.label}
+            </Badge>
+          )}
         </div>
+        {progress && meta && (
+          <div
+            className="flex items-center gap-2 pt-1"
+            aria-label={`Progresso da ficha: ${progress.percent}% (${meta.label})`}
+          >
+            <div
+              className={cn("h-1 flex-1 overflow-hidden rounded-full", meta.trackClass)}
+              role="progressbar"
+              aria-valuenow={progress.percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className={cn("h-full rounded-full transition-all", meta.barClass)}
+                style={{ width: `${progress.percent}%` }}
+              />
+            </div>
+            <span
+              className={cn(
+                "num-mono shrink-0 text-[11px] font-semibold tabular-nums",
+                meta.textClass,
+              )}
+            >
+              {progress.percent}%
+            </span>
+          </div>
+        )}
       </div>
 
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />

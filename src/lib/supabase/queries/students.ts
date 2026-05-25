@@ -146,6 +146,108 @@ export async function listStudents(
 }
 
 // =====================================================================
+// Lista com agregados para cálculo de progresso da ficha (Coordenação)
+// Faz uma query principal nos `students` (com colunas necessárias) e
+// dispara em paralelo as sub-tabelas filtradas por `student_id IN (...)`.
+// =====================================================================
+export interface StudentAggregateBundle {
+  student: StudentDetailRow;
+  contact: StudentContactRow | null;
+  address: StudentAddressRow | null;
+  emergency: EmergencyContactRow[];
+  health: HealthRestrictionRow | null;
+  logistics: StudentLogisticsRow | null;
+  vehicle: StudentVehicleRow | null;
+}
+
+export async function listStudentsWithAggregates(
+  supabase: SupabaseClient<any, any, any>,
+  options: { classId?: string; query?: string; pelotao?: string } = {},
+): Promise<StudentAggregateBundle[]> {
+  let q = supabase
+    .from("students")
+    .select("*")
+    .is("deleted_at", null)
+    .order("student_number", { ascending: true, nullsFirst: false });
+
+  if (options.classId) q = q.eq("class_id", options.classId);
+  if (options.pelotao) q = q.eq("pelotao", options.pelotao);
+
+  const term = options.query?.trim();
+  if (term) {
+    const asNumber = Number(term);
+    if (Number.isInteger(asNumber)) {
+      q = q.or(
+        `student_number.eq.${asNumber},war_name.ilike.%${term}%,full_name.ilike.%${term}%`,
+      );
+    } else {
+      q = q.or(`war_name.ilike.%${term}%,full_name.ilike.%${term}%`);
+    }
+  }
+
+  const { data: studentsData } = await q;
+  const students = (studentsData ?? []) as StudentDetailRow[];
+  if (students.length === 0) return [];
+
+  const ids = students.map((s) => s.id);
+
+  const [
+    { data: contacts },
+    { data: addresses },
+    { data: emergencies },
+    { data: healths },
+    { data: logistics },
+    { data: vehicles },
+  ] = await Promise.all([
+    supabase.from("student_contacts").select("*").in("student_id", ids),
+    supabase.from("student_addresses").select("*").in("student_id", ids),
+    supabase.from("emergency_contacts").select("*").in("student_id", ids),
+    supabase.from("health_restrictions").select("*").in("student_id", ids),
+    supabase.from("student_logistics").select("*").in("student_id", ids),
+    supabase.from("vehicles").select("*").in("student_id", ids),
+  ]);
+
+  const byStudentId = <T extends { student_id: string }>(
+    rows: T[] | null,
+  ): Map<string, T> => {
+    const m = new Map<string, T>();
+    (rows ?? []).forEach((r) => m.set(r.student_id, r));
+    return m;
+  };
+
+  const groupByStudentId = <T extends { student_id: string }>(
+    rows: T[] | null,
+  ): Map<string, T[]> => {
+    const m = new Map<string, T[]>();
+    (rows ?? []).forEach((r) => {
+      const arr = m.get(r.student_id) ?? [];
+      arr.push(r);
+      m.set(r.student_id, arr);
+    });
+    return m;
+  };
+
+  const contactMap = byStudentId(contacts as StudentContactRow[] | null);
+  const addressMap = byStudentId(addresses as StudentAddressRow[] | null);
+  const healthMap = byStudentId(healths as HealthRestrictionRow[] | null);
+  const logisticsMap = byStudentId(logistics as StudentLogisticsRow[] | null);
+  const vehicleMap = byStudentId(vehicles as StudentVehicleRow[] | null);
+  const emergencyMap = groupByStudentId(
+    emergencies as EmergencyContactRow[] | null,
+  );
+
+  return students.map((s) => ({
+    student: s,
+    contact: contactMap.get(s.id) ?? null,
+    address: addressMap.get(s.id) ?? null,
+    emergency: emergencyMap.get(s.id) ?? [],
+    health: healthMap.get(s.id) ?? null,
+    logistics: logisticsMap.get(s.id) ?? null,
+    vehicle: vehicleMap.get(s.id) ?? null,
+  }));
+}
+
+// =====================================================================
 // Lista básica (Instrutor + Aluno) — sem dados sensíveis
 // =====================================================================
 export async function listClassBasic(
