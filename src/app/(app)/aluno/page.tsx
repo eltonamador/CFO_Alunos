@@ -216,7 +216,7 @@ export default async function AlunoHome() {
               <p className="text-sm font-medium">{p.label}</p>
               <p
                 className={`text-sm tabular-nums font-semibold ${
-                  p.value === 100 ? "text-green-600" : "text-muted-foreground"
+                  p.value === 100 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
                 }`}
               >
                 {p.value}%
@@ -236,7 +236,7 @@ export default async function AlunoHome() {
       <section className="rounded-lg border bg-card p-6">
         <h2 className="font-semibold">Pendências</h2>
         {pendencias.length === 0 ? (
-          <p className="mt-2 text-sm font-medium text-green-600">
+          <p className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
             ✔ Nenhuma pendência no momento.
           </p>
         ) : (

@@ -18,6 +18,7 @@ import { logoutAction } from "@/modules/identity/presentation/actions/authAction
 import type { SessionProfile } from "@/modules/identity/presentation/session";
 import { Button } from "@/components/ui/Button";
 import { NavLink } from "@/components/app/NavLink";
+import { ThemeToggle } from "@/components/app/ThemeToggle";
 import { getStudentSigla } from "@/lib/utils";
 
 interface NavItem {
@@ -159,6 +160,7 @@ export function AppShell({
               </p>
             </div>
           </div>
+          <ThemeToggle className="mb-1 w-full text-white/85 hover:bg-white/10 hover:text-white" />
           <form action={logoutAction}>
             <Button
               type="submit"
@@ -191,11 +193,14 @@ export function AppShell({
                 CFO Alunos
               </span>
             </Link>
-            <form action={logoutAction}>
-              <Button type="submit" variant="ghost" size="sm">
-                Sair
-              </Button>
-            </form>
+            <div className="flex items-center gap-1">
+              <ThemeToggle showLabel={false} />
+              <form action={logoutAction}>
+                <Button type="submit" variant="ghost" size="sm">
+                  Sair
+                </Button>
+              </form>
+            </div>
           </div>
         </header>
 

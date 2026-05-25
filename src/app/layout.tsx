@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/app/ThemeProvider";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
 
 const fontSans = Barlow({
@@ -46,6 +48,18 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const themeScript = `
+(() => {
+  try {
+    const theme = localStorage.getItem("${THEME_STORAGE_KEY}") === "dark" ? "dark" : "light";
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme;
+  } catch (_) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -53,7 +67,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable}`}
     >
-      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

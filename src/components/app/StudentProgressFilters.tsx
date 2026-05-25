@@ -99,7 +99,7 @@ export function StudentProgressFilters({
         <select
           value={sort}
           onChange={(e) => update("sort", e.target.value === "numero" ? null : e.target.value)}
-          className="h-8 rounded-md border border-border bg-card px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-brand-red-100"
+          className="h-8 rounded-md border border-input bg-card px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
           aria-label="Ordenar lista de alunos"
         >
           {SORTS.map((s) => (

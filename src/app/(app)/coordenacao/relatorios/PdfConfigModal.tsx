@@ -566,7 +566,7 @@ function ModalShell({
           </DialogPrimitive.Close>
 
           {sensitive && (
-            <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 Este relatório contém dados sensíveis. Mantenha o arquivo sob controle interno
@@ -664,25 +664,25 @@ const STATUS_STYLE: Record<
 > = {
   vazio: {
     bar: "bg-gray-400",
-    text: "text-gray-700 bg-gray-50 border-gray-300",
+    text: "text-gray-700 bg-gray-50 border-gray-300 dark:bg-gray-900/30 dark:text-gray-200 dark:border-gray-700",
     label: "Sem seleção",
     icon: <Info className="h-4 w-4" />,
   },
   ideal: {
     bar: "bg-emerald-500",
-    text: "text-emerald-800 bg-emerald-50 border-emerald-300",
+    text: "text-emerald-800 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-200 dark:border-emerald-700",
     label: "Ideal para A4",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
   limite: {
     bar: "bg-amber-500",
-    text: "text-amber-900 bg-amber-50 border-amber-300",
+    text: "text-amber-900 bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-700",
     label: "No limite",
     icon: <Info className="h-4 w-4" />,
   },
   excesso: {
     bar: "bg-red-500",
-    text: "text-red-900 bg-red-50 border-red-300",
+    text: "text-red-900 bg-red-50 border-red-300 dark:bg-red-950/30 dark:text-red-200 dark:border-red-700",
     label: "Excesso de campos",
     icon: <AlertTriangle className="h-4 w-4" />,
   },
@@ -708,7 +708,7 @@ function SelectionStatusBar({
           {evaluation.occupancyPct}% de aproveitamento
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/60">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/60 dark:bg-black/30">
         <div className={cn("h-full transition-all", style.bar)} style={{ width: `${pct}%` }} />
       </div>
       <p className="leading-relaxed">{evaluation.message}</p>

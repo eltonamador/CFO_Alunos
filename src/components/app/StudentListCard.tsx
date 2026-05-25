@@ -35,7 +35,7 @@ export function StudentListCard({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-card-sm transition-all hover:-translate-y-px hover:border-brand-red-100 hover:shadow-card-md"
+      className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground shadow-card-sm transition-all hover:-translate-y-px hover:border-brand-red-100 hover:shadow-card-md dark:hover:border-brand-red-700/60"
     >
       <div className="flex shrink-0 items-center justify-center">
         <Avatar

@@ -59,12 +59,12 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  insert: "bg-blue-50 text-blue-700 border-blue-200",
-  update: "bg-amber-50 text-amber-700 border-amber-200",
-  delete: "bg-red-50 text-red-700 border-red-200",
-  validate: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  reject: "bg-rose-50 text-rose-700 border-rose-200",
-  view_emergency_contact: "bg-purple-50 text-purple-700 border-purple-200",
+  insert: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800/60",
+  update: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800/60",
+  delete: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800/60",
+  validate: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800/60",
+  reject: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-200 dark:border-rose-800/60",
+  view_emergency_contact: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800/60",
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -159,10 +159,10 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
 
               // Icon/Bullet colors depending on action
               let bulletColor = "bg-muted border-border ring-muted/40";
-              if (isInsert) bulletColor = "bg-blue-500 border-blue-600 ring-blue-100";
-              if (isUpdate) bulletColor = "bg-amber-500 border-amber-600 ring-amber-100";
-              if (isDelete) bulletColor = "bg-red-500 border-red-600 ring-red-100";
-              if (isView) bulletColor = "bg-purple-500 border-purple-600 ring-purple-100";
+              if (isInsert) bulletColor = "bg-blue-500 border-blue-600 ring-blue-100 dark:ring-blue-900/40";
+              if (isUpdate) bulletColor = "bg-amber-500 border-amber-600 ring-amber-100 dark:ring-amber-900/40";
+              if (isDelete) bulletColor = "bg-red-500 border-red-600 ring-red-100 dark:ring-red-900/40";
+              if (isView) bulletColor = "bg-purple-500 border-purple-600 ring-purple-100 dark:ring-purple-900/40";
 
               return (
                 <div key={log.id} className="relative group">
@@ -212,7 +212,7 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
                       )}
                       
                       {log.reason && (
-                        <p className="mt-1 text-xs text-muted-foreground italic bg-white border border-border rounded p-2">
+                        <p className="mt-1 rounded border border-border bg-card p-2 text-xs italic text-muted-foreground">
                           <strong>Motivo: </strong> {log.reason}
                         </p>
                       )}
@@ -220,7 +220,7 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
 
                     {/* Comparisons and details for changes */}
                     {changes.length > 0 && (
-                      <div className="mt-3 overflow-x-auto border border-border rounded-lg bg-white">
+                      <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
                         <table className="min-w-full divide-y divide-border text-xs">
                           <thead className="bg-secondary">
                             <tr>
@@ -235,10 +235,10 @@ export function HistoricoTab({ _studentId, logs, studentMap }: Props) {
                                 <td className="px-3 py-2 font-sans font-semibold text-foreground">
                                   {FIELD_LABELS[ch.field] || ch.field}
                                 </td>
-                                <td className="px-3 py-2 text-red-600 line-through whitespace-pre-wrap">
+                                <td className="whitespace-pre-wrap px-3 py-2 text-red-600 line-through dark:text-red-300">
                                   {formatValue(ch.field, ch.beforeVal)}
                                 </td>
-                                <td className="px-3 py-2 text-emerald-700 font-semibold bg-emerald-50/20 whitespace-pre-wrap">
+                                <td className="whitespace-pre-wrap bg-emerald-50/20 px-3 py-2 font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
                                   {formatValue(ch.field, ch.afterVal)}
                                 </td>
                               </tr>

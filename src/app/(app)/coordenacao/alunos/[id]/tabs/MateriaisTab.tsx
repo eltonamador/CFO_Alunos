@@ -18,12 +18,12 @@ import type {
 // =====================================================================
 const STATUS_OPTIONS = [
   { value: "pendente_validacao", label: "Pendente", color: "text-muted-foreground" },
-  { value: "ok", label: "✔ OK", color: "text-green-600" },
-  { value: "comprado", label: "Comprado", color: "text-blue-600" },
-  { value: "vai_chegar", label: "Ainda vai chegar", color: "text-yellow-600" },
-  { value: "falta_comprar", label: "Falta comprar", color: "text-orange-600" },
-  { value: "em_duvida", label: "Em dúvida", color: "text-purple-600" },
-  { value: "inadequado", label: "Inadequado", color: "text-red-600" },
+  { value: "ok", label: "✔ OK", color: "text-green-600 dark:text-green-400" },
+  { value: "comprado", label: "Comprado", color: "text-blue-600 dark:text-blue-400" },
+  { value: "vai_chegar", label: "Ainda vai chegar", color: "text-yellow-600 dark:text-yellow-400" },
+  { value: "falta_comprar", label: "Falta comprar", color: "text-orange-600 dark:text-orange-400" },
+  { value: "em_duvida", label: "Em dúvida", color: "text-purple-600 dark:text-purple-400" },
+  { value: "inadequado", label: "Inadequado", color: "text-red-600 dark:text-red-400" },
   { value: "nao_se_aplica", label: "Não se aplica", color: "text-muted-foreground" },
 ] as const;
 
@@ -181,7 +181,7 @@ function EquipmentItem({
                 name="status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value as typeof currentStatus)}
-                className="rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                className="rounded border border-input bg-card px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
               >
                 {STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -201,7 +201,7 @@ function EquipmentItem({
                 defaultValue={status?.student_notes ?? ""}
                 placeholder="Descreva sua dúvida sobre este item..."
                 rows={2}
-                className="w-full rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded border border-input bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
             )}
           </form>
@@ -321,7 +321,7 @@ function CategoryGroup({
             </span>
           )}
           {pendingCount === 0 && (
-            <span className="text-xs text-green-600">✔ completo</span>
+            <span className="text-xs text-green-600 dark:text-green-400">✔ completo</span>
           )}
           <svg
             className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}

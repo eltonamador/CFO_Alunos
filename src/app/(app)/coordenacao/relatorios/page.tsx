@@ -101,7 +101,7 @@ export default async function RelatoriosPage() {
         </p>
       </header>
 
-      <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+      <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
         <div className="flex gap-2">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <p>

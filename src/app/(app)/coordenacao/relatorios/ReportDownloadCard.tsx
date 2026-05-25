@@ -162,7 +162,7 @@ export function ReportDownloadCard({
           className={cn(
             "mt-3 flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
             message.type === "success"
-              ? "border-green-500/40 bg-green-500/10 text-green-700"
+              ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
               : "border-destructive/40 bg-destructive/10 text-destructive",
           )}
           role={message.type === "error" ? "alert" : "status"}

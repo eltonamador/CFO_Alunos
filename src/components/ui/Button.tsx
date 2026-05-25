@@ -7,13 +7,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-card-sm hover:bg-brand-red-800",
+        default: "bg-primary text-primary-foreground shadow-card-sm hover:bg-brand-red-800 dark:hover:bg-brand-red-600",
         secondary: "bg-secondary text-secondary-foreground border border-border hover:bg-muted",
         outline: "border border-input bg-card hover:bg-accent hover:text-accent-foreground",
-        ghost: "text-ink-700 hover:bg-secondary hover:text-foreground",
+        ghost: "text-foreground/80 hover:bg-secondary hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        success: "bg-emerald-700 text-white hover:bg-emerald-800",
-        gold: "bg-brand-gold-500 text-ink-900 hover:bg-brand-gold-600",
+        success: "bg-emerald-700 text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500",
+        gold: "bg-brand-gold-500 text-ink-900 hover:bg-brand-gold-600 dark:bg-brand-gold-300 dark:text-ink-900 dark:hover:bg-brand-gold-500",
       },
       size: {
         default: "h-11 px-4 py-2",
