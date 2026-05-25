@@ -63,6 +63,7 @@ export async function upsertEquipmentStatusAction(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/coordenacao");
   revalidatePath("/aluno/ficha");
   revalidatePath("/aluno/materiais");
   revalidatePath("/aluno");
@@ -108,5 +109,7 @@ export async function validateEquipmentItemAction(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/coordenacao");
+  revalidatePath("/coordenacao/pendencias");
   return { ok: true };
 }

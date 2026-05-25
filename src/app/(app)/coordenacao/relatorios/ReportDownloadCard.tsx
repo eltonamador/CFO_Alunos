@@ -16,6 +16,8 @@ interface ReportDownloadCardProps {
   sensitive?: boolean;
   statLabel: string;
   statValue: string;
+  /** Se false, esconde o botão XLSX (ex.: ficha personalizada só tem PDF). */
+  xlsxAvailable?: boolean;
 }
 
 const EXPECTED_CONTENT_TYPE: Record<Format, string> = {
@@ -36,6 +38,7 @@ export function ReportDownloadCard({
   sensitive = false,
   statLabel,
   statValue,
+  xlsxAvailable = true,
 }: ReportDownloadCardProps) {
   const [loading, setLoading] = React.useState<Format | null>(null);
   const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -67,7 +70,10 @@ export function ReportDownloadCard({
         let error = "Não foi possível gerar o relatório.";
         if (contentType.includes("application/json")) {
           const payload = await response.json().catch(() => null);
-          error = payload?.error ?? error;
+          const main = payload?.error ?? error;
+          const detail = payload?.detail;
+          // Mostra o detail (mensagem específica do servidor) junto, se houver.
+          error = detail ? `${main} — ${detail}` : main;
         }
         throw new Error(error);
       }
@@ -126,17 +132,19 @@ export function ReportDownloadCard({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          data-testid={`download-${slug}-xlsx`}
-          onClick={() => downloadReport("xlsx")}
-          disabled={loading !== null}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-xs font-semibold uppercase tracking-[0.06em] text-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading === "xlsx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-          Baixar XLSX
-        </button>
+      <div className={cn("mt-5 grid gap-2", xlsxAvailable ? "sm:grid-cols-2" : "sm:grid-cols-1")}>
+        {xlsxAvailable && (
+          <button
+            type="button"
+            data-testid={`download-${slug}-xlsx`}
+            onClick={() => downloadReport("xlsx")}
+            disabled={loading !== null}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-xs font-semibold uppercase tracking-[0.06em] text-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading === "xlsx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+            Baixar XLSX
+          </button>
+        )}
         <button
           type="button"
           data-testid={`download-${slug}-pdf`}
@@ -145,7 +153,7 @@ export function ReportDownloadCard({
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FileText className="h-4 w-4" />
-          Baixar PDF
+          {xlsxAvailable ? "Baixar PDF" : "Configurar e baixar PDF"}
         </button>
       </div>
 

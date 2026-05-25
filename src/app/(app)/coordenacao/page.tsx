@@ -49,10 +49,10 @@ export default async function CoordenacaoHome() {
       cpf, rg, birth_date, marital_status, mother_name, education_level,
       student_contacts(whatsapp, email_personal),
       student_addresses(street, city, zip, state),
-      health_restrictions(blood_type, validation_status),
+      health_restrictions(blood_type, validation_status, allergies, continuous_medication, chronic_disease, physical_restriction, dietary_restriction),
       emergency_contacts(id, priority),
       student_logistics(student_id),
-      vehicles(student_id)
+      vehicles(student_id, has_cnh)
     `)
     .is("deleted_at", null);
 
@@ -104,8 +104,11 @@ export default async function CoordenacaoHome() {
     }
   }
 
-  // 2. Documentos
-  const REQUIRED_DOC_TYPES = ["rg_cpf", "cnh", "comprovante_residencia", "foto_3x4", "declaracao_medica"];
+  // 2. Documentos — tipos obrigatórios são condicionais:
+  //    cnh: somente se aluno declarou possuir CNH (vehicles.has_cnh)
+  //    declaracao_medica: somente se aluno declarou alguma restrição de saúde
+  //    rg_cpf, comprovante_residencia, foto_3x4: sempre obrigatórios
+  const BASE_DOC_TYPES = ["rg_cpf", "comprovante_residencia", "foto_3x4"];
   const { data: rawDocs } = await supabase
     .from("documents")
     .select("student_id, doc_type, status")
@@ -117,20 +120,32 @@ export default async function CoordenacaoHome() {
     .select("*", { count: "exact", head: true })
     .eq("status", "validado");
 
-  let studentsWithAllDocs = 0;
-  if (allDocs) {
-    const studentDocsMap = new Map<string, Set<string>>();
-    for (const d of allDocs) {
-      if (!studentDocsMap.has(d.student_id)) {
-        studentDocsMap.set(d.student_id, new Set());
-      }
-      studentDocsMap.get(d.student_id)!.add(d.doc_type);
+  const studentDocsMap = new Map<string, Set<string>>();
+  for (const d of allDocs) {
+    if (!studentDocsMap.has(d.student_id)) {
+      studentDocsMap.set(d.student_id, new Set());
     }
-    for (const [_, types] of studentDocsMap.entries()) {
-      const hasAll = REQUIRED_DOC_TYPES.every((t) => types.has(t));
-      if (hasAll) {
-        studentsWithAllDocs++;
-      }
+    studentDocsMap.get(d.student_id)!.add(d.doc_type);
+  }
+
+  let studentsWithAllDocs = 0;
+  for (const s of allStudentsData) {
+    const v = Array.isArray(s.vehicles) ? s.vehicles[0] : s.vehicles;
+    const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
+    const required = [...BASE_DOC_TYPES];
+    if (v?.has_cnh) required.push("cnh");
+    const hasRestriction = !!(
+      h?.allergies ||
+      h?.continuous_medication ||
+      h?.chronic_disease ||
+      h?.physical_restriction ||
+      h?.dietary_restriction
+    );
+    if (hasRestriction) required.push("declaracao_medica");
+
+    const types = studentDocsMap.get(s.id) ?? new Set<string>();
+    if (required.every((t) => types.has(t))) {
+      studentsWithAllDocs++;
     }
   }
 
@@ -151,7 +166,9 @@ export default async function CoordenacaoHome() {
 
   if (allStudentsData && reqs) {
     const reqsQuarentena = reqs.filter((r) => r.phase === "quarentena" && r.mandatory);
-    const reqsGeral = reqs.filter((r) => r.mandatory);
+    // "Geral" = enxoval do curso completo (quarentena + início). Itens da fase
+    // "posterior" (pós-curso) não entram no progresso operacional da turma.
+    const reqsGeral = reqs.filter((r) => r.mandatory && r.phase !== "posterior");
 
     const statusesByStudent = new Map<string, Map<string, { status: string; validation_status: string }>>();
     if (allEqStatuses) {
@@ -166,11 +183,13 @@ export default async function CoordenacaoHome() {
       }
     }
 
-    const DONE_STATUSES = new Set(["ok", "nao_se_aplica"]);
-    const isItemDone = (r: any, s?: { status: string; validation_status: string }) => {
+    // "Entregue" inclui qualquer item que o aluno declarou possuir (mesmo que
+    // ainda não validado pela coordenação) — a validação pendente é exibida
+    // no painel de pendências.
+    const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
+    const isItemDone = (_r: any, s?: { status: string; validation_status: string }) => {
       if (!s) return false;
-      if (DONE_STATUSES.has(s.status)) return true;
-      return s.status === "comprado" && s.validation_status === "validado";
+      return DONE_STATUSES.has(s.status);
     };
 
     for (const student of allStudentsData) {

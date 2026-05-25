@@ -13,13 +13,14 @@ import {
   buildPendenciasEnxovalPDF,
   buildSaudePDF,
   buildEmergenciaPDF,
+  buildFichaPersonalizadaPDF,
 } from "@/lib/reports/pdf-builders";
 
 type Builder = (supabase: ReturnType<typeof createSupabaseServerClient>, selectedFields?: string[]) => Promise<any>;
 
 interface ReportSpec {
   label: string;
-  xlsx: Builder;
+  xlsx?: Builder; // ficha-personalizada não tem versão XLSX
   pdf: Builder;
 }
 
@@ -28,6 +29,10 @@ const REPORTS: Record<string, ReportSpec> = {
     label: "Ficha_Completa_CFO2026.1",
     xlsx: buildFichaCompletaWorkbook as Builder,
     pdf: buildFichaCompletaPDF as Builder,
+  },
+  "ficha-personalizada": {
+    label: "Ficha_Personalizada_CFO2026.1",
+    pdf: buildFichaPersonalizadaPDF as Builder,
   },
   "pendencias-enxoval": {
     label: "Pendencias_Enxoval_CFO2026.1",
@@ -79,12 +84,22 @@ async function handleReportRequest(
     return NextResponse.json({ error: "Formato inválido (use xlsx ou pdf)" }, { status: 400 });
   }
 
-  // 6. Gera o arquivo
+  // 6. Ficha personalizada só existe em PDF
+  if (format === "xlsx" && !report.xlsx) {
+    return NextResponse.json(
+      { error: "Este relatório só está disponível em PDF" },
+      { status: 400 },
+    );
+  }
+
+  // 7. Gera o arquivo
   const supabase = createSupabaseServerClient();
 
   try {
     const buffer =
-      format === "pdf" ? await report.pdf(supabase as any, selectedFields) : await report.xlsx(supabase as any);
+      format === "pdf"
+        ? await report.pdf(supabase as any, selectedFields)
+        : await report.xlsx!(supabase as any);
 
     const date = new Date().toISOString().slice(0, 10);
     const ext = format === "pdf" ? "pdf" : "xlsx";

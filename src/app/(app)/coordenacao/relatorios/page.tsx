@@ -30,6 +30,15 @@ const REPORTS: Report[] = [
     statLabel: "alunos no relatório",
   },
   {
+    slug: "ficha-personalizada",
+    title: "Ficha Personalizada da Turma",
+    description:
+      "Monte seu relatório escolhendo campos das 11 abas da ficha. Inclui presets e indicador de aproveitamento da folha A4.",
+    icon: "🧩",
+    roles: ["coordenacao", "secretaria"],
+    statLabel: "alunos disponíveis",
+  },
+  {
     slug: "pendencias-enxoval",
     title: "Pendências de Enxoval",
     description:
@@ -72,6 +81,7 @@ export default async function RelatoriosPage() {
 
   const stats: Record<string, string> = {
     "ficha-completa": String(students.count ?? 0).padStart(2, "0"),
+    "ficha-personalizada": String(students.count ?? 0).padStart(2, "0"),
     "pendencias-enxoval": String(requirements.count ?? 0).padStart(2, "0"),
     saude: String(health.count ?? 0).padStart(2, "0"),
     emergencia: String(emergency.count ?? 0).padStart(2, "0"),
@@ -112,6 +122,7 @@ export default async function RelatoriosPage() {
             sensitive={report.sensitive}
             statValue={stats[report.slug] ?? "00"}
             statLabel={report.statLabel}
+            xlsxAvailable={report.slug !== "ficha-personalizada"}
           />
         ))}
       </div>

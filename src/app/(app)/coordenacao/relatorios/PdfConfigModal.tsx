@@ -2,11 +2,25 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X, ShieldAlert, FileText, CheckCircle2 } from "lucide-react";
+import { X, ShieldAlert, FileText, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import {
+  FICHA_FIELDS,
+  FICHA_GROUPS,
+  FICHA_PRESETS,
+  evaluateSelection,
+  type FichaGroupId,
+  type SelectionStatus,
+} from "@/lib/reports/ficha-personalizada-catalog";
 
 // Export the data structure so we can use it in the page/card as well
-export type ReportSlug = "ficha-completa" | "pendencias-enxoval" | "saude" | "emergencia";
+export type ReportSlug =
+  | "ficha-completa"
+  | "ficha-personalizada"
+  | "pendencias-enxoval"
+  | "saude"
+  | "emergencia";
 
 export interface FieldOption {
   id: string;
@@ -20,7 +34,10 @@ export interface FieldGroup {
   fields: FieldOption[];
 }
 
-export const REPORT_CONFIGS: Record<ReportSlug, FieldGroup[]> = {
+// Catálogos dos relatórios "fixos" (não-personalizados). A Ficha Personalizada
+// usa um catálogo próprio com presets e indicador de A4 — tratada como caso
+// especial no modal abaixo.
+export const REPORT_CONFIGS: Record<Exclude<ReportSlug, "ficha-personalizada">, FieldGroup[]> = {
   "ficha-completa": [
     {
       id: "identificacao",
@@ -174,7 +191,17 @@ interface PdfConfigModalProps {
   isGenerating?: boolean;
 }
 
-export function PdfConfigModal({
+export function PdfConfigModal(props: PdfConfigModalProps) {
+  if (props.slug === "ficha-personalizada") {
+    return <FichaPersonalizadaModal {...props} />;
+  }
+  return <FixedReportModal {...props} />;
+}
+
+// =====================================================================
+// Modal genérico (relatórios fixos: ficha-completa, saúde etc.)
+// =====================================================================
+function FixedReportModal({
   open,
   onOpenChange,
   slug,
@@ -183,8 +210,9 @@ export function PdfConfigModal({
   onGenerate,
   isGenerating,
 }: PdfConfigModalProps) {
+  const groups = REPORT_CONFIGS[slug as Exclude<ReportSlug, "ficha-personalizada">] || [];
+
   const initialSelection = React.useMemo(() => {
-    const groups = REPORT_CONFIGS[slug] || [];
     const selected = new Set<string>();
     groups.forEach((g) => {
       g.fields.forEach((f) => {
@@ -192,17 +220,13 @@ export function PdfConfigModal({
       });
     });
     return selected;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
-
-  const groups = REPORT_CONFIGS[slug] || [];
 
   const [selectedFields, setSelectedFields] = React.useState<Set<string>>(initialSelection);
 
-  // Reset selection when modal opens
   React.useEffect(() => {
-    if (open) {
-      setSelectedFields(initialSelection);
-    }
+    if (open) setSelectedFields(initialSelection);
   }, [open, initialSelection]);
 
   const toggleField = (id: string) => {
@@ -219,21 +243,314 @@ export function PdfConfigModal({
     groups.forEach((g) => g.fields.forEach((f) => all.add(f.id)));
     setSelectedFields(all);
   };
+  const clearAll = () => setSelectedFields(new Set());
+  const handleGenerate = () => onGenerate(Array.from(selectedFields));
+
+  return (
+    <ModalShell open={open} onOpenChange={onOpenChange} title={title} sensitive={sensitive}>
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="space-x-2">
+          <Button type="button" variant="outline" size="sm" onClick={selectAll}>
+            Selecionar todos
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={clearAll}>
+            Limpar seleção
+          </Button>
+        </div>
+        <div className="text-sm text-muted-foreground font-medium">
+          <span className="text-foreground">{selectedFields.size}</span> campos selecionados
+        </div>
+      </div>
+
+      <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-6">
+        {groups.map((group) => (
+          <FieldGroupBlock
+            key={group.id}
+            groupLabel={group.label}
+            fields={group.fields.map((f) => ({ id: f.id, label: f.label }))}
+            selected={selectedFields}
+            onToggle={toggleField}
+          />
+        ))}
+      </div>
+
+      <PreviewChips
+        labelsById={Object.fromEntries(groups.flatMap((g) => g.fields).map((f) => [f.id, f.label]))}
+        selected={selectedFields}
+      />
+
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogPrimitive.Close asChild>
+          <Button type="button" variant="outline" disabled={isGenerating}>
+            Cancelar
+          </Button>
+        </DialogPrimitive.Close>
+        <Button
+          type="button"
+          onClick={handleGenerate}
+          disabled={selectedFields.size === 0 || isGenerating}
+        >
+          {isGenerating ? "Gerando..." : "Gerar PDF"}
+          {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// =====================================================================
+// Modal — Ficha Personalizada (catálogo de 11 abas + indicador A4)
+// =====================================================================
+function FichaPersonalizadaModal({
+  open,
+  onOpenChange,
+  title,
+  sensitive,
+  onGenerate,
+  isGenerating,
+}: PdfConfigModalProps) {
+  const [selectedFields, setSelectedFields] = React.useState<Set<string>>(new Set());
+  const [activePreset, setActivePreset] = React.useState<string>("basicos");
+
+  // Carrega o preset inicial ao abrir
+  React.useEffect(() => {
+    if (open) {
+      const preset = FICHA_PRESETS.find((p) => p.id === "basicos");
+      if (preset) {
+        setSelectedFields(new Set(preset.fieldIds));
+        setActivePreset("basicos");
+      }
+    }
+  }, [open]);
+
+  const evaluation = React.useMemo(
+    () => evaluateSelection(Array.from(selectedFields)),
+    [selectedFields],
+  );
+
+  const fieldsByGroup = React.useMemo(() => {
+    const map = new Map<FichaGroupId, typeof FICHA_FIELDS>();
+    FICHA_GROUPS.forEach((g) => map.set(g.id, []));
+    FICHA_FIELDS.forEach((f) => map.get(f.groupId)?.push(f));
+    return map;
+  }, []);
+
+  const toggleField = (id: string) => {
+    setActivePreset("personalizado");
+    setSelectedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleGroup = (groupId: FichaGroupId) => {
+    setActivePreset("personalizado");
+    const groupFieldIds = (fieldsByGroup.get(groupId) ?? []).map((f) => f.id);
+    setSelectedFields((prev) => {
+      const next = new Set(prev);
+      const allSelected = groupFieldIds.every((id) => next.has(id));
+      if (allSelected) groupFieldIds.forEach((id) => next.delete(id));
+      else groupFieldIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const applyPreset = (presetId: string) => {
+    if (presetId === "personalizado") {
+      setActivePreset("personalizado");
+      return;
+    }
+    const preset = FICHA_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    setActivePreset(presetId);
+    setSelectedFields(new Set(preset.fieldIds));
+  };
 
   const clearAll = () => {
+    setActivePreset("personalizado");
     setSelectedFields(new Set());
   };
 
+  const blockGenerate =
+    evaluation.status === "excesso" || evaluation.status === "vazio" || isGenerating;
+
   const handleGenerate = () => {
+    if (blockGenerate) return;
     onGenerate(Array.from(selectedFields));
   };
 
   return (
+    <ModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      sensitive={sensitive}
+      maxWidthClass="max-w-3xl"
+    >
+      {/* Presets */}
+      <div className="space-y-2 border-b pb-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Presets
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FICHA_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => applyPreset(preset.id)}
+              title={preset.description}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                activePreset === preset.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:border-primary hover:text-primary",
+              )}
+            >
+              {preset.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => applyPreset("personalizado")}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              activePreset === "personalizado"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:border-primary hover:text-primary",
+            )}
+          >
+            Personalizado
+          </button>
+        </div>
+      </div>
+
+      {/* Indicador de fit A4 */}
+      <SelectionStatusBar evaluation={evaluation} />
+
+      {/* Cabeçalho de ações */}
+      <div className="flex items-center justify-between border-b pb-2">
+        <Button type="button" variant="outline" size="sm" onClick={clearAll}>
+          Limpar seleção
+        </Button>
+        <div className="text-sm text-muted-foreground font-medium">
+          <span className="text-foreground">{evaluation.count}</span> campos ·{" "}
+          <span className="text-foreground">{evaluation.totalMinPx}</span>/
+          {evaluation.usablePx} pt
+        </div>
+      </div>
+
+      {/* Grupos (abas) */}
+      <div className="max-h-[42vh] overflow-y-auto pr-2 space-y-5">
+        {FICHA_GROUPS.map((group) => {
+          const fields = fieldsByGroup.get(group.id) ?? [];
+          const selectedInGroup = fields.filter((f) => selectedFields.has(f.id)).length;
+          const allSelected = fields.length > 0 && selectedInGroup === fields.length;
+          return (
+            <div key={group.id} className="space-y-2">
+              <div className="flex items-center justify-between border-b pb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.id)}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border",
+                      allSelected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : selectedInGroup > 0
+                          ? "border-primary bg-primary/20"
+                          : "border-border",
+                    )}
+                  >
+                    {allSelected && <CheckCircle2 className="h-3 w-3" />}
+                  </span>
+                  {group.label}
+                </button>
+                <span className="text-xs text-muted-foreground">
+                  {selectedInGroup}/{fields.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 pl-1">
+                {fields.map((field) => {
+                  const isChecked = selectedFields.has(field.id);
+                  return (
+                    <label
+                      key={field.id}
+                      className="flex items-center gap-2 text-sm leading-none cursor-pointer group"
+                    >
+                      <div className="relative flex h-4 w-4 items-center justify-center rounded border border-primary/50 shadow-sm group-hover:border-primary transition-colors">
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => toggleField(field.id)}
+                        />
+                        {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
+                      </div>
+                      <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                        {field.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <PreviewChips
+        labelsById={Object.fromEntries(FICHA_FIELDS.map((f) => [f.id, f.label]))}
+        selected={selectedFields}
+      />
+
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogPrimitive.Close asChild>
+          <Button type="button" variant="outline" disabled={isGenerating}>
+            Cancelar
+          </Button>
+        </DialogPrimitive.Close>
+        <Button type="button" onClick={handleGenerate} disabled={blockGenerate}>
+          {isGenerating ? "Gerando..." : "Gerar PDF"}
+          {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// =====================================================================
+// Subcomponentes compartilhados
+// =====================================================================
+
+function ModalShell({
+  open,
+  onOpenChange,
+  title,
+  sensitive,
+  maxWidthClass = "max-w-2xl",
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  title: string;
+  sensitive?: boolean;
+  maxWidthClass?: string;
+  children: React.ReactNode;
+}) {
+  return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full">
-          
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg md:w-full",
+            maxWidthClass,
+          )}
+        >
           <div className="flex flex-col space-y-1.5">
             <DialogPrimitive.Title className="font-display text-lg font-semibold leading-none tracking-tight">
               Configurar PDF: {title}
@@ -243,7 +560,7 @@ export function PdfConfigModal({
             </DialogPrimitive.Description>
           </div>
 
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
@@ -251,91 +568,150 @@ export function PdfConfigModal({
           {sensitive && (
             <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Este relatório contém dados sensíveis. Mantenha o arquivo sob controle interno conforme a LGPD.</p>
+              <p>
+                Este relatório contém dados sensíveis. Mantenha o arquivo sob controle interno
+                conforme a LGPD.
+              </p>
             </div>
           )}
 
-          <div className="flex items-center justify-between border-b pb-2">
-            <div className="space-x-2">
-              <Button type="button" variant="outline" size="sm" onClick={selectAll}>
-                Selecionar todos
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={clearAll}>
-                Limpar seleção
-              </Button>
-            </div>
-            <div className="text-sm text-muted-foreground font-medium">
-              <span className="text-foreground">{selectedFields.size}</span> campos selecionados
-            </div>
-          </div>
-
-          <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-6">
-            {groups.map((group) => (
-              <div key={group.id} className="space-y-3">
-                <h4 className="font-medium text-sm border-b pb-1 text-foreground">{group.label}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {group.fields.map((field) => {
-                    const isChecked = selectedFields.has(field.id);
-                    return (
-                      <label
-                        key={field.id}
-                        className="flex items-center gap-2 text-sm leading-none cursor-pointer group"
-                      >
-                        <div className="relative flex h-4 w-4 items-center justify-center rounded border border-primary/50 text-current shadow-sm group-hover:border-primary transition-colors">
-                          <input
-                            type="checkbox"
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            checked={isChecked}
-                            onChange={() => toggleField(field.id)}
-                          />
-                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
-                        </div>
-                        <span className="text-muted-foreground group-hover:text-foreground transition-colors">
-                          {field.label}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-muted/50 rounded-lg p-3 mt-2 border">
-            <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Prévia das colunas</h5>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedFields.size === 0 ? (
-                <span className="text-sm text-destructive">Nenhum campo selecionado. O PDF não será gerado.</span>
-              ) : (
-                groups.flatMap(g => g.fields)
-                  .filter(f => selectedFields.has(f.id))
-                  .map(f => (
-                    <span key={f.id} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {f.label}
-                    </span>
-                  ))
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <DialogPrimitive.Close asChild>
-              <Button type="button" variant="outline" disabled={isGenerating}>
-                Cancelar
-              </Button>
-            </DialogPrimitive.Close>
-            <Button
-              type="button"
-              onClick={handleGenerate}
-              disabled={selectedFields.size === 0 || isGenerating}
-            >
-              {isGenerating ? "Gerando..." : "Gerar PDF"}
-              {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
-            </Button>
-          </div>
-
+          {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  );
+}
+
+function FieldGroupBlock({
+  groupLabel,
+  fields,
+  selected,
+  onToggle,
+}: {
+  groupLabel: string;
+  fields: { id: string; label: string }[];
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <h4 className="font-medium text-sm border-b pb-1 text-foreground">{groupLabel}</h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {fields.map((field) => {
+          const isChecked = selected.has(field.id);
+          return (
+            <label
+              key={field.id}
+              className="flex items-center gap-2 text-sm leading-none cursor-pointer group"
+            >
+              <div className="relative flex h-4 w-4 items-center justify-center rounded border border-primary/50 shadow-sm group-hover:border-primary transition-colors">
+                <input
+                  type="checkbox"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  checked={isChecked}
+                  onChange={() => onToggle(field.id)}
+                />
+                {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
+              </div>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                {field.label}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PreviewChips({
+  labelsById,
+  selected,
+}: {
+  labelsById: Record<string, string>;
+  selected: Set<string>;
+}) {
+  return (
+    <div className="bg-muted/50 rounded-lg p-3 mt-2 border">
+      <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+        Prévia das colunas
+      </h5>
+      <div className="flex flex-wrap gap-1.5">
+        {selected.size === 0 ? (
+          <span className="text-sm text-destructive">
+            Nenhum campo selecionado. O PDF não será gerado.
+          </span>
+        ) : (
+          Array.from(selected)
+            .filter((id) => labelsById[id])
+            .map((id) => (
+              <span
+                key={id}
+                className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              >
+                {labelsById[id]}
+              </span>
+            ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+const STATUS_STYLE: Record<
+  SelectionStatus,
+  { bar: string; text: string; label: string; icon: React.ReactNode }
+> = {
+  vazio: {
+    bar: "bg-gray-400",
+    text: "text-gray-700 bg-gray-50 border-gray-300",
+    label: "Sem seleção",
+    icon: <Info className="h-4 w-4" />,
+  },
+  ideal: {
+    bar: "bg-emerald-500",
+    text: "text-emerald-800 bg-emerald-50 border-emerald-300",
+    label: "Ideal para A4",
+    icon: <CheckCircle2 className="h-4 w-4" />,
+  },
+  limite: {
+    bar: "bg-amber-500",
+    text: "text-amber-900 bg-amber-50 border-amber-300",
+    label: "No limite",
+    icon: <Info className="h-4 w-4" />,
+  },
+  excesso: {
+    bar: "bg-red-500",
+    text: "text-red-900 bg-red-50 border-red-300",
+    label: "Excesso de campos",
+    icon: <AlertTriangle className="h-4 w-4" />,
+  },
+};
+
+function SelectionStatusBar({
+  evaluation,
+}: {
+  evaluation: ReturnType<typeof evaluateSelection>;
+}) {
+  const style = STATUS_STYLE[evaluation.status];
+  const pct = Math.min(100, evaluation.occupancyPct);
+  // Quando há excesso, a barra preenche 100% e fica vermelha; mostra também
+  // overflow textualmente.
+  return (
+    <div className={cn("space-y-2 rounded-lg border px-3 py-2 text-xs", style.text)}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 font-semibold">
+          {style.icon}
+          <span>{style.label}</span>
+        </div>
+        <span className="font-mono">
+          {evaluation.occupancyPct}% de aproveitamento
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/60">
+        <div className={cn("h-full transition-all", style.bar)} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="leading-relaxed">{evaluation.message}</p>
+    </div>
   );
 }

@@ -124,8 +124,8 @@ const addressSchema = z.object({
   state: optionalUF(),
   zip: optionalCEP(),
   landmark: optionalTrimmed(),
-  origin_in_amapa: z.enum(["true", "false"]).optional(),
-  from_other_state: z.enum(["true", "false"]).optional(),
+  origin_in_amapa: z.enum(["true", "false"]).or(z.literal("")).optional(),
+  from_other_state: z.enum(["true", "false"]).or(z.literal("")).optional(),
   origin_state: optionalUF(),
   origin_city: optionalTrimmed(),
   naturality_city: optionalTrimmed(),
@@ -267,14 +267,14 @@ const healthSchema = z
     peso_kg: z
       .union([z.literal(""), z.coerce.number().min(30, "Peso entre 30 e 200 kg.").max(200, "Peso entre 30 e 200 kg.")])
       .optional(),
-    cirurgia_ocular: z.enum(["true", "false"]).optional(),
+    cirurgia_ocular: z.enum(["true", "false"]).or(z.literal("")).optional(),
     cirurgia_ocular_obs: optionalTrimmed(),
     allergies: optionalTrimmed(),
     continuous_medication: optionalTrimmed(),
     chronic_disease: optionalTrimmed(),
     physical_restriction: optionalTrimmed(),
     dietary_restriction: optionalTrimmed(),
-    uses_glasses: z.enum(["true", "false"]).optional(),
+    uses_glasses: z.enum(["true", "false"]).or(z.literal("")).optional(),
     medical_notes: optionalTrimmed(),
   })
   .superRefine((data, ctx) => {
@@ -544,9 +544,9 @@ export async function updateStudentAdminAction(
 // =====================================================================
 const logisticsSchema = z.object({
   studentId: z.string().uuid(),
-  has_fixed_residence_macapa: z.enum(["true", "false"]).optional(),
+  has_fixed_residence_macapa: z.enum(["true", "false"]).or(z.literal("")).optional(),
   course_address: z.string().optional(),
-  has_family_in_ap: z.enum(["true", "false"]).optional(),
+  has_family_in_ap: z.enum(["true", "false"]).or(z.literal("")).optional(),
   local_contact: z.string().optional(),
 });
 
@@ -613,9 +613,9 @@ const identificationSchema = z.object({
   ),
   religion: optionalTrimmed(),
   religion_other: optionalTrimmed(),
-  has_religious_restriction: z.enum(["true", "false"]).optional(),
+  has_religious_restriction: z.enum(["true", "false"]).or(z.literal("")).optional(),
   religious_restriction_notes: optionalTrimmed(),
-  had_prior_military_service: z.enum(["true", "false"]).optional(),
+  had_prior_military_service: z.enum(["true", "false"]).or(z.literal("")).optional(),
   prior_military_branch: z
     .enum([
       "corpo_de_bombeiros_militar",
@@ -838,14 +838,14 @@ export async function updateIdentificationAction(
 const vehicleSchema = z
   .object({
     studentId: z.string().uuid(),
-    has_vehicle: z.enum(["true", "false"]).optional(),
+    has_vehicle: z.enum(["true", "false"]).or(z.literal("")).optional(),
     vehicle_type: optionalTrimmed(),
     vehicle_brand_model: optionalTrimmed(),
     plate: optionalTrimmed(),
-    has_cnh: z.enum(["true", "false"]).optional(),
+    has_cnh: z.enum(["true", "false"]).or(z.literal("")).optional(),
     cnh_category: optionalTrimmed(),
     cnh_valid_until: optionalTrimmed(),
-    cnh_attached: z.enum(["true", "false"]).optional(),
+    cnh_attached: z.enum(["true", "false"]).or(z.literal("")).optional(),
     notes: optionalTrimmed(),
   })
   .superRefine((data, ctx) => {
@@ -899,7 +899,7 @@ export async function updateVehicleAction(
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
-  const boolOrNull = (v: "true" | "false" | undefined) =>
+  const boolOrNull = (v: "true" | "false" | "" | undefined) =>
     v === "true" ? true : v === "false" ? false : null;
 
   const supabase = createServerClientUntyped();
