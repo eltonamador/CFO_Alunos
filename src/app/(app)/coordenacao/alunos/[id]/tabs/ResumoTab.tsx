@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Alert } from "@/components/ui/Alert";
-import { updateStudentAdminAction } from "@/modules/student-profile/presentation/actions/studentActions";
+import {
+  updateStudentAdminAction,
+  updateEnrollmentStatusAction,
+} from "@/modules/student-profile/presentation/actions/studentActions";
+import { Badge } from "@/components/ui/Badge";
 import type {
   StudentDetailRow,
   StudentContactRow,
@@ -210,9 +214,33 @@ export function ResumoTab({
                     : "Não atribuído"
                 }
               />
-              <Field label="Matrícula" value={student.enrollment_id} mono />
+              <div className="space-y-0.5">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Matrícula
+                </dt>
+                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                  <span className="num-mono">
+                    {student.enrollment_id ?? <span className="text-muted-foreground">—</span>}
+                  </span>
+                  <Badge
+                    variant={student.enrollment_status === "confirmada" ? "success" : "warning"}
+                    dot
+                  >
+                    {student.enrollment_status === "confirmada"
+                      ? "Matrícula confirmada"
+                      : "Matrícula pendente"}
+                  </Badge>
+                </dd>
+              </div>
               <Field label="Situação" value={student.situation} />
             </dl>
+          )}
+          {canEditAdmin && (
+            <EnrollmentStatusControl
+              studentId={student.id}
+              currentStatus={student.enrollment_status}
+              currentEnrollmentId={student.enrollment_id}
+            />
           )}
         </CardContent>
       </Card>
@@ -277,5 +305,89 @@ export function ResumoTab({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Controle inline de status da matrícula (somente Coordenação).
+// ---------------------------------------------------------------------
+function EnrollmentStatusControl({
+  studentId,
+  currentStatus,
+  currentEnrollmentId,
+}: {
+  studentId: string;
+  currentStatus: "pendente" | "confirmada";
+  currentEnrollmentId: string | null;
+}) {
+  const [state, formAction] = useFormState(updateEnrollmentStatusAction, null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+
+  if (!open) {
+    return (
+      <div className="mt-3 flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          {currentStatus === "confirmada"
+            ? "Alterar matrícula"
+            : "Confirmar matrícula"}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="mt-3 space-y-3 rounded-md border border-dashed border-border bg-muted/30 p-3">
+      <input type="hidden" name="studentId" value={studentId} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="enrollment_status">Status</Label>
+          <Select
+            id="enrollment_status"
+            name="enrollment_status"
+            defaultValue={currentStatus}
+          >
+            <option value="pendente">Matrícula pendente</option>
+            <option value="confirmada">Matrícula confirmada</option>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="enrollment_id">Número da matrícula (opcional)</Label>
+          <Input
+            id="enrollment_id"
+            name="enrollment_id"
+            defaultValue={currentEnrollmentId ?? ""}
+            placeholder="Quando disponível"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
+      {state?.ok === false && (
+        <Alert variant="destructive" className="text-xs py-2 px-3">
+          {state.error}
+        </Alert>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(false)}
+        >
+          Cancelar
+        </Button>
+        <SubmitButton />
+      </div>
+    </form>
   );
 }

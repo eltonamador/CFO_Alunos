@@ -152,11 +152,14 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
                 warName={s.war_name}
                 fullName={s.full_name}
                 pelotao={s.pelotao}
-                badges={
-                  s.situation !== "matriculado"
-                    ? [{ label: s.situation, variant: "warning" }]
-                    : []
-                }
+                badges={[
+                  ...(s.situation !== "matriculado"
+                    ? ([{ label: s.situation, variant: "warning" as const }])
+                    : []),
+                  s.enrollment_status === "confirmada"
+                    ? { label: "Matrícula confirmada", variant: "success" as const }
+                    : { label: "Matrícula pendente", variant: "warning" as const },
+                ]}
                 progress={progress}
               />
             );

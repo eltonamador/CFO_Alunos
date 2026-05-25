@@ -41,6 +41,7 @@ function emptyBundle(): StudentProfileBundle {
       religion_other: null,
       has_religious_restriction: null,
       religious_restriction_notes: null,
+      enrollment_status: "pendente",
     },
     contact: null,
     address: null,
@@ -86,6 +87,7 @@ function fullBundle(): StudentProfileBundle {
       religion_other: "Espirita",
       has_religious_restriction: false,
       religious_restriction_notes: null,
+      enrollment_status: "confirmada",
     },
     contact: {
       student_id: "s-1",
@@ -283,5 +285,33 @@ describe("calculateStudentProfileProgress", () => {
   it("REQUIRED_FIELDS não tem ids duplicados", () => {
     const ids = REQUIRED_FIELDS.map((f) => f.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("matrícula pendente não penaliza o progresso (enrollment_id excluído do total)", () => {
+    const pending = fullBundle();
+    pending.student.enrollment_status = "pendente";
+    pending.student.enrollment_id = null;
+
+    const confirmed = fullBundle();
+    confirmed.student.enrollment_status = "confirmada";
+    confirmed.student.enrollment_id = "12345";
+
+    const rPending = calculateStudentProfileProgress(pending);
+    const rConfirmed = calculateStudentProfileProgress(confirmed);
+
+    // pendente: enrollment_id sai do total, ficha continua 100%.
+    expect(rPending.status).toBe("completa");
+    expect(rPending.percent).toBe(100);
+    expect(rPending.total).toBe(rConfirmed.total - 1);
+  });
+
+  it("matrícula confirmada sem número conta como campo faltante", () => {
+    const b = fullBundle();
+    b.student.enrollment_status = "confirmada";
+    b.student.enrollment_id = null;
+
+    const r = calculateStudentProfileProgress(b);
+    expect(r.missing).toContain("enrollment_id");
+    expect(r.status).not.toBe("completa");
   });
 });

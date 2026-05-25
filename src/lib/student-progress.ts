@@ -59,6 +59,12 @@ interface RequiredField {
   id: string;
   kind: FieldKind;
   get: (b: StudentProfileBundle) => unknown;
+  /**
+   * Quando definido, o campo só entra no cálculo (total e filled) caso
+   * a condição seja verdadeira. Usado, por ex., para `enrollment_id`,
+   * que só é obrigatório quando a matrícula está confirmada.
+   */
+  appliesWhen?: (b: StudentProfileBundle) => boolean;
 }
 
 const priorityOne = (b: StudentProfileBundle) =>
@@ -78,7 +84,14 @@ export const REQUIRED_FIELDS: ReadonlyArray<RequiredField> = [
   { id: "marital_status", kind: "text", get: (b) => b.student.marital_status },
   { id: "education_level", kind: "text", get: (b) => b.student.education_level },
   { id: "graduation_type", kind: "text", get: (b) => b.student.graduation_type },
-  { id: "enrollment_id", kind: "text", get: (b) => b.student.enrollment_id },
+  {
+    id: "enrollment_id",
+    kind: "text",
+    get: (b) => b.student.enrollment_id,
+    // Só pesa no progresso quando a matrícula foi confirmada pela Coordenação.
+    appliesWhen: (b) =>
+      (b.student as { enrollment_status?: string }).enrollment_status === "confirmada",
+  },
   { id: "cpf", kind: "text", get: (b) => b.student.cpf },
   { id: "rg", kind: "text", get: (b) => b.student.rg },
   { id: "father_name", kind: "text", get: (b) => b.student.father_name },
@@ -163,11 +176,14 @@ export function statusFor(filled: number, total: number): ProgressStatus {
 export function calculateStudentProfileProgress(
   bundle: StudentProfileBundle,
 ): ProgressResult {
-  const total = REQUIRED_FIELDS.length;
+  const applicable = REQUIRED_FIELDS.filter(
+    (f) => !f.appliesWhen || f.appliesWhen(bundle),
+  );
+  const total = applicable.length;
   const missing: string[] = [];
   let filled = 0;
 
-  for (const field of REQUIRED_FIELDS) {
+  for (const field of applicable) {
     if (isFilled(field.get(bundle), field.kind)) {
       filled += 1;
     } else {

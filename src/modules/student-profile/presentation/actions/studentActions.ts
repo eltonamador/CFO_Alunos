@@ -858,3 +858,56 @@ export async function updateVehicleAction(
   return { ok: true };
 }
 
+// =====================================================================
+// Status da matrícula — apenas Coordenação
+// =====================================================================
+const enrollmentStatusSchema = z.object({
+  studentId: z.string().uuid(),
+  enrollment_status: z.enum(["pendente", "confirmada"]),
+  enrollment_id: z
+    .string()
+    .optional()
+    .transform((v) => (v == null || v.trim() === "" ? undefined : v.trim())),
+});
+
+export async function updateEnrollmentStatusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessão expirada" };
+  if (session.role !== "coordenacao") {
+    return { ok: false, error: "Apenas Coordenação pode alterar o status da matrícula." };
+  }
+
+  const parsed = enrollmentStatusSchema.safeParse({
+    studentId: formData.get("studentId"),
+    enrollment_status: formData.get("enrollment_status"),
+    enrollment_id: formData.get("enrollment_id") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+
+  const { studentId, enrollment_status, enrollment_id } = parsed.data;
+  const supabase = createServerClientUntyped();
+
+  const update: Record<string, unknown> = {
+    enrollment_status,
+    updated_by: session.userId,
+  };
+  // Só sobrescreve enrollment_id quando o form enviar valor (pendente ou
+  // confirmada). Form vazio NÃO apaga matrícula previamente registrada.
+  if (enrollment_id !== undefined) {
+    update.enrollment_id = enrollment_id;
+  }
+
+  const { error } = await supabase.from("students").update(update).eq("id", studentId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/coordenacao/alunos");
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+

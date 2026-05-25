@@ -41,6 +41,7 @@ export interface StudentDetailRow extends StudentListRow {
   religion_other: string | null;
   has_religious_restriction: boolean | null;
   religious_restriction_notes: string | null;
+  enrollment_status: "pendente" | "confirmada";
 }
 
 export interface StudentContactRow {
