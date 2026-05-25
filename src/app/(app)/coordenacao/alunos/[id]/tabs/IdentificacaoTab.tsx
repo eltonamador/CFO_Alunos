@@ -45,6 +45,18 @@ export function IdentificacaoTab({
   const [hasRestriction, setHasRestriction] = useState(
     student.has_religious_restriction === true ? "true" : student.has_religious_restriction === false ? "false" : ""
   );
+  const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
+
+  const age = (() => {
+    if (!birthDate) return null;
+    const d = new Date(birthDate);
+    if (Number.isNaN(d.getTime())) return null;
+    const now = new Date();
+    let years = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) years--;
+    return years >= 0 && years < 130 ? years : null;
+  })();
 
   const showReligionOther = religion === "Outra";
   const showRestrictionNotes = religion === "Adventista" || hasRestriction === "true";
@@ -68,13 +80,20 @@ export function IdentificacaoTab({
 
           <div className="space-y-2">
             <Label htmlFor="birth_date">Data de nascimento</Label>
-            <Input
-              id="birth_date"
-              name="birth_date"
-              type="date"
-              defaultValue={student.birth_date ?? ""}
-              max={TODAY}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="birth_date"
+                name="birth_date"
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                max={TODAY}
+                className="flex-1"
+              />
+              <div className="flex h-10 min-w-[88px] items-center justify-center rounded-md border bg-muted px-3 text-sm font-medium tabular-nums">
+                {age !== null ? `${age} anos` : "—"}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
