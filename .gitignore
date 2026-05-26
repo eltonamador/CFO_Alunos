@@ -54,3 +54,7 @@ supabase/.temp
 .env.local.localdev.bak
 *.bak
 backups/
+
+# Importadores com dados pessoais (LGPD) — nunca commitar
+scripts/import-t1-cfo/data/
+scripts/import-t1-cfo/out/
