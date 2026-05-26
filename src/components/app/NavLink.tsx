@@ -10,6 +10,7 @@ interface NavLinkProps {
   icon?: React.ReactNode;
   variant?: "sidebar" | "bottom";
   exact?: boolean;
+  badge?: number;
 }
 
 function isActive(pathname: string, href: string, exact?: boolean) {
@@ -18,7 +19,25 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function NavLink({ href, label, icon, variant = "sidebar", exact }: NavLinkProps) {
+function UnreadDot({ count }: { count: number }) {
+  if (count <= 0) return null;
+  const label = count > 9 ? "9+" : String(count);
+  return (
+    <span
+      aria-label={`${count} não lido${count > 1 ? "s" : ""}`}
+      className={cn(
+        "absolute flex items-center justify-center rounded-full bg-red-500 font-sans font-bold leading-none text-white",
+        count > 9
+          ? "right-[-6px] top-[-4px] h-4 min-w-[1rem] px-1 text-[9px]"
+          : "right-[-5px] top-[-4px] h-4 w-4 text-[9px]",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+export function NavLink({ href, label, icon, variant = "sidebar", exact, badge = 0 }: NavLinkProps) {
   const pathname = usePathname();
   const active = isActive(pathname, href, exact);
 
@@ -39,7 +58,10 @@ export function NavLink({ href, label, icon, variant = "sidebar", exact }: NavLi
         {active && (
           <span aria-hidden className="absolute top-0 h-[3px] w-10 rounded-b-full bg-primary" />
         )}
-        {icon}
+        <span className="relative">
+          {icon}
+          <UnreadDot count={badge} />
+        </span>
         <span>{label}</span>
       </Link>
     );
@@ -58,8 +80,9 @@ export function NavLink({ href, label, icon, variant = "sidebar", exact }: NavLi
       )}
     >
       {icon && (
-        <span className={cn("transition-transform", active ? "text-white" : "text-white/70 group-hover:text-white")}>
+        <span className={cn("relative transition-transform", active ? "text-white" : "text-white/70 group-hover:text-white")}>
           {icon}
+          <UnreadDot count={badge} />
         </span>
       )}
       <span>{label}</span>

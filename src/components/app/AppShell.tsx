@@ -26,6 +26,7 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   exact?: boolean;
+  badge?: number;
 }
 
 const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
@@ -90,12 +91,19 @@ function getUserDisplayName(session: SessionProfile): string {
 
 export function AppShell({
   session,
+  unreadAnnouncements = 0,
   children,
 }: {
   session: SessionProfile;
+  unreadAnnouncements?: number;
   children: React.ReactNode;
 }) {
-  const nav = NAV_BY_ROLE[session.role];
+  const baseNav = NAV_BY_ROLE[session.role];
+  const nav: NavItem[] = baseNav.map((item) =>
+    item.href === "/aluno/comunicados" && unreadAnnouncements > 0
+      ? { ...item, badge: unreadAnnouncements }
+      : item,
+  );
   const userInitials = getUserInitials(session);
   const userDisplayName = getUserDisplayName(session);
 
@@ -140,6 +148,7 @@ export function AppShell({
               href={item.href}
               label={item.label}
               exact={item.exact}
+              badge={item.badge}
               icon={<item.icon className="h-4 w-4" aria-hidden />}
             />
           ))}
@@ -220,6 +229,7 @@ export function AppShell({
               label={item.label}
               variant="bottom"
               exact={item.exact}
+              badge={item.badge}
               icon={<item.icon className="h-5 w-5" />}
             />
           ))}
