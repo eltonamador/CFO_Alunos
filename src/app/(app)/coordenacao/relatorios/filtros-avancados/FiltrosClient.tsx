@@ -414,19 +414,19 @@ export function FiltrosClient({ alunos, role }: Props) {
       {/* ── Resultados ──────────────────────────────────────────────── */}
       <section className="space-y-4">
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-3">
-            <div>
+          <CardHeader className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <CardTitle className="text-base">Resultado</CardTitle>
               <CardDescription>
                 {resumo.filtrados} aluno(s) · {resumo.percentual}% da turma ({resumo.total})
               </CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => exportar("pdf")}
                 disabled={loading !== null || resumo.filtrados === 0}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {loading === "pdf" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -439,7 +439,7 @@ export function FiltrosClient({ alunos, role }: Props) {
                 type="button"
                 onClick={() => exportar("xlsx")}
                 disabled={loading !== null || resumo.filtrados === 0}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
               >
                 {loading === "xlsx" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -227,7 +227,7 @@ export async function buildSaudeWorkbook(
     .from("students")
     .select(
       `student_number, war_name, full_name, sex,
-       health_restrictions(operational_summary, allergies, continuous_medication, chronic_disease, physical_restriction, validation_status)`,
+       health_restrictions(operational_summary, allergies, continuous_medication, chronic_disease, physical_restriction, validation_status, has_allergies, has_continuous_medication, has_chronic_disease, has_physical_restriction)`,
     )
     .order("student_number");
 
@@ -255,23 +255,25 @@ export async function buildSaudeWorkbook(
     const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
     if (
       !h?.operational_summary &&
-      !h?.allergies &&
-      !h?.continuous_medication &&
-      !h?.chronic_disease &&
-      !h?.physical_restriction
+      !h?.has_allergies &&
+      !h?.has_continuous_medication &&
+      !h?.has_chronic_disease &&
+      !h?.has_physical_restriction
     ) {
       return; // sem restrição: omite
     }
+    const fmtBool = (flag: boolean | null, detail: string | null) =>
+      flag ? (detail ? `Sim — ${detail}` : "Sim") : flag === false ? "Não" : "";
     const row = ws.addRow([
       s.student_number ?? "",
       s.war_name,
       s.full_name,
       s.sex ?? "",
       h?.operational_summary ?? "",
-      h?.allergies ?? "",
-      h?.continuous_medication ?? "",
-      h?.chronic_disease ?? "",
-      h?.physical_restriction ?? "",
+      fmtBool(h?.has_allergies, h?.allergies),
+      fmtBool(h?.has_continuous_medication, h?.continuous_medication),
+      fmtBool(h?.has_chronic_disease, h?.chronic_disease),
+      fmtBool(h?.has_physical_restriction, h?.physical_restriction),
       h?.validation_status?.replace(/_/g, " ") ?? "",
     ]);
     applyDataRow(row, rowIndex++);

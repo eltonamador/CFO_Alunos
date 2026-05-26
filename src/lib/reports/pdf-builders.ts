@@ -586,7 +586,9 @@ export async function buildSaudePDF(
        health_restrictions(
          blood_type, rh_factor, allergies, continuous_medication, chronic_disease,
          physical_restriction, dietary_restriction, uses_glasses, cirurgia_ocular,
-         cirurgia_ocular_obs, validation_status, operational_summary
+         cirurgia_ocular_obs, validation_status, operational_summary,
+         has_allergies, has_continuous_medication, has_chronic_disease,
+         has_physical_restriction, has_dietary_restriction, has_eye_surgery
        )`,
     )
     .order("student_number");
@@ -595,12 +597,13 @@ export async function buildSaudePDF(
     const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
     return (
       h &&
-      (h.allergies ||
-        h.continuous_medication ||
-        h.chronic_disease ||
-        h.physical_restriction ||
-        h.dietary_restriction ||
+      (h.has_allergies ||
+        h.has_continuous_medication ||
+        h.has_chronic_disease ||
+        h.has_physical_restriction ||
+        h.has_dietary_restriction ||
         h.uses_glasses ||
+        h.has_eye_surgery ||
         h.cirurgia_ocular ||
         h.operational_summary)
     );
@@ -947,7 +950,7 @@ export async function buildFichaPersonalizadaPDF(
     needsHealth
       ? loadById(
           "health_restrictions",
-          "student_id, blood_type, rh_factor, altura_cm, peso_kg, allergies, continuous_medication, chronic_disease, physical_restriction, dietary_restriction, uses_glasses, cirurgia_ocular, cirurgia_ocular_obs, operational_summary, validation_status",
+          "student_id, blood_type, rh_factor, altura_cm, peso_kg, allergies, continuous_medication, chronic_disease, physical_restriction, dietary_restriction, uses_glasses, cirurgia_ocular, cirurgia_ocular_obs, operational_summary, validation_status, has_allergies, has_continuous_medication, has_chronic_disease, has_physical_restriction, has_dietary_restriction, has_eye_surgery",
         )
       : Promise.resolve(new Map<string, any>()),
   ]);

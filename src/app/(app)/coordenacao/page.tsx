@@ -49,7 +49,7 @@ export default async function CoordenacaoHome() {
       cpf, rg, birth_date, marital_status, mother_name, education_level,
       student_contacts(whatsapp, email_personal),
       student_addresses(street, city, zip, state),
-      health_restrictions(blood_type, validation_status, allergies, continuous_medication, chronic_disease, physical_restriction, dietary_restriction),
+      health_restrictions(blood_type, validation_status, has_allergies, has_continuous_medication, has_chronic_disease, has_physical_restriction, has_dietary_restriction),
       emergency_contacts(id, priority),
       student_logistics(student_id),
       vehicles(student_id, has_cnh)
@@ -135,11 +135,11 @@ export default async function CoordenacaoHome() {
     const required = [...BASE_DOC_TYPES];
     if (v?.has_cnh) required.push("cnh");
     const hasRestriction = !!(
-      h?.allergies ||
-      h?.continuous_medication ||
-      h?.chronic_disease ||
-      h?.physical_restriction ||
-      h?.dietary_restriction
+      h?.has_allergies ||
+      h?.has_continuous_medication ||
+      h?.has_chronic_disease ||
+      h?.has_physical_restriction ||
+      h?.has_dietary_restriction
     );
     if (hasRestriction) required.push("declaracao_medica");
 

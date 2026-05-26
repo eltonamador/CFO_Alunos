@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import {
   updateHealthAction,
@@ -15,6 +16,63 @@ import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import type { HealthRestrictionRow } from "@/lib/supabase/queries/students";
+
+type YesNo = "true" | "false" | "";
+
+function HealthBoolField({
+  name,
+  label,
+  detailName,
+  detailLabel,
+  detailPlaceholder,
+  initialHas,
+  initialDetail,
+}: {
+  name: string;
+  label: string;
+  detailName: string;
+  detailLabel: string;
+  detailPlaceholder?: string;
+  initialHas: boolean | null;
+  initialDetail: string | null;
+}) {
+  const [val, setVal] = React.useState<YesNo>(
+    initialHas === true ? "true" : initialHas === false ? "false" : "",
+  );
+  const showDetail = val === "true";
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+      <Label htmlFor={name}>{label}</Label>
+      <Select
+        id={name}
+        name={name}
+        value={val}
+        onChange={(e) => setVal(e.target.value as YesNo)}
+      >
+        <option value="">—</option>
+        <option value="false">Não</option>
+        <option value="true">Sim</option>
+      </Select>
+      {showDetail && (
+        <div className="space-y-1.5 pt-1">
+          <Label htmlFor={detailName} className="text-xs text-muted-foreground">
+            {detailLabel}
+          </Label>
+          <Textarea
+            id={detailName}
+            name={detailName}
+            defaultValue={initialDetail ?? ""}
+            placeholder={detailPlaceholder}
+            required
+          />
+        </div>
+      )}
+      {!showDetail && (
+        <input type="hidden" name={detailName} value="" />
+      )}
+    </div>
+  );
+}
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -130,66 +188,65 @@ export function SaudeTab({ studentId, health, canCurate = false }: Props) {
                   <option value="true">Sim</option>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="cirurgia_ocular">Fez cirurgia ocular de grau?</Label>
-                <Select
-                  id="cirurgia_ocular"
-                  name="cirurgia_ocular"
-                  defaultValue={health?.cirurgia_ocular == null ? "" : String(health.cirurgia_ocular)}
-                >
-                  <option value="">—</option>
-                  <option value="false">Não</option>
-                  <option value="true">Sim</option>
-                </Select>
-              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cirurgia_ocular_obs">Observação sobre cirurgia ocular</Label>
-              <Textarea
-                id="cirurgia_ocular_obs"
-                name="cirurgia_ocular_obs"
-                placeholder="Descreva o tipo, data ou outras informações relevantes"
-                defaultValue={health?.cirurgia_ocular_obs ?? ""}
-              />
-            </div>
+            <HealthBoolField
+              name="has_eye_surgery"
+              label="Realizou cirurgia ocular / refrativa?"
+              detailName="cirurgia_ocular_obs"
+              detailLabel="Qual cirurgia? (tipo, data e observações)"
+              detailPlaceholder="Ex.: Lasik em 2022 — olho direito"
+              initialHas={
+                health?.has_eye_surgery ?? health?.cirurgia_ocular ?? null
+              }
+              initialDetail={health?.cirurgia_ocular_obs ?? null}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="allergies">Alergias</Label>
-              <Textarea id="allergies" name="allergies" defaultValue={health?.allergies ?? ""} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="continuous_medication">Medicamento contínuo</Label>
-              <Textarea
-                id="continuous_medication"
-                name="continuous_medication"
-                defaultValue={health?.continuous_medication ?? ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="chronic_disease">Doença crônica relevante</Label>
-              <Textarea
-                id="chronic_disease"
-                name="chronic_disease"
-                defaultValue={health?.chronic_disease ?? ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="physical_restriction">Restrição física</Label>
-              <Textarea
-                id="physical_restriction"
-                name="physical_restriction"
-                defaultValue={health?.physical_restriction ?? ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dietary_restriction">Restrição alimentar</Label>
-              <Textarea
-                id="dietary_restriction"
-                name="dietary_restriction"
-                defaultValue={health?.dietary_restriction ?? ""}
-              />
-            </div>
+            <HealthBoolField
+              name="has_allergies"
+              label="Possui alergia?"
+              detailName="allergies"
+              detailLabel="Quais alergias?"
+              detailPlaceholder="Ex.: camarão, dipirona"
+              initialHas={health?.has_allergies ?? null}
+              initialDetail={health?.allergies ?? null}
+            />
+
+            <HealthBoolField
+              name="has_continuous_medication"
+              label="Usa medicamento contínuo?"
+              detailName="continuous_medication"
+              detailLabel="Qual medicamento? (nome, dose, frequência)"
+              initialHas={health?.has_continuous_medication ?? null}
+              initialDetail={health?.continuous_medication ?? null}
+            />
+
+            <HealthBoolField
+              name="has_chronic_disease"
+              label="Possui doença crônica relevante?"
+              detailName="chronic_disease"
+              detailLabel="Qual doença? (diagnóstico)"
+              initialHas={health?.has_chronic_disease ?? null}
+              initialDetail={health?.chronic_disease ?? null}
+            />
+
+            <HealthBoolField
+              name="has_physical_restriction"
+              label="Possui restrição física?"
+              detailName="physical_restriction"
+              detailLabel="Qual restrição física?"
+              initialHas={health?.has_physical_restriction ?? null}
+              initialDetail={health?.physical_restriction ?? null}
+            />
+
+            <HealthBoolField
+              name="has_dietary_restriction"
+              label="Possui restrição alimentar?"
+              detailName="dietary_restriction"
+              detailLabel="Qual restrição alimentar?"
+              initialHas={health?.has_dietary_restriction ?? null}
+              initialDetail={health?.dietary_restriction ?? null}
+            />
             <div className="space-y-2">
               <Label htmlFor="medical_notes">Observação médica</Label>
               <Textarea id="medical_notes" name="medical_notes" defaultValue={health?.medical_notes ?? ""} />

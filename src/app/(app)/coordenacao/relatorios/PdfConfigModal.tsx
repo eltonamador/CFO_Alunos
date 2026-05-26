@@ -247,9 +247,32 @@ function FixedReportModal({
   const handleGenerate = () => onGenerate(Array.from(selectedFields));
 
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={title} sensitive={sensitive}>
-      <div className="flex items-center justify-between border-b pb-2">
-        <div className="space-x-2">
+    <ModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      sensitive={sensitive}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <DialogPrimitive.Close asChild>
+            <Button type="button" variant="outline" disabled={isGenerating} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+          </DialogPrimitive.Close>
+          <Button
+            type="button"
+            onClick={handleGenerate}
+            disabled={selectedFields.size === 0 || isGenerating}
+            className="w-full sm:w-auto"
+          >
+            {isGenerating ? "Gerando..." : "Gerar PDF"}
+            {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-2 border-b pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={selectAll}>
             Selecionar todos
           </Button>
@@ -262,7 +285,7 @@ function FixedReportModal({
         </div>
       </div>
 
-      <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-6">
+      <div className="space-y-6">
         {groups.map((group) => (
           <FieldGroupBlock
             key={group.id}
@@ -278,22 +301,6 @@ function FixedReportModal({
         labelsById={Object.fromEntries(groups.flatMap((g) => g.fields).map((f) => [f.id, f.label]))}
         selected={selectedFields}
       />
-
-      <div className="flex justify-end gap-3 pt-2">
-        <DialogPrimitive.Close asChild>
-          <Button type="button" variant="outline" disabled={isGenerating}>
-            Cancelar
-          </Button>
-        </DialogPrimitive.Close>
-        <Button
-          type="button"
-          onClick={handleGenerate}
-          disabled={selectedFields.size === 0 || isGenerating}
-        >
-          {isGenerating ? "Gerando..." : "Gerar PDF"}
-          {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
-        </Button>
-      </div>
     </ModalShell>
   );
 }
@@ -388,6 +395,24 @@ function FichaPersonalizadaModal({
       title={title}
       sensitive={sensitive}
       maxWidthClass="max-w-3xl"
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <DialogPrimitive.Close asChild>
+            <Button type="button" variant="outline" disabled={isGenerating} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+          </DialogPrimitive.Close>
+          <Button
+            type="button"
+            onClick={handleGenerate}
+            disabled={blockGenerate}
+            className="w-full sm:w-auto"
+          >
+            {isGenerating ? "Gerando..." : "Gerar PDF"}
+            {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
+          </Button>
+        </div>
+      }
     >
       {/* Presets */}
       <div className="space-y-2 border-b pb-3">
@@ -430,8 +455,8 @@ function FichaPersonalizadaModal({
       <SelectionStatusBar evaluation={evaluation} />
 
       {/* Cabeçalho de ações */}
-      <div className="flex items-center justify-between border-b pb-2">
-        <Button type="button" variant="outline" size="sm" onClick={clearAll}>
+      <div className="flex flex-col gap-2 border-b pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button type="button" variant="outline" size="sm" onClick={clearAll} className="w-full sm:w-auto">
           Limpar seleção
         </Button>
         <div className="text-sm text-muted-foreground font-medium">
@@ -442,7 +467,7 @@ function FichaPersonalizadaModal({
       </div>
 
       {/* Grupos (abas) */}
-      <div className="max-h-[42vh] overflow-y-auto pr-2 space-y-5">
+      <div className="space-y-5">
         {FICHA_GROUPS.map((group) => {
           const fields = fieldsByGroup.get(group.id) ?? [];
           const selectedInGroup = fields.filter((f) => selectedFields.has(f.id)).length;
@@ -506,18 +531,6 @@ function FichaPersonalizadaModal({
         labelsById={Object.fromEntries(FICHA_FIELDS.map((f) => [f.id, f.label]))}
         selected={selectedFields}
       />
-
-      <div className="flex justify-end gap-3 pt-2">
-        <DialogPrimitive.Close asChild>
-          <Button type="button" variant="outline" disabled={isGenerating}>
-            Cancelar
-          </Button>
-        </DialogPrimitive.Close>
-        <Button type="button" onClick={handleGenerate} disabled={blockGenerate}>
-          {isGenerating ? "Gerando..." : "Gerar PDF"}
-          {!isGenerating && <FileText className="ml-2 h-4 w-4" />}
-        </Button>
-      </div>
     </ModalShell>
   );
 }
@@ -533,6 +546,7 @@ function ModalShell({
   sensitive,
   maxWidthClass = "max-w-2xl",
   children,
+  footer,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -540,6 +554,7 @@ function ModalShell({
   sensitive?: boolean;
   maxWidthClass?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -547,35 +562,40 @@ function ModalShell({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg md:w-full",
+            "fixed left-[50%] top-[50%] z-50 flex w-[calc(100%-1rem)] max-h-[95dvh] translate-x-[-50%] translate-y-[-50%] flex-col border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-h-[90dvh] sm:w-full sm:rounded-lg",
             maxWidthClass,
           )}
         >
-          <div className="flex flex-col space-y-1.5">
-            <DialogPrimitive.Title className="font-display text-lg font-semibold leading-none tracking-tight">
+          <div className="relative shrink-0 border-b px-4 py-4 sm:px-6">
+            <DialogPrimitive.Title className="pr-8 font-display text-base font-semibold leading-tight tracking-tight sm:text-lg">
               Configurar PDF: {title}
             </DialogPrimitive.Title>
-            <DialogPrimitive.Description className="text-sm text-muted-foreground">
+            <DialogPrimitive.Description className="mt-1 pr-8 text-xs text-muted-foreground sm:text-sm">
               Selecione quais colunas deseja incluir no relatório final.
             </DialogPrimitive.Description>
+            <DialogPrimitive.Close className="absolute right-3 top-3 rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+              <X className="h-5 w-5" />
+              <span className="sr-only">Fechar</span>
+            </DialogPrimitive.Close>
           </div>
 
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Fechar</span>
-          </DialogPrimitive.Close>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6">
+            {sensitive && (
+              <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-950 sm:text-sm dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Este relatório contém dados sensíveis. Mantenha o arquivo sob controle interno
+                  conforme a LGPD.
+                </p>
+              </div>
+            )}
 
-          {sensitive && (
-            <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>
-                Este relatório contém dados sensíveis. Mantenha o arquivo sob controle interno
-                conforme a LGPD.
-              </p>
-            </div>
+            {children}
+          </div>
+
+          {footer && (
+            <div className="shrink-0 border-t bg-background px-4 py-3 sm:px-6">{footer}</div>
           )}
-
-          {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

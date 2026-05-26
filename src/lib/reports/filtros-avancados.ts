@@ -113,6 +113,12 @@ export interface AlunoFiltravel {
     has_vehicle: boolean | null;
   } | null;
   health_restrictions: {
+    has_allergies: boolean | null;
+    has_continuous_medication: boolean | null;
+    has_physical_restriction: boolean | null;
+    has_dietary_restriction: boolean | null;
+    has_chronic_disease: boolean | null;
+    has_eye_surgery: boolean | null;
     allergies: string | null;
     continuous_medication: string | null;
     physical_restriction: string | null;
@@ -135,7 +141,11 @@ export const STUDENT_SELECT_COLUMNS = `
   student_addresses(state, city, origin_in_amapa, from_other_state),
   student_logistics(needs_housing, has_fixed_residence_macapa),
   vehicles(has_cnh, cnh_category, has_vehicle),
-  health_restrictions(allergies, continuous_medication, physical_restriction, dietary_restriction, chronic_disease)
+  health_restrictions(
+    has_allergies, has_continuous_medication, has_physical_restriction,
+    has_dietary_restriction, has_chronic_disease, has_eye_surgery,
+    allergies, continuous_medication, physical_restriction, dietary_restriction, chronic_disease
+  )
 `;
 
 // ──────────────────────────────────────────────────────────────────────
@@ -167,11 +177,15 @@ export function residesInAmapa(a: AlunoFiltravel): boolean | null {
   return null;
 }
 
-export const hasAllergy = (a: AlunoFiltravel) => nonEmpty(a.health_restrictions?.allergies);
+// Filtros de saúde usam booleanos explícitos (has_*) — preenchidos pela
+// migração 0028 a partir dos textos antigos. Texto vazio ou contendo
+// "nenhum/não" NÃO conta como ocorrência positiva.
+export const hasAllergy = (a: AlunoFiltravel) =>
+  Boolean(a.health_restrictions?.has_allergies);
 export const usesMedication = (a: AlunoFiltravel) =>
-  nonEmpty(a.health_restrictions?.continuous_medication);
+  Boolean(a.health_restrictions?.has_continuous_medication);
 export const hasPhysicalRestriction = (a: AlunoFiltravel) =>
-  nonEmpty(a.health_restrictions?.physical_restriction);
+  Boolean(a.health_restrictions?.has_physical_restriction);
 
 export const hasCnh = (a: AlunoFiltravel) => Boolean(a.vehicles?.has_cnh);
 export const hasVehicle = (a: AlunoFiltravel) => Boolean(a.vehicles?.has_vehicle);

@@ -256,6 +256,8 @@ export async function upsertEmergencyContactAction(
 // Saúde / Restrições — Política A (write-then-validate): grava direto
 // mas marca validation_status='pendente' e gera PendingChange (D-005).
 // =====================================================================
+const yesNo = () => z.enum(["true", "false"]).or(z.literal("")).optional();
+
 const healthSchema = z
   .object({
     studentId: z.string().uuid(),
@@ -267,24 +269,38 @@ const healthSchema = z
     peso_kg: z
       .union([z.literal(""), z.coerce.number().min(30, "Peso entre 30 e 200 kg.").max(200, "Peso entre 30 e 200 kg.")])
       .optional(),
-    cirurgia_ocular: z.enum(["true", "false"]).or(z.literal("")).optional(),
+    has_eye_surgery: yesNo(),
     cirurgia_ocular_obs: optionalTrimmed(),
+    has_allergies: yesNo(),
     allergies: optionalTrimmed(),
+    has_continuous_medication: yesNo(),
     continuous_medication: optionalTrimmed(),
+    has_chronic_disease: yesNo(),
     chronic_disease: optionalTrimmed(),
+    has_physical_restriction: yesNo(),
     physical_restriction: optionalTrimmed(),
+    has_dietary_restriction: yesNo(),
     dietary_restriction: optionalTrimmed(),
-    uses_glasses: z.enum(["true", "false"]).or(z.literal("")).optional(),
+    uses_glasses: yesNo(),
     medical_notes: optionalTrimmed(),
   })
   .superRefine((data, ctx) => {
-    if (data.cirurgia_ocular === "true" && !data.cirurgia_ocular_obs) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["cirurgia_ocular_obs"],
-        message: "Descreva a cirurgia ocular realizada.",
-      });
-    }
+    const requireDetail = (
+      flag: "true" | "false" | "" | undefined,
+      detail: string | undefined,
+      detailPath: string,
+      msg: string,
+    ) => {
+      if (flag === "true" && !detail) {
+        ctx.addIssue({ code: "custom", path: [detailPath], message: msg });
+      }
+    };
+    requireDetail(data.has_eye_surgery, data.cirurgia_ocular_obs, "cirurgia_ocular_obs", "Descreva a cirurgia ocular realizada.");
+    requireDetail(data.has_allergies, data.allergies, "allergies", "Descreva as alergias.");
+    requireDetail(data.has_continuous_medication, data.continuous_medication, "continuous_medication", "Descreva o medicamento contínuo.");
+    requireDetail(data.has_chronic_disease, data.chronic_disease, "chronic_disease", "Descreva a doença crônica.");
+    requireDetail(data.has_physical_restriction, data.physical_restriction, "physical_restriction", "Descreva a restrição física.");
+    requireDetail(data.has_dietary_restriction, data.dietary_restriction, "dietary_restriction", "Descreva a restrição alimentar.");
   });
 
 export async function updateHealthAction(
@@ -297,7 +313,27 @@ export async function updateHealthAction(
   const parsed = healthSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, blood_type, rh_factor, uses_glasses, cirurgia_ocular, altura_cm, peso_kg, ...rest } = parsed.data;
+  const {
+    studentId,
+    blood_type,
+    rh_factor,
+    uses_glasses,
+    has_eye_surgery,
+    has_allergies,
+    has_continuous_medication,
+    has_chronic_disease,
+    has_physical_restriction,
+    has_dietary_restriction,
+    altura_cm,
+    peso_kg,
+    cirurgia_ocular_obs,
+    allergies,
+    continuous_medication,
+    chronic_disease,
+    physical_restriction,
+    dietary_restriction,
+    medical_notes,
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
   const supabase = createServerClientUntyped();
@@ -309,15 +345,43 @@ export async function updateHealthAction(
     .eq("student_id", studentId)
     .maybeSingle();
 
+  const boolOrNull = (v: "true" | "false" | "" | undefined): boolean | null =>
+    v === "true" ? true : v === "false" ? false : null;
+  const detailIfYes = (
+    flag: "true" | "false" | "" | undefined,
+    detail: string | undefined,
+  ): string | null => (flag === "true" ? nullIfEmpty(detail) : null);
+
+  const hasEye = boolOrNull(has_eye_surgery);
+  const hasAllergiesV = boolOrNull(has_allergies);
+  const hasMedV = boolOrNull(has_continuous_medication);
+  const hasChronicV = boolOrNull(has_chronic_disease);
+  const hasPhysicalV = boolOrNull(has_physical_restriction);
+  const hasDietaryV = boolOrNull(has_dietary_restriction);
+
   const newRow = {
     student_id: studentId,
     blood_type: blood_type || null,
     rh_factor: rh_factor || null,
     altura_cm: altura_cm !== "" && altura_cm !== undefined ? Number(altura_cm) : null,
     peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : null,
-    cirurgia_ocular: cirurgia_ocular === "true" ? true : cirurgia_ocular === "false" ? false : null,
+    // Cirurgia ocular: mantém a coluna legada cirurgia_ocular em sincronia
+    // com has_eye_surgery (espelho) para compatibilidade com relatórios.
+    has_eye_surgery: hasEye,
+    cirurgia_ocular: hasEye,
+    cirurgia_ocular_obs: detailIfYes(has_eye_surgery, cirurgia_ocular_obs),
+    has_allergies: hasAllergiesV,
+    allergies: detailIfYes(has_allergies, allergies),
+    has_continuous_medication: hasMedV,
+    continuous_medication: detailIfYes(has_continuous_medication, continuous_medication),
+    has_chronic_disease: hasChronicV,
+    chronic_disease: detailIfYes(has_chronic_disease, chronic_disease),
+    has_physical_restriction: hasPhysicalV,
+    physical_restriction: detailIfYes(has_physical_restriction, physical_restriction),
+    has_dietary_restriction: hasDietaryV,
+    dietary_restriction: detailIfYes(has_dietary_restriction, dietary_restriction),
     uses_glasses: uses_glasses === "true",
-    ...rest,
+    medical_notes: nullIfEmpty(medical_notes),
     validation_status: "pendente",
     validated_by: null,
     validated_at: null,

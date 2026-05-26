@@ -137,7 +137,7 @@ async function buildXlsx(
             ...base,
             simNao(hasAllergy(a)),
             simNao(usesMedication(a)),
-            a.health_restrictions?.physical_restriction ? "Sim" : "Não",
+            a.health_restrictions?.has_physical_restriction ? "Sim" : "Não",
           ]
         : base,
     );

@@ -97,6 +97,12 @@ export interface HealthRestrictionRow {
   peso_kg: number | null;
   cirurgia_ocular: boolean | null;
   cirurgia_ocular_obs: string | null;
+  has_allergies: boolean | null;
+  has_continuous_medication: boolean | null;
+  has_chronic_disease: boolean | null;
+  has_physical_restriction: boolean | null;
+  has_dietary_restriction: boolean | null;
+  has_eye_surgery: boolean | null;
   allergies: string | null;
   continuous_medication: string | null;
   chronic_disease: string | null;
@@ -107,6 +113,10 @@ export interface HealthRestrictionRow {
   operational_summary: string | null;
   validation_status: "pendente" | "validado" | "recusado";
   validated_at: string | null;
+  medical_doc_waived: boolean;
+  medical_doc_waived_reason: string | null;
+  medical_doc_waived_by: string | null;
+  medical_doc_waived_at: string | null;
 }
 
 export interface InstructorCardRow {
