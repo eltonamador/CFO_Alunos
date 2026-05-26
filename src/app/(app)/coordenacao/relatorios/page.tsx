@@ -1,4 +1,5 @@
-import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { Filter, ShieldAlert } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
@@ -110,6 +111,22 @@ export default async function RelatoriosPage() {
           </p>
         </div>
       </div>
+
+      <Link
+        href="/coordenacao/relatorios/filtros-avancados"
+        className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 transition hover:border-primary/60 hover:bg-muted/40"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Filter className="h-5 w-5" />
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold leading-none text-foreground">Filtros Avançados</p>
+          <p className="text-sm text-muted-foreground">
+            Combine critérios da ficha (sexo, status da matrícula, situação) e gere
+            contagens, listas e relatórios em PDF/XLSX.
+          </p>
+        </div>
+      </Link>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {available.map((report) => (
