@@ -37,6 +37,7 @@ export interface FiltrosState {
   ficha: FichaSituacao[];
   // Origem
   resideAp: ResideApFilter[];
+  vemDeOutroEstado: BoolFilter[];
   ufEndereco: string; // texto livre, contém
   // Saúde (LGPD)
   temAlergia: BoolFilter[];
@@ -60,6 +61,7 @@ export const EMPTY_FILTROS: FiltrosState = {
   enrollment: [],
   ficha: [],
   resideAp: [],
+  vemDeOutroEstado: [],
   ufEndereco: "",
   temAlergia: [],
   usaMedicacao: [],
@@ -167,6 +169,15 @@ function nonEmpty(s: string | null | undefined): boolean {
   return typeof s === "string" && s.trim().length > 0;
 }
 
+export function comesFromOtherState(a: AlunoFiltravel): boolean {
+  const addr = a.student_addresses;
+  if (!addr) return false;
+  if (typeof addr.from_other_state === "boolean") return addr.from_other_state;
+  if (typeof addr.origin_in_amapa === "boolean") return !addr.origin_in_amapa;
+  if (nonEmpty(addr.state)) return addr.state!.trim().toUpperCase() !== "AP";
+  return false;
+}
+
 export function residesInAmapa(a: AlunoFiltravel): boolean | null {
   // origin_in_amapa preferencial; fallback para state == 'AP'
   const addr = a.student_addresses;
@@ -228,6 +239,9 @@ export function applyFiltros(alunos: AlunoFiltravel[], f: FiltrosState): AlunoFi
       if (!f.resideAp.includes(key)) return false;
     }
 
+    // Vem de outro estado (explícito; fallback a derivação)
+    if (!matchBool(f.vemDeOutroEstado, comesFromOtherState(a))) return false;
+
     // UF (texto livre, contém)
     if (uf.length > 0) {
       const state = (a.student_addresses?.state ?? "").toUpperCase();
@@ -270,7 +284,7 @@ export interface ResumoEstatisticas {
   porSexo: { masculino: number; feminino: number; naoInformado: number };
   porMatricula: { confirmada: number; pendente: number };
   porFicha: { completa: number; incompleta: number; naoIniciada: number };
-  porOrigem: { ap: number; foraAp: number; naoInformado: number };
+  porOrigem: { ap: number; foraAp: number; naoInformado: number; outroEstado: number };
   porSaude: { alergia: number; medicacao: number; restricaoFisica: number };
   porLogistica: { cnh: number; veiculo: number; expMilitar: number; pendMaterial: number };
   porDocumentos: { pendentes: number };
@@ -307,6 +321,7 @@ export function computeResumo(
       ap: count(f, (a) => residesInAmapa(a) === true),
       foraAp: count(f, (a) => residesInAmapa(a) === false),
       naoInformado: count(f, (a) => residesInAmapa(a) === null),
+      outroEstado: count(f, comesFromOtherState),
     },
     porSaude: {
       alergia: count(f, hasAllergy),
@@ -366,6 +381,8 @@ export function describeFiltros(f: FiltrosState): string[] {
       `Reside no AP: ${f.resideAp.map((v) => (v === "sim" ? "Sim" : v === "nao" ? "Não" : "Não informado")).join(", ")}`,
     );
   }
+  if (f.vemDeOutroEstado.length)
+    out.push(`Vem de outro estado: ${labelBool(f.vemDeOutroEstado)}`);
   if (f.ufEndereco.trim()) out.push(`UF de endereço contém: ${f.ufEndereco.trim().toUpperCase()}`);
 
   if (f.temAlergia.length) out.push(`Alergia: ${labelBool(f.temAlergia)}`);

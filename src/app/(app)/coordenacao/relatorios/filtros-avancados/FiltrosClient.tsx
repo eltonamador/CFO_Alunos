@@ -93,6 +93,7 @@ export function FiltrosClient({ alunos, role }: Props) {
     filtros.enrollment.length +
     filtros.ficha.length +
     filtros.resideAp.length +
+    filtros.vemDeOutroEstado.length +
     (filtros.ufEndereco.trim() ? 1 : 0) +
     filtros.temAlergia.length +
     filtros.usaMedicacao.length +
@@ -201,6 +202,21 @@ export function FiltrosClient({ alunos, role }: Props) {
                 checked={filtros.resideAp.includes(o.value)}
                 onChange={() =>
                   setFiltros((f) => ({ ...f, resideAp: toggle(f.resideAp, o.value) }))
+                }
+              />
+            ))}
+          </FilterGroup>
+          <FilterGroup label="Vem de outro estado">
+            {BOOL_OPTIONS.map((o) => (
+              <CheckboxRow
+                key={o.value}
+                label={o.label}
+                checked={filtros.vemDeOutroEstado.includes(o.value)}
+                onChange={() =>
+                  setFiltros((f) => ({
+                    ...f,
+                    vemDeOutroEstado: toggle(f.vemDeOutroEstado, o.value),
+                  }))
                 }
               />
             ))}
@@ -462,6 +478,7 @@ export function FiltrosClient({ alunos, role }: Props) {
               <StatBox label="Ficha não iniciada" value={resumo.porFicha.naoIniciada} />
               <StatBox label="Reside no AP" value={resumo.porOrigem.ap} />
               <StatBox label="Fora do AP" value={resumo.porOrigem.foraAp} />
+              <StatBox label="Vem de outro estado" value={resumo.porOrigem.outroEstado} />
               {isCoordenacao && (
                 <>
                   <StatBox label="Com alergia" value={resumo.porSaude.alergia} />
