@@ -69,7 +69,7 @@ export async function buildFichaCompletaWorkbook(
        cpf, rg, enrollment_id, marital_status, education_level,
        student_contacts(whatsapp, email_personal),
        student_addresses(city, state, from_other_state),
-       student_logistics(needs_housing, has_fixed_residence_macapa)`,
+       student_logistics(needs_housing, has_fixed_residence_macapa, gandola_size, pants_size)`,
     )
     .order("student_number");
 
@@ -100,6 +100,8 @@ export async function buildFichaCompletaWorkbook(
     "UF",
     "Vem de outro estado",
     "Necessita alojamento",
+    "Gandola",
+    "Calça",
   ];
 
   applyHeaderRow(ws.addRow([]), columns);
@@ -128,6 +130,8 @@ export async function buildFichaCompletaWorkbook(
       a?.state ?? "",
       a?.from_other_state ? "Sim" : "Não",
       l?.needs_housing ? "Sim" : "Não",
+      l?.gandola_size ?? "",
+      l?.pants_size ?? "",
     ]);
     applyDataRow(row, i);
   });

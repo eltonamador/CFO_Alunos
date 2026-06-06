@@ -137,6 +137,8 @@ export const FICHA_FIELDS: FichaField[] = [
   { id: "fp_log_needs_housing", groupId: "logistica", label: "Precisa moradia?", minPx: 60, weight: 0.07 },
   { id: "fp_log_family_ap", groupId: "logistica", label: "Família em AP?", minPx: 60, weight: 0.07 },
   { id: "fp_log_local_contact", groupId: "logistica", label: "Contato local", minPx: 110, weight: 0.13 },
+  { id: "fp_log_gandola", groupId: "logistica", label: "Gandola", minPx: 48, weight: 0.05 },
+  { id: "fp_log_calca", groupId: "logistica", label: "Calça", minPx: 48, weight: 0.05 },
 
   // ── Veículo / CNH ─────────────────────────────────────────────────
   { id: "fp_vei_has_vehicle", groupId: "veiculo", label: "Tem veículo?", minPx: 56, weight: 0.06 },
@@ -239,6 +241,8 @@ export const FICHA_PRESETS: FichaPreset[] = [
       "fp_resumo_war_name",
       "fp_log_residencia_macapa",
       "fp_log_needs_housing",
+      "fp_log_gandola",
+      "fp_log_calca",
       "fp_vei_has_vehicle",
       "fp_vei_has_cnh",
       "fp_vei_cnh_cat",

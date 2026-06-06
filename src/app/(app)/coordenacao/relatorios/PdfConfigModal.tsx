@@ -82,7 +82,11 @@ export const REPORT_CONFIGS: Record<Exclude<ReportSlug, "ficha-personalizada">, 
     {
       id: "logistica",
       label: "Logística",
-      fields: [{ id: "fc_logistica", label: "Moradia / Endereço local" }],
+      fields: [
+        { id: "fc_logistica", label: "Moradia / Endereço local" },
+        { id: "fc_gandola", label: "Gandola" },
+        { id: "fc_calca", label: "Calça" },
+      ],
     },
     {
       id: "veiculo",

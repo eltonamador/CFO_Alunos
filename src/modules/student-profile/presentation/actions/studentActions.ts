@@ -604,6 +604,53 @@ export async function updateStudentAdminAction(
 }
 
 // =====================================================================
+// Situação no curso — APENAS Coordenação
+// =====================================================================
+const courseStatusSchema = z.object({
+  studentId: z.string().uuid(),
+  course_status: z.enum([
+    "matriculado",
+    "excluido",
+    "trancado",
+    "desistente",
+    "transferido",
+    "concluido",
+    "outro",
+  ]),
+});
+
+export async function updateCourseStatusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessão expirada" };
+  if (session.role !== "coordenacao") {
+    return { ok: false, error: "Apenas Coordenação pode alterar a situação no curso." };
+  }
+
+  const parsed = courseStatusSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+
+  const supabase = createServerClientUntyped();
+  const { error } = await supabase
+    .from("students")
+    .update({
+      course_status: parsed.data.course_status,
+      updated_by: session.userId,
+    })
+    .eq("id", parsed.data.studentId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/coordenacao/alunos/${parsed.data.studentId}`);
+  revalidatePath("/coordenacao/alunos");
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
+// =====================================================================
 // Logística — Aluno (própria) ou Coordenação/Secretaria
 // =====================================================================
 const logisticsSchema = z.object({
@@ -612,6 +659,8 @@ const logisticsSchema = z.object({
   course_address: z.string().optional(),
   has_family_in_ap: z.enum(["true", "false"]).or(z.literal("")).optional(),
   local_contact: z.string().optional(),
+  gandola_size: optionalTrimmed(),
+  pants_size: optionalTrimmed(),
 });
 
 export async function updateLogisticsAction(
@@ -624,17 +673,34 @@ export async function updateLogisticsAction(
   const parsed = logisticsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, has_fixed_residence_macapa, has_family_in_ap, ...rest } = parsed.data;
+  const {
+    studentId,
+    has_fixed_residence_macapa,
+    has_family_in_ap,
+    gandola_size,
+    pants_size,
+    ...rest
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+  if (session.role !== "coordenacao" && (gandola_size !== undefined || pants_size !== undefined)) {
+    return { ok: false, error: "Apenas Coordenação pode alterar dados de fardamento." };
+  }
 
   const supabase = createServerClientUntyped();
-  const { error } = await supabase.from("student_logistics").upsert({
+  const updatePayload: Record<string, unknown> = {
     student_id: studentId,
     ...rest,
     has_fixed_residence_macapa: has_fixed_residence_macapa === "true" ? true : has_fixed_residence_macapa === "false" ? false : null,
     has_family_in_ap: has_family_in_ap === "true" ? true : has_family_in_ap === "false" ? false : null,
     updated_by: session.userId,
-  });
+  };
+
+  if (session.role === "coordenacao") {
+    updatePayload.gandola_size = nullIfEmpty(gandola_size);
+    updatePayload.pants_size = nullIfEmpty(pants_size);
+  }
+
+  const { error } = await supabase.from("student_logistics").upsert(updatePayload);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
@@ -656,6 +722,7 @@ const identificationSchema = z.object({
   naturality_state: optionalUF(),
   naturality_city: optionalTrimmed(),
   marital_status: optionalTrimmed(),
+  spouse_name: optionalTrimmed(),
   education_level: optionalTrimmed(),
   graduation_type: optionalTrimmed(),
   graduation_name: optionalTrimmed(),
@@ -696,6 +763,9 @@ const identificationSchema = z.object({
 }).superRefine((data, ctx) => {
   const isAdventist = data.religion === "Adventista";
   const hasRestriction = data.has_religious_restriction === "true";
+  const requiresSpouse = ["Casado", "Casada", "Casado(a)", "União estável"].includes(
+    data.marital_status ?? "",
+  );
 
   if (data.religion === "Outra" && !data.religion_other) {
     ctx.addIssue({
@@ -710,6 +780,14 @@ const identificationSchema = z.object({
       code: "custom",
       path: ["religious_restriction_notes"],
       message: "Por favor, detalhe as considerações ou restrições operacionais associadas.",
+    });
+  }
+
+  if (requiresSpouse && data.spouse_name && cleanSpaces(data.spouse_name).length < 3) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["spouse_name"],
+      message: "Informe um nome válido para o(a) cônjuge/companheiro(a).",
     });
   }
 
@@ -760,6 +838,7 @@ export async function updateIdentificationAction(
     naturality_state,
     naturality_city,
     marital_status,
+    spouse_name,
     education_level,
     graduation_type,
     graduation_name,
@@ -797,6 +876,9 @@ export async function updateIdentificationAction(
   const priorRankValue = hadPrior === true ? nullIfEmpty(prior_military_rank) : null;
   const priorDurationValue = hadPrior === true ? nullIfEmpty(prior_military_duration) : null;
   const priorNotesValue = hadPrior === true ? nullIfEmpty(prior_military_notes) : null;
+  const spouseRequired = ["Casado", "Casada", "Casado(a)", "União estável"].includes(
+    marital_status ?? "",
+  );
 
   const supabase = createServerClientUntyped();
 
@@ -816,6 +898,7 @@ export async function updateIdentificationAction(
       naturality_state: naturality_state ? maskUF(naturality_state) : null,
       naturality_city: nullIfEmpty(naturality_city),
       marital_status: nullIfEmpty(marital_status),
+      spouse_name: spouseRequired && spouse_name ? normalizeName(spouse_name) : null,
       education_level: nullIfEmpty(education_level),
       graduation_type: nullIfEmpty(graduation_type),
       graduation_name: nullIfEmpty(graduation_name),

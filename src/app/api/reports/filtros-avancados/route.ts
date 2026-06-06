@@ -97,6 +97,8 @@ async function buildXlsx(
     "CNH",
     "Veículo",
     "Aloj.",
+    "Gandola",
+    "Calça",
     "Exp. Militar",
     "Pend. Mat.",
     "Pend. Doc.",
@@ -127,6 +129,8 @@ async function buildXlsx(
       simNao(hasCnh(a)),
       simNao(hasVehicle(a)),
       simNao(needsHousing(a)),
+      a.student_logistics?.gandola_size ?? "",
+      a.student_logistics?.pants_size ?? "",
       simNao(hasPriorMilitary(a)),
       simNao(a.has_pending_equipment),
       simNao(a.has_pending_documents),
@@ -234,10 +238,10 @@ async function buildPdf(
   doc.moveDown(0.4);
 
   // Tabela
-  const baseHeaders = ["Nº", "Nome de Guerra", "Pel.", "Sx", "UF", "AP", "Matr.", "Ficha", "CNH", "Veíc.", "Mil.", "PM", "PD"];
+  const baseHeaders = ["Nº", "Nome de Guerra", "Pel.", "Sx", "UF", "AP", "Matr.", "Ficha", "CNH", "Veíc.", "Gand.", "Calça", "Mil.", "PM", "PD"];
   const sensHeaders = ["Alerg.", "Med."];
   const headers = includeSensitive ? [...baseHeaders, ...sensHeaders] : baseHeaders;
-  const fractionsBase = [0.04, 0.22, 0.05, 0.04, 0.05, 0.05, 0.09, 0.09, 0.05, 0.06, 0.05, 0.06, 0.06];
+  const fractionsBase = [0.04, 0.18, 0.05, 0.04, 0.05, 0.05, 0.08, 0.08, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05];
   const fractionsSens = [0.06, 0.05];
   let fractions = includeSensitive ? [...fractionsBase, ...fractionsSens] : fractionsBase;
   const sum = fractions.reduce((s, f) => s + f, 0);
@@ -289,6 +293,8 @@ async function buildPdf(
         fichaLabel(computeFichaSituacao(a)),
         simNao(hasCnh(a)),
         simNao(hasVehicle(a)),
+        a.student_logistics?.gandola_size ?? "—",
+        a.student_logistics?.pants_size ?? "—",
         simNao(hasPriorMilitary(a)),
         simNao(a.has_pending_equipment),
         simNao(a.has_pending_documents),

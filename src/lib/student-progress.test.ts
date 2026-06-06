@@ -42,6 +42,8 @@ function emptyBundle(): StudentProfileBundle {
       has_religious_restriction: null,
       religious_restriction_notes: null,
       enrollment_status: "pendente",
+      course_status: "matriculado",
+      spouse_name: null,
       had_prior_military_service: null,
       prior_military_branch: null,
       prior_military_institution: null,
@@ -94,6 +96,8 @@ function fullBundle(): StudentProfileBundle {
       has_religious_restriction: false,
       religious_restriction_notes: null,
       enrollment_status: "confirmada",
+      course_status: "matriculado",
+      spouse_name: null,
       had_prior_military_service: false,
       prior_military_branch: null,
       prior_military_institution: null,
@@ -170,6 +174,8 @@ function fullBundle(): StudentProfileBundle {
       needs_housing: false,
       has_family_in_ap: null,
       local_contact: null,
+      gandola_size: null,
+      pants_size: null,
     },
     vehicle: {
       student_id: "s-1",
@@ -244,6 +250,8 @@ describe("calculateStudentProfileProgress", () => {
       needs_housing: false,
       has_family_in_ap: null,
       local_contact: null,
+      gandola_size: null,
+      pants_size: null,
     };
     b.vehicle = {
       student_id: "s-1",

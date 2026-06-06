@@ -42,6 +42,15 @@ export interface StudentDetailRow extends StudentListRow {
   has_religious_restriction: boolean | null;
   religious_restriction_notes: string | null;
   enrollment_status: "pendente" | "confirmada";
+  course_status:
+    | "matriculado"
+    | "excluido"
+    | "trancado"
+    | "desistente"
+    | "transferido"
+    | "concluido"
+    | "outro";
+  spouse_name: string | null;
   had_prior_military_service: boolean | null;
   prior_military_branch:
     | "corpo_de_bombeiros_militar"
@@ -468,6 +477,8 @@ export interface StudentLogisticsRow {
   needs_housing: boolean | null;
   has_family_in_ap: boolean | null;
   local_contact: string | null;
+  gandola_size: string | null;
+  pants_size: string | null;
 }
 
 export async function fetchStudentLogistics(

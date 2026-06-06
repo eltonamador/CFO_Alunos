@@ -144,7 +144,9 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
         )}
         {tab === "emergencia" && <EmergenciaTab studentId={student.id} contacts={emergency} />}
         {tab === "saude" && <SaudeTab studentId={student.id} health={health} canCurate />}
-        {tab === "logistica" && <LogisticaTab studentId={student.id} logistics={logistics} />}
+        {tab === "logistica" && (
+          <LogisticaTab studentId={student.id} logistics={logistics} canEditUniform />
+        )}
         {tab === "veiculo" && <VeiculoTab studentId={student.id} vehicle={vehicle} />}
         {tab === "documentos" && <DocumentsTab studentId={student.id} />}
         {tab === "materiais" && (

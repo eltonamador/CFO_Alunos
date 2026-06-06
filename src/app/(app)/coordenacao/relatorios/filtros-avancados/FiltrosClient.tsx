@@ -16,6 +16,7 @@ import {
   hasPriorMilitary,
   hasVehicle,
   residesInAmapa,
+  uniformValue,
   type AlunoFiltravel,
   type BoolFilter,
   type EnrollmentFilter,
@@ -87,6 +88,20 @@ export function FiltrosClient({ alunos, role }: Props) {
   const filtrados = React.useMemo(() => applyFiltros(alunos, filtros), [alunos, filtros]);
   const resumo = React.useMemo(() => computeResumo(alunos, filtrados), [alunos, filtrados]);
   const criterios = React.useMemo(() => describeFiltros(filtros), [filtros]);
+  const gandolaOptions = React.useMemo(
+    () =>
+      Array.from(
+        new Set(alunos.map((a) => uniformValue(a.student_logistics?.gandola_size)).filter(Boolean)),
+      ).sort(),
+    [alunos],
+  );
+  const calcaOptions = React.useMemo(
+    () =>
+      Array.from(
+        new Set(alunos.map((a) => uniformValue(a.student_logistics?.pants_size)).filter(Boolean)),
+      ).sort(),
+    [alunos],
+  );
 
   const filtrosAtivos =
     filtros.sexo.length +
@@ -101,6 +116,8 @@ export function FiltrosClient({ alunos, role }: Props) {
     filtros.temCnh.length +
     filtros.temVeiculo.length +
     filtros.necessitaAlojamento.length +
+    filtros.gandola.length +
+    filtros.calca.length +
     filtros.expMilitar.length +
     filtros.instituicaoMilitar.length +
     filtros.pendMaterial.length +
@@ -326,6 +343,38 @@ export function FiltrosClient({ alunos, role }: Props) {
               />
             ))}
           </FilterGroup>
+          <FilterGroup label="Gandola">
+            {gandolaOptions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum tamanho informado.</p>
+            ) : (
+              gandolaOptions.map((size) => (
+                <CheckboxRow
+                  key={size}
+                  label={size}
+                  checked={filtros.gandola.includes(size)}
+                  onChange={() =>
+                    setFiltros((f) => ({ ...f, gandola: toggle(f.gandola, size) }))
+                  }
+                />
+              ))
+            )}
+          </FilterGroup>
+          <FilterGroup label="Calça">
+            {calcaOptions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum tamanho informado.</p>
+            ) : (
+              calcaOptions.map((size) => (
+                <CheckboxRow
+                  key={size}
+                  label={size}
+                  checked={filtros.calca.includes(size)}
+                  onChange={() =>
+                    setFiltros((f) => ({ ...f, calca: toggle(f.calca, size) }))
+                  }
+                />
+              ))
+            )}
+          </FilterGroup>
           <FilterGroup label="Experiência militar anterior">
             {BOOL_OPTIONS.map((o) => (
               <CheckboxRow
@@ -530,6 +579,8 @@ export function FiltrosClient({ alunos, role }: Props) {
                       <th className="px-4 py-2 text-left">UF</th>
                       <th className="px-4 py-2 text-left">Matrícula</th>
                       <th className="px-4 py-2 text-left">Ficha</th>
+                      <th className="px-4 py-2 text-left">Gandola</th>
+                      <th className="px-4 py-2 text-left">Calça</th>
                       <th className="px-4 py-2 text-left">Sinais</th>
                     </tr>
                   </thead>
@@ -560,6 +611,8 @@ export function FiltrosClient({ alunos, role }: Props) {
                           <td className="px-4 py-2">
                             <Badge variant={fichaBadgeVariant(fs)}>{fichaLabel(fs)}</Badge>
                           </td>
+                          <td className="px-4 py-2">{a.student_logistics?.gandola_size ?? "—"}</td>
+                          <td className="px-4 py-2">{a.student_logistics?.pants_size ?? "—"}</td>
                           <td className="px-4 py-2">
                             <div className="flex flex-wrap gap-1">
                               {hasCnh(a) && <Badge variant="info">CNH</Badge>}

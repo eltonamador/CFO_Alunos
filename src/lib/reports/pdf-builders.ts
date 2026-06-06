@@ -377,7 +377,7 @@ interface FichaColumn {
   id: string;
   header: string;
   width: number;
-  accessor: (s: any, ctx: { contact: any; addr: any }) => string | number | null | undefined;
+  accessor: (s: any, ctx: { contact: any; addr: any; logistics: any }) => string | number | null | undefined;
 }
 
 const FICHA_COLUMNS: FichaColumn[] = [
@@ -398,6 +398,8 @@ const FICHA_COLUMNS: FichaColumn[] = [
   { id: "fc_email", header: "E-mail", width: 0.14, accessor: (_s, ctx) => ctx.contact?.email_personal },
   { id: "fc_cidade", header: "Cidade", width: 0.07, accessor: (_s, ctx) => ctx.addr?.city },
   { id: "fc_estado", header: "UF", width: 0.03, accessor: (_s, ctx) => ctx.addr?.state },
+  { id: "fc_gandola", header: "Gandola", width: 0.05, accessor: (_s, ctx) => ctx.logistics?.gandola_size },
+  { id: "fc_calca", header: "Calça", width: 0.05, accessor: (_s, ctx) => ctx.logistics?.pants_size },
 ];
 
 export async function buildFichaCompletaPDF(
@@ -410,7 +412,8 @@ export async function buildFichaCompletaPDF(
       `id, student_number, war_name, full_name, sex, birth_date, cpf, rg,
        pelotao, situation, marital_status, education_level,
        student_contacts(whatsapp, email_personal),
-       student_addresses(city, state)`,
+       student_addresses(city, state),
+       student_logistics(gandola_size, pants_size)`,
     )
     .order("student_number");
 
@@ -425,7 +428,8 @@ export async function buildFichaCompletaPDF(
   const rows = (students ?? []).map((s: any) => {
     const contact = Array.isArray(s.student_contacts) ? s.student_contacts[0] : s.student_contacts;
     const addr = Array.isArray(s.student_addresses) ? s.student_addresses[0] : s.student_addresses;
-    return cols.map((col) => col.accessor(s, { contact, addr }));
+    const logistics = Array.isArray(s.student_logistics) ? s.student_logistics[0] : s.student_logistics;
+    return cols.map((col) => col.accessor(s, { contact, addr, logistics }));
   });
 
   return buildTableReport(
@@ -830,6 +834,8 @@ const FICHA_ACCESSORS: Record<string, Accessor> = {
   fp_log_needs_housing: (_s, ctx) => yesNo(ctx.logistics?.needs_housing),
   fp_log_family_ap: (_s, ctx) => yesNo(ctx.logistics?.has_family_in_ap),
   fp_log_local_contact: (_s, ctx) => ctx.logistics?.local_contact,
+  fp_log_gandola: (_s, ctx) => ctx.logistics?.gandola_size,
+  fp_log_calca: (_s, ctx) => ctx.logistics?.pants_size,
 
   // Veículo
   fp_vei_has_vehicle: (_s, ctx) => yesNo(ctx.vehicle?.has_vehicle),
@@ -938,7 +944,7 @@ export async function buildFichaPersonalizadaPDF(
     needsLogistics
       ? loadById(
           "student_logistics",
-          "student_id, has_fixed_residence_macapa, course_address, needs_housing, has_family_in_ap, local_contact",
+          "student_id, has_fixed_residence_macapa, course_address, needs_housing, has_family_in_ap, local_contact, gandola_size, pants_size",
         )
       : Promise.resolve(new Map<string, any>()),
     needsVehicle

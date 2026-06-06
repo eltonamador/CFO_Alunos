@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/Select";
 import { Alert } from "@/components/ui/Alert";
 import {
   updateStudentAdminAction,
+  updateCourseStatusAction,
   updateEnrollmentStatusAction,
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Badge } from "@/components/ui/Badge";
@@ -26,6 +27,16 @@ const MILITARY_BRANCH_LABELS: Record<string, string> = {
   policia_militar: "Polícia Militar",
   forcas_armadas: "Forças Armadas",
   outra: "Outra",
+};
+
+const COURSE_STATUS_LABELS: Record<StudentDetailRow["course_status"], string> = {
+  matriculado: "Matriculado",
+  excluido: "Excluído",
+  trancado: "Trancado",
+  desistente: "Desistente",
+  transferido: "Transferido",
+  concluido: "Concluído",
+  outro: "Outro",
 };
 
 function formatBirthDateWithAge(iso: string | null | undefined): string | null {
@@ -239,8 +250,15 @@ export function ResumoTab({
                   </Badge>
                 </dd>
               </div>
-              <Field label="Situação" value={student.situation} />
+              <Field label="Situação no curso" value={COURSE_STATUS_LABELS[student.course_status]} />
+              <Field label="Situação da ficha" value={student.situation} />
             </dl>
+          )}
+          {canEditAdmin && (
+            <CourseStatusControl
+              studentId={student.id}
+              currentStatus={student.course_status}
+            />
           )}
           {canEditAdmin && (
             <EnrollmentStatusControl
@@ -324,6 +342,7 @@ export function ResumoTab({
           <dl className="grid grid-cols-2 gap-3">
             <Field label="Nacionalidade" value={student.nationality} />
             <Field label="Estado civil" value={student.marital_status} />
+            <Field label="Cônjuge/companheiro(a)" value={student.spouse_name} />
             <Field label="Naturalidade" value={
               student.naturality_city && student.naturality_state
                 ? `${student.naturality_city} / ${student.naturality_state}`
@@ -340,6 +359,70 @@ export function ResumoTab({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function CourseStatusControl({
+  studentId,
+  currentStatus,
+}: {
+  studentId: string;
+  currentStatus: StudentDetailRow["course_status"];
+}) {
+  const [state, formAction] = useFormState(updateCourseStatusAction, null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+
+  if (!open) {
+    return (
+      <div className="mt-3 flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          Alterar situação no curso
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="mt-3 space-y-3 rounded-md border border-dashed border-border bg-muted/30 p-3">
+      <input type="hidden" name="studentId" value={studentId} />
+      <div className="space-y-1">
+        <Label htmlFor="course_status">Situação no curso</Label>
+        <Select id="course_status" name="course_status" defaultValue={currentStatus}>
+          {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      {state?.ok === false && (
+        <Alert variant="destructive" className="text-xs py-2 px-3">
+          {state.error}
+        </Alert>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(false)}
+        >
+          Cancelar
+        </Button>
+        <SubmitButton />
+      </div>
+    </form>
   );
 }
 

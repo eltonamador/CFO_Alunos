@@ -58,3 +58,4 @@ backups/
 # Importadores com dados pessoais (LGPD) — nunca commitar
 scripts/import-t1-cfo/data/
 scripts/import-t1-cfo/out/
+.vercel

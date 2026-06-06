@@ -46,6 +46,7 @@ export function IdentificacaoTab({
     student.has_religious_restriction === true ? "true" : student.has_religious_restriction === false ? "false" : ""
   );
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
+  const [maritalStatus, setMaritalStatus] = useState(student.marital_status ?? "");
   const [hadPriorMilitary, setHadPriorMilitary] = useState(
     student.had_prior_military_service === true
       ? "true"
@@ -68,6 +69,9 @@ export function IdentificacaoTab({
 
   const showReligionOther = religion === "Outra";
   const showRestrictionNotes = religion === "Adventista" || hasRestriction === "true";
+  const showSpouseName = ["Casado", "Casada", "Casado(a)", "União estável"].includes(
+    maritalStatus,
+  );
 
   return (
     <form action={formAction} className="space-y-8">
@@ -119,7 +123,8 @@ export function IdentificacaoTab({
             <Select
               id="marital_status"
               name="marital_status"
-              defaultValue={student.marital_status ?? ""}
+              value={maritalStatus}
+              onChange={(e) => setMaritalStatus(e.target.value)}
             >
               <option value="">Não informado</option>
               <option value="Solteiro">Solteiro(a)</option>
@@ -130,6 +135,18 @@ export function IdentificacaoTab({
               <option value="Viúvo">Viúvo(a)</option>
             </Select>
           </div>
+
+          {showSpouseName && (
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="spouse_name">Nome do(a) cônjuge/companheiro(a)</Label>
+              <Input
+                id="spouse_name"
+                name="spouse_name"
+                defaultValue={student.spouse_name ?? ""}
+                placeholder="Nome completo"
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="naturality_state">Naturalidade — UF</Label>
