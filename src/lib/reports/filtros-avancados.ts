@@ -133,6 +133,12 @@ export interface AlunoFiltravel {
     dietary_restriction: string | null;
     chronic_disease: string | null;
   } | null;
+  weight_summary?: {
+    currentWeightKg: number | null;
+    lastMeasuredAt: string | null;
+    count: number;
+    variationKg: number | null;
+  } | null;
   // Flags pré-computados pela página server
   has_pending_equipment: boolean;
   has_pending_documents: boolean;

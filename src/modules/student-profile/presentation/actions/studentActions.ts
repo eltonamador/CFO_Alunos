@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
 import { getSession } from "@/modules/identity/presentation/session";
+import { normalizeWeightInput } from "@/modules/student-profile/domain/weightHistory";
 import {
   maskPhone,
   maskCEP,
@@ -57,6 +58,17 @@ function canEditOwn(session: { role: string; studentId: string | null }, student
   if (isAdmin(session.role)) return true;
   if (session.role === "aluno" && session.studentId === studentId) return true;
   return false;
+}
+
+function todayInSaoPaulo(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 // =====================================================================
@@ -364,7 +376,7 @@ export async function updateHealthAction(
     blood_type: blood_type || null,
     rh_factor: rh_factor || null,
     altura_cm: altura_cm !== "" && altura_cm !== undefined ? Number(altura_cm) : null,
-    peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : null,
+    peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : previous?.peso_kg ?? null,
     // Cirurgia ocular: mantém a coluna legada cirurgia_ocular em sincronia
     // com has_eye_surgery (espelho) para compatibilidade com relatórios.
     has_eye_surgery: hasEye,
@@ -404,6 +416,88 @@ export async function updateHealthAction(
       status: "pendente",
     });
   }
+
+  revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
+// =====================================================================
+// Historico de Peso - append-only
+// =====================================================================
+const weightHistorySchema = z.object({
+  studentId: z.string().uuid(),
+  weight_kg: z.union([z.string(), z.number()]),
+  measured_at: optionalTrimmed(),
+  notes: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.trim()))
+    .refine((v) => v === undefined || v.length <= 500, "Observacao deve ter ate 500 caracteres."),
+});
+
+export async function addStudentWeightAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessao expirada" };
+  if (session.role !== "aluno" && session.role !== "coordenacao") {
+    return { ok: false, error: "Sem permissao" };
+  }
+
+  const parsed = weightHistorySchema.safeParse({
+    studentId: formData.get("studentId"),
+    weight_kg: formData.get("weight_kg") ?? "",
+    measured_at: formData.get("measured_at") ?? undefined,
+    notes: formData.get("notes") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados invalidos" };
+  }
+
+  const { studentId, notes } = parsed.data;
+  if (session.role === "aluno" && session.studentId !== studentId) {
+    return { ok: false, error: "Sem permissao" };
+  }
+
+  let weightKg: number;
+  try {
+    weightKg = normalizeWeightInput(parsed.data.weight_kg);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Peso invalido." };
+  }
+
+  const today = todayInSaoPaulo();
+  const measuredAt = session.role === "coordenacao" ? (parsed.data.measured_at ?? today) : today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(measuredAt) || Number.isNaN(Date.parse(`${measuredAt}T00:00:00Z`))) {
+    return { ok: false, error: "Data de medicao invalida." };
+  }
+  if (measuredAt > today) {
+    return { ok: false, error: "Data de medicao nao pode ser futura." };
+  }
+
+  const source = session.role === "aluno" ? "aluno" : "coordenacao";
+  const supabase = createServerClientUntyped();
+
+  const { error: insertError } = await supabase.from("student_weight_history").insert({
+    student_id: studentId,
+    weight_kg: weightKg,
+    measured_at: measuredAt,
+    created_by: session.userId,
+    created_by_name: session.fullName,
+    created_by_role: session.role,
+    source,
+    notes: nullIfEmpty(notes),
+  });
+  if (insertError) return { ok: false, error: insertError.message };
+
+  const { error: healthError } = await supabase.from("health_restrictions").upsert({
+    student_id: studentId,
+    peso_kg: weightKg,
+    last_updated_at: new Date().toISOString(),
+  });
+  if (healthError) return { ok: false, error: healthError.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
   revalidatePath("/aluno/ficha");

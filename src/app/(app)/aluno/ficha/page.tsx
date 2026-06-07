@@ -10,6 +10,7 @@ import {
   fetchStudentCanga,
   fetchStudentLogistics,
   fetchStudentVehicle,
+  fetchStudentWeightHistory,
 } from "@/lib/supabase/queries/students";
 import { Tabs } from "@/components/ui/Tabs";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
@@ -64,11 +65,12 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
 
   const tab = searchParams.tab ?? "resumo";
 
-  const [contact, address, emergency, health, canga, logistics, vehicle, checklist] = await Promise.all([
+  const [contact, address, emergency, health, weightHistory, canga, logistics, vehicle, checklist] = await Promise.all([
     fetchStudentContact(supabase, session.studentId),
     fetchStudentAddress(supabase, session.studentId),
     fetchEmergencyContacts(supabase, session.studentId),
     fetchHealthRestriction(supabase, session.studentId),
+    fetchStudentWeightHistory(supabase, session.studentId),
     fetchStudentCanga(supabase, session.studentId),
     fetchStudentLogistics(supabase, session.studentId),
     fetchStudentVehicle(supabase, session.studentId),
@@ -126,7 +128,14 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
         {tab === "emergencia" && (
           <EmergenciaTab studentId={session.studentId} contacts={emergency} />
         )}
-        {tab === "saude" && <SaudeTab studentId={session.studentId} health={health} />}
+        {tab === "saude" && (
+          <SaudeTab
+            studentId={session.studentId}
+            health={health}
+            weightHistory={weightHistory}
+            currentUserName={session.fullName}
+          />
+        )}
         {tab === "logistica" && (
           <LogisticaTab studentId={session.studentId} logistics={logistics} />
         )}

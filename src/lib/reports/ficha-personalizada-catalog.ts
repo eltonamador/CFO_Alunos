@@ -121,7 +121,9 @@ export const FICHA_FIELDS: FichaField[] = [
   // ── Saúde (LGPD) ──────────────────────────────────────────────────
   { id: "fp_sa_blood", groupId: "saude", label: "Sangue/RH", minPx: 50, weight: 0.06 },
   { id: "fp_sa_altura", groupId: "saude", label: "Altura", minPx: 40, weight: 0.05 },
-  { id: "fp_sa_peso", groupId: "saude", label: "Peso", minPx: 40, weight: 0.05 },
+  { id: "fp_sa_peso", groupId: "saude", label: "Peso atual", minPx: 52, weight: 0.06 },
+  { id: "fp_sa_peso_data", groupId: "saude", label: "Última medição", minPx: 70, weight: 0.08 },
+  { id: "fp_sa_peso_registros", groupId: "saude", label: "Reg. peso", minPx: 48, weight: 0.05 },
   { id: "fp_sa_alergias", groupId: "saude", label: "Alergias", minPx: 110, weight: 0.13 },
   { id: "fp_sa_medicacao", groupId: "saude", label: "Medicação contínua", minPx: 110, weight: 0.13 },
   { id: "fp_sa_doenca", groupId: "saude", label: "Doença / Restr. física", minPx: 110, weight: 0.13 },

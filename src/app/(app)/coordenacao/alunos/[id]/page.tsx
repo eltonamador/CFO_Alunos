@@ -14,6 +14,7 @@ import {
   fetchStudentVehicle,
   listStudents,
   fetchStudentAuditLogs,
+  fetchStudentWeightHistory,
 } from "@/lib/supabase/queries/students";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
 import { Tabs } from "@/components/ui/Tabs";
@@ -61,12 +62,13 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
 
   const tab = searchParams.tab ?? "resumo";
 
-  const [contact, address, emergency, health, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs] =
+  const [contact, address, emergency, health, weightHistory, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs] =
     await Promise.all([
       fetchStudentContact(supabase, params.id),
       fetchStudentAddress(supabase, params.id),
       fetchEmergencyContacts(supabase, params.id),
       fetchHealthRestriction(supabase, params.id),
+      fetchStudentWeightHistory(supabase, params.id),
       signedPhotoUrl(supabase, student.photo_path),
       fetchStudentCanga(supabase, params.id),
       listStudents(supabase),
@@ -143,7 +145,15 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
           />
         )}
         {tab === "emergencia" && <EmergenciaTab studentId={student.id} contacts={emergency} />}
-        {tab === "saude" && <SaudeTab studentId={student.id} health={health} canCurate />}
+        {tab === "saude" && (
+          <SaudeTab
+            studentId={student.id}
+            health={health}
+            weightHistory={weightHistory}
+            currentUserName={session.fullName}
+            canCurate
+          />
+        )}
         {tab === "logistica" && (
           <LogisticaTab studentId={student.id} logistics={logistics} canEditUniform />
         )}

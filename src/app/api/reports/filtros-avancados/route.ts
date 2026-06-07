@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { buildWeightSummary } from "@/modules/student-profile/domain/weightHistory";
 import {
   computeFichaSituacao,
   hasAllergy,
@@ -44,6 +45,14 @@ function enrollmentLabel(e: "pendente" | "confirmada" | null): string {
 }
 function simNao(v: boolean): string {
   return v ? "Sim" : "Não";
+}
+function formatWeight(v: number | null | undefined): string {
+  return v == null ? "" : `${v} kg`;
+}
+function formatDateBR(v: string | null | undefined): string {
+  if (!v) return "";
+  const d = new Date(`${v}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString("pt-BR");
 }
 function residesLabel(a: AlunoFiltravel): string {
   const r = residesInAmapa(a);
@@ -103,7 +112,14 @@ async function buildXlsx(
     "Pend. Mat.",
     "Pend. Doc.",
   ];
-  const sensitiveHeaders = ["Alergia", "Medicação", "Restr. Física"];
+  const sensitiveHeaders = [
+    "Peso atual",
+    "Ult. medicao peso",
+    "Reg. peso",
+    "Alergia",
+    "Medicação",
+    "Restr. Física",
+  ];
   const headers = includeSensitive ? [...baseHeaders, ...sensitiveHeaders] : baseHeaders;
 
   const hdr = ws.addRow(headers);
@@ -139,6 +155,9 @@ async function buildXlsx(
       includeSensitive
         ? [
             ...base,
+            formatWeight(a.weight_summary?.currentWeightKg),
+            formatDateBR(a.weight_summary?.lastMeasuredAt),
+            a.weight_summary?.count ?? 0,
             simNao(hasAllergy(a)),
             simNao(usesMedication(a)),
             a.health_restrictions?.has_physical_restriction ? "Sim" : "Não",
@@ -239,10 +258,10 @@ async function buildPdf(
 
   // Tabela
   const baseHeaders = ["Nº", "Nome de Guerra", "Pel.", "Sx", "UF", "AP", "Matr.", "Ficha", "CNH", "Veíc.", "Gand.", "Calça", "Mil.", "PM", "PD"];
-  const sensHeaders = ["Alerg.", "Med."];
+  const sensHeaders = ["Peso", "Med. Peso", "Reg.", "Alerg.", "Med."];
   const headers = includeSensitive ? [...baseHeaders, ...sensHeaders] : baseHeaders;
   const fractionsBase = [0.04, 0.18, 0.05, 0.04, 0.05, 0.05, 0.08, 0.08, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05];
-  const fractionsSens = [0.06, 0.05];
+  const fractionsSens = [0.06, 0.06, 0.04, 0.05, 0.05];
   let fractions = includeSensitive ? [...fractionsBase, ...fractionsSens] : fractionsBase;
   const sum = fractions.reduce((s, f) => s + f, 0);
   fractions = fractions.map((f) => f / sum);
@@ -300,7 +319,14 @@ async function buildPdf(
         simNao(a.has_pending_documents),
       ];
       const cells = (includeSensitive
-        ? [...base, simNao(hasAllergy(a)), simNao(usesMedication(a))]
+        ? [
+            ...base,
+            formatWeight(a.weight_summary?.currentWeightKg),
+            formatDateBR(a.weight_summary?.lastMeasuredAt),
+            a.weight_summary?.count ?? 0,
+            simNao(hasAllergy(a)),
+            simNao(usesMedication(a)),
+          ]
         : base
       ).map((v) => (v === "" || v === null || v === undefined ? "—" : String(v)));
 
@@ -448,15 +474,40 @@ export async function POST(req: NextRequest) {
     (pendDocsRes.data ?? []).map((r) => (r as any).student_id).filter(Boolean),
   );
 
+  const weightSummaryMap = new Map<string, NonNullable<AlunoFiltravel["weight_summary"]>>();
+  if (includeSensitive && studentIds.length > 0) {
+    const resp = await supabase
+      .from("student_weight_history")
+      .select("id, student_id, weight_kg, measured_at, created_at")
+      .in("student_id", studentIds);
+    if (!resp.error) {
+      const grouped = new Map<string, any[]>();
+      for (const row of (resp.data as any[]) ?? []) {
+        const arr = grouped.get(row.student_id) ?? [];
+        arr.push({
+          id: row.id,
+          weight_kg: Number(row.weight_kg),
+          measured_at: row.measured_at,
+          created_at: row.created_at,
+        });
+        grouped.set(row.student_id, arr);
+      }
+      for (const [studentId, rows] of grouped.entries()) {
+        weightSummaryMap.set(studentId, buildWeightSummary(rows));
+      }
+    }
+  }
+
   let alunos: AlunoFiltravel[] = raw.map((s) => ({
     ...s,
     has_pending_equipment: pendEquipSet.has(s.id),
     has_pending_documents: pendDocsSet.has(s.id),
+    weight_summary: weightSummaryMap.get(s.id) ?? null,
   }));
 
   // Se a sessão não é Coordenação, zera dados sensíveis nas linhas (defesa em profundidade)
   if (session.role !== "coordenacao") {
-    alunos = alunos.map((a) => ({ ...a, health_restrictions: null, religion: null }));
+    alunos = alunos.map((a) => ({ ...a, health_restrictions: null, religion: null, weight_summary: null }));
   }
 
   try {

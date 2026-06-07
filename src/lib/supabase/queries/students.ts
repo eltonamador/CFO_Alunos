@@ -128,6 +128,20 @@ export interface HealthRestrictionRow {
   medical_doc_waived_at: string | null;
 }
 
+export interface StudentWeightHistoryRow {
+  id: string;
+  student_id: string;
+  weight_kg: number;
+  measured_at: string;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_by_role: "aluno" | "coordenacao" | string | null;
+  source: "aluno" | "coordenacao";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InstructorCardRow {
   id: string;
   class_id: string;
@@ -374,6 +388,19 @@ export async function fetchHealthRestriction(
     .eq("student_id", studentId)
     .maybeSingle();
   return (data as HealthRestrictionRow | null) ?? null;
+}
+
+export async function fetchStudentWeightHistory(
+  supabase: SupabaseClient<any, any, any>,
+  studentId: string,
+): Promise<StudentWeightHistoryRow[]> {
+  const { data } = await supabase
+    .from("student_weight_history")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("measured_at", { ascending: false })
+    .order("created_at", { ascending: false });
+  return (data ?? []) as StudentWeightHistoryRow[];
 }
 
 // =====================================================================

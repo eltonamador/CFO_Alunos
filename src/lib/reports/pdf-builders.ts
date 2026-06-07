@@ -2,6 +2,7 @@
 import PDFDocument from "pdfkit";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FICHA_FIELDS_BY_ID, type FichaField } from "./ficha-personalizada-catalog";
+import { buildWeightSummary, type WeightSummary } from "@/modules/student-profile/domain/weightHistory";
 
 // =====================================================================
 // Layout institucional CBMAP · ABM · CFO 2026.1
@@ -721,6 +722,7 @@ interface FichaCtx {
   address: any;
   logistics: any;
   health: any;
+  weight: WeightSummary;
   vehicle: any;
   emergency: { c1: any; c2: any };
   docs: { enviados: number; pendentes: number; rejeitados: number };
@@ -810,7 +812,14 @@ const FICHA_ACCESSORS: Record<string, Accessor> = {
   fp_sa_blood: (_s, ctx) =>
     ctx.health?.blood_type ? `${ctx.health.blood_type}${ctx.health.rh_factor ?? ""}` : null,
   fp_sa_altura: (_s, ctx) => (ctx.health?.altura_cm ? `${ctx.health.altura_cm} cm` : null),
-  fp_sa_peso: (_s, ctx) => (ctx.health?.peso_kg ? `${ctx.health.peso_kg} kg` : null),
+  fp_sa_peso: (_s, ctx) =>
+    ctx.weight.currentWeightKg != null
+      ? `${ctx.weight.currentWeightKg} kg`
+      : ctx.health?.peso_kg
+        ? `${ctx.health.peso_kg} kg`
+        : null,
+  fp_sa_peso_data: (_s, ctx) => formatDateBR(ctx.weight.lastMeasuredAt),
+  fp_sa_peso_registros: (_s, ctx) => ctx.weight.count,
   fp_sa_alergias: (_s, ctx) => ctx.health?.allergies,
   fp_sa_medicacao: (_s, ctx) => ctx.health?.continuous_medication,
   fp_sa_doenca: (_s, ctx) => {
@@ -910,6 +919,9 @@ export async function buildFichaPersonalizadaPDF(
   const needsLogistics = cols.some((c) => c.groupId === "logistica");
   const needsVehicle = cols.some((c) => c.groupId === "veiculo");
   const needsHealth = cols.some((c) => c.groupId === "saude");
+  const needsWeightHistory = cols.some((c) =>
+    ["fp_sa_peso", "fp_sa_peso_data", "fp_sa_peso_registros"].includes(c.id),
+  );
   const needsEmergency = cols.some((c) => c.groupId === "emergencia");
   const needsDocs = cols.some((c) => c.id.startsWith("fp_doc_"));
   const needsMats = cols.some((c) => c.id.startsWith("fp_mat_"));
@@ -960,6 +972,32 @@ export async function buildFichaPersonalizadaPDF(
         )
       : Promise.resolve(new Map<string, any>()),
   ]);
+
+  const weightByStudent = new Map<string, WeightSummary>();
+  if (needsWeightHistory && studentIds.length > 0) {
+    const resp = await supabase
+      .from("student_weight_history")
+      .select("id, student_id, weight_kg, measured_at, created_at")
+      .in("student_id", studentIds);
+    if (resp.error) {
+      console.warn("[ficha-personalizada] falha em student_weight_history:", resp.error.message);
+    } else {
+      const grouped = new Map<string, any[]>();
+      for (const row of (resp.data as any[]) ?? []) {
+        const arr = grouped.get(row.student_id) ?? [];
+        arr.push({
+          id: row.id,
+          weight_kg: Number(row.weight_kg),
+          measured_at: row.measured_at,
+          created_at: row.created_at,
+        });
+        grouped.set(row.student_id, arr);
+      }
+      for (const [studentId, rows] of grouped.entries()) {
+        weightByStudent.set(studentId, buildWeightSummary(rows));
+      }
+    }
+  }
 
   // Contatos de emergência: 1:N — agrupa em c1/c2
   const emergencyByStudent = new Map<string, { c1: any; c2: any }>();
@@ -1027,6 +1065,12 @@ export async function buildFichaPersonalizadaPDF(
       address: addressMap.get(s.id) ?? null,
       logistics: logisticsMap.get(s.id) ?? null,
       health: healthMap.get(s.id) ?? null,
+      weight: weightByStudent.get(s.id) ?? {
+        currentWeightKg: null,
+        lastMeasuredAt: null,
+        count: 0,
+        variationKg: null,
+      },
       vehicle: vehicleMap.get(s.id) ?? null,
       emergency: emergencyByStudent.get(s.id) ?? { c1: null, c2: null },
       docs: docsByStudent.get(s.id) ?? { enviados: 0, pendentes: 0, rejeitados: 0 },
