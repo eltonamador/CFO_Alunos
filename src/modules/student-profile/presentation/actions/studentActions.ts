@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
 import { getSession } from "@/modules/identity/presentation/session";
+import { normalizeWeightInput } from "@/modules/student-profile/domain/weightHistory";
 import {
   maskPhone,
   maskCEP,
@@ -57,6 +58,17 @@ function canEditOwn(session: { role: string; studentId: string | null }, student
   if (isAdmin(session.role)) return true;
   if (session.role === "aluno" && session.studentId === studentId) return true;
   return false;
+}
+
+function todayInSaoPaulo(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 // =====================================================================
@@ -364,7 +376,7 @@ export async function updateHealthAction(
     blood_type: blood_type || null,
     rh_factor: rh_factor || null,
     altura_cm: altura_cm !== "" && altura_cm !== undefined ? Number(altura_cm) : null,
-    peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : null,
+    peso_kg: peso_kg !== "" && peso_kg !== undefined ? Number(peso_kg) : previous?.peso_kg ?? null,
     // Cirurgia ocular: mantém a coluna legada cirurgia_ocular em sincronia
     // com has_eye_surgery (espelho) para compatibilidade com relatórios.
     has_eye_surgery: hasEye,
@@ -404,6 +416,88 @@ export async function updateHealthAction(
       status: "pendente",
     });
   }
+
+  revalidatePath(`/coordenacao/alunos/${studentId}`);
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
+// =====================================================================
+// Historico de Peso - append-only
+// =====================================================================
+const weightHistorySchema = z.object({
+  studentId: z.string().uuid(),
+  weight_kg: z.union([z.string(), z.number()]),
+  measured_at: optionalTrimmed(),
+  notes: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.trim()))
+    .refine((v) => v === undefined || v.length <= 500, "Observacao deve ter ate 500 caracteres."),
+});
+
+export async function addStudentWeightAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessao expirada" };
+  if (session.role !== "aluno" && session.role !== "coordenacao") {
+    return { ok: false, error: "Sem permissao" };
+  }
+
+  const parsed = weightHistorySchema.safeParse({
+    studentId: formData.get("studentId"),
+    weight_kg: formData.get("weight_kg") ?? "",
+    measured_at: formData.get("measured_at") ?? undefined,
+    notes: formData.get("notes") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados invalidos" };
+  }
+
+  const { studentId, notes } = parsed.data;
+  if (session.role === "aluno" && session.studentId !== studentId) {
+    return { ok: false, error: "Sem permissao" };
+  }
+
+  let weightKg: number;
+  try {
+    weightKg = normalizeWeightInput(parsed.data.weight_kg);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Peso invalido." };
+  }
+
+  const today = todayInSaoPaulo();
+  const measuredAt = session.role === "coordenacao" ? (parsed.data.measured_at ?? today) : today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(measuredAt) || Number.isNaN(Date.parse(`${measuredAt}T00:00:00Z`))) {
+    return { ok: false, error: "Data de medicao invalida." };
+  }
+  if (measuredAt > today) {
+    return { ok: false, error: "Data de medicao nao pode ser futura." };
+  }
+
+  const source = session.role === "aluno" ? "aluno" : "coordenacao";
+  const supabase = createServerClientUntyped();
+
+  const { error: insertError } = await supabase.from("student_weight_history").insert({
+    student_id: studentId,
+    weight_kg: weightKg,
+    measured_at: measuredAt,
+    created_by: session.userId,
+    created_by_name: session.fullName,
+    created_by_role: session.role,
+    source,
+    notes: nullIfEmpty(notes),
+  });
+  if (insertError) return { ok: false, error: insertError.message };
+
+  const { error: healthError } = await supabase.from("health_restrictions").upsert({
+    student_id: studentId,
+    peso_kg: weightKg,
+    last_updated_at: new Date().toISOString(),
+  });
+  if (healthError) return { ok: false, error: healthError.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
   revalidatePath("/aluno/ficha");
@@ -527,6 +621,14 @@ const adminStudentSchema = z.object({
   studentNumber: z.coerce.number().int().min(1).max(100),
   pelotao: z.enum(["CFO I", "CFO II", "CFO III"]),
   cangaStudentId: z.string().uuid().or(z.literal("")).optional().nullable(),
+  coordinationNotes: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.trim()))
+    .refine(
+      (v) => v === undefined || v.length <= 2000,
+      "Observações devem ter até 2000 caracteres.",
+    ),
 });
 
 export async function updateStudentAdminAction(
@@ -542,13 +644,14 @@ export async function updateStudentAdminAction(
     studentNumber: formData.get("studentNumber"),
     pelotao: formData.get("pelotao"),
     cangaStudentId: formData.get("cangaStudentId") || null,
+    coordinationNotes: formData.get("coordinationNotes") ?? undefined,
   });
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const { studentId, studentNumber, pelotao, cangaStudentId } = parsed.data;
+  const { studentId, studentNumber, pelotao, cangaStudentId, coordinationNotes } = parsed.data;
 
   if (cangaStudentId === studentId) {
     return { ok: false, error: "Um aluno não pode ser canga de si mesmo." };
@@ -556,12 +659,13 @@ export async function updateStudentAdminAction(
 
   const supabase = createServerClientUntyped();
 
-  // 1. Atualizar dados cadastrais críticos (número e pelotão/fase)
+  // 1. Atualizar dados cadastrais críticos (número, pelotão/fase e observações)
   const { error: studentError } = await supabase
     .from("students")
     .update({
       student_number: studentNumber,
       pelotao: pelotao,
+      coordination_notes: nullIfEmpty(coordinationNotes),
       updated_by: session.userId,
     })
     .eq("id", studentId);
@@ -604,6 +708,53 @@ export async function updateStudentAdminAction(
 }
 
 // =====================================================================
+// Situação no curso — APENAS Coordenação
+// =====================================================================
+const courseStatusSchema = z.object({
+  studentId: z.string().uuid(),
+  course_status: z.enum([
+    "matriculado",
+    "excluido",
+    "trancado",
+    "desistente",
+    "transferido",
+    "concluido",
+    "outro",
+  ]),
+});
+
+export async function updateCourseStatusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessão expirada" };
+  if (session.role !== "coordenacao") {
+    return { ok: false, error: "Apenas Coordenação pode alterar a situação no curso." };
+  }
+
+  const parsed = courseStatusSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+
+  const supabase = createServerClientUntyped();
+  const { error } = await supabase
+    .from("students")
+    .update({
+      course_status: parsed.data.course_status,
+      updated_by: session.userId,
+    })
+    .eq("id", parsed.data.studentId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/coordenacao/alunos/${parsed.data.studentId}`);
+  revalidatePath("/coordenacao/alunos");
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
+// =====================================================================
 // Logística — Aluno (própria) ou Coordenação/Secretaria
 // =====================================================================
 const logisticsSchema = z.object({
@@ -612,6 +763,8 @@ const logisticsSchema = z.object({
   course_address: z.string().optional(),
   has_family_in_ap: z.enum(["true", "false"]).or(z.literal("")).optional(),
   local_contact: z.string().optional(),
+  gandola_size: optionalTrimmed(),
+  pants_size: optionalTrimmed(),
 });
 
 export async function updateLogisticsAction(
@@ -624,17 +777,34 @@ export async function updateLogisticsAction(
   const parsed = logisticsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Dados inválidos" };
 
-  const { studentId, has_fixed_residence_macapa, has_family_in_ap, ...rest } = parsed.data;
+  const {
+    studentId,
+    has_fixed_residence_macapa,
+    has_family_in_ap,
+    gandola_size,
+    pants_size,
+    ...rest
+  } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+  if (session.role !== "coordenacao" && (gandola_size !== undefined || pants_size !== undefined)) {
+    return { ok: false, error: "Apenas Coordenação pode alterar dados de fardamento." };
+  }
 
   const supabase = createServerClientUntyped();
-  const { error } = await supabase.from("student_logistics").upsert({
+  const updatePayload: Record<string, unknown> = {
     student_id: studentId,
     ...rest,
     has_fixed_residence_macapa: has_fixed_residence_macapa === "true" ? true : has_fixed_residence_macapa === "false" ? false : null,
     has_family_in_ap: has_family_in_ap === "true" ? true : has_family_in_ap === "false" ? false : null,
     updated_by: session.userId,
-  });
+  };
+
+  if (session.role === "coordenacao") {
+    updatePayload.gandola_size = nullIfEmpty(gandola_size);
+    updatePayload.pants_size = nullIfEmpty(pants_size);
+  }
+
+  const { error } = await supabase.from("student_logistics").upsert(updatePayload);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/coordenacao/alunos/${studentId}`);
@@ -656,6 +826,7 @@ const identificationSchema = z.object({
   naturality_state: optionalUF(),
   naturality_city: optionalTrimmed(),
   marital_status: optionalTrimmed(),
+  spouse_name: optionalTrimmed(),
   education_level: optionalTrimmed(),
   graduation_type: optionalTrimmed(),
   graduation_name: optionalTrimmed(),
@@ -693,9 +864,16 @@ const identificationSchema = z.object({
   prior_military_rank: optionalTrimmed(),
   prior_military_duration: optionalTrimmed(),
   prior_military_notes: optionalTrimmed(),
+  has_specialization: z.enum(["true", "false"]).or(z.literal("")).optional(),
+  specialization_name: optionalTrimmed(),
+  specialization_institution: optionalTrimmed(),
+  specialization_period: optionalTrimmed(),
 }).superRefine((data, ctx) => {
   const isAdventist = data.religion === "Adventista";
   const hasRestriction = data.has_religious_restriction === "true";
+  const requiresSpouse = ["Casado", "Casada", "Casado(a)", "União estável"].includes(
+    data.marital_status ?? "",
+  );
 
   if (data.religion === "Outra" && !data.religion_other) {
     ctx.addIssue({
@@ -710,6 +888,14 @@ const identificationSchema = z.object({
       code: "custom",
       path: ["religious_restriction_notes"],
       message: "Por favor, detalhe as considerações ou restrições operacionais associadas.",
+    });
+  }
+
+  if (requiresSpouse && data.spouse_name && cleanSpaces(data.spouse_name).length < 3) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["spouse_name"],
+      message: "Informe um nome válido para o(a) cônjuge/companheiro(a).",
     });
   }
 
@@ -737,6 +923,15 @@ const identificationSchema = z.object({
       });
     }
   }
+
+  // Especialização operacional / estágio: exige o nome quando "Sim".
+  if (data.has_specialization === "true" && !data.specialization_name) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["specialization_name"],
+      message: "Informe o nome do curso de especialização ou estágio.",
+    });
+  }
 });
 
 export async function updateIdentificationAction(
@@ -760,6 +955,7 @@ export async function updateIdentificationAction(
     naturality_state,
     naturality_city,
     marital_status,
+    spouse_name,
     education_level,
     graduation_type,
     graduation_name,
@@ -782,8 +978,24 @@ export async function updateIdentificationAction(
     prior_military_rank,
     prior_military_duration,
     prior_military_notes,
+    has_specialization,
+    specialization_name,
+    specialization_institution,
+    specialization_period,
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+
+  // Especialização operacional / estágio: quando "Não" ou não informado,
+  // limpa os complementares previamente preenchidos.
+  const hasSpecialization =
+    has_specialization === "true"
+      ? true
+      : has_specialization === "false"
+        ? false
+        : null;
+  const specializationNameValue = hasSpecialization === true ? nullIfEmpty(specialization_name) : null;
+  const specializationInstitutionValue = hasSpecialization === true ? nullIfEmpty(specialization_institution) : null;
+  const specializationPeriodValue = hasSpecialization === true ? nullIfEmpty(specialization_period) : null;
 
   // Quando "Não", limpa quaisquer complementares previamente preenchidos.
   const hadPrior =
@@ -797,6 +1009,9 @@ export async function updateIdentificationAction(
   const priorRankValue = hadPrior === true ? nullIfEmpty(prior_military_rank) : null;
   const priorDurationValue = hadPrior === true ? nullIfEmpty(prior_military_duration) : null;
   const priorNotesValue = hadPrior === true ? nullIfEmpty(prior_military_notes) : null;
+  const spouseRequired = ["Casado", "Casada", "Casado(a)", "União estável"].includes(
+    marital_status ?? "",
+  );
 
   const supabase = createServerClientUntyped();
 
@@ -816,6 +1031,7 @@ export async function updateIdentificationAction(
       naturality_state: naturality_state ? maskUF(naturality_state) : null,
       naturality_city: nullIfEmpty(naturality_city),
       marital_status: nullIfEmpty(marital_status),
+      spouse_name: spouseRequired && spouse_name ? normalizeName(spouse_name) : null,
       education_level: nullIfEmpty(education_level),
       graduation_type: nullIfEmpty(graduation_type),
       graduation_name: nullIfEmpty(graduation_name),
@@ -838,6 +1054,10 @@ export async function updateIdentificationAction(
       prior_military_rank: priorRankValue,
       prior_military_duration: priorDurationValue,
       prior_military_notes: priorNotesValue,
+      has_specialization: hasSpecialization,
+      specialization_name: specializationNameValue,
+      specialization_institution: specializationInstitutionValue,
+      specialization_period: specializationPeriodValue,
       updated_by: session.userId,
     })
     .eq("id", studentId)
@@ -996,6 +1216,10 @@ const enrollmentStatusSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v == null || v.trim() === "" ? undefined : v.trim())),
+  enrollment_date: optionalTrimmed().refine(
+    (v) => v === undefined || /^\d{4}-\d{2}-\d{2}$/.test(v),
+    "Data de inclusão inválida.",
+  ),
 });
 
 export async function updateEnrollmentStatusAction(
@@ -1012,12 +1236,13 @@ export async function updateEnrollmentStatusAction(
     studentId: formData.get("studentId"),
     enrollment_status: formData.get("enrollment_status"),
     enrollment_id: formData.get("enrollment_id") ?? undefined,
+    enrollment_date: formData.get("enrollment_date") ?? undefined,
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const { studentId, enrollment_status, enrollment_id } = parsed.data;
+  const { studentId, enrollment_status, enrollment_id, enrollment_date } = parsed.data;
   const supabase = createServerClientUntyped();
 
   const update: Record<string, unknown> = {
@@ -1028,6 +1253,10 @@ export async function updateEnrollmentStatusAction(
   // confirmada). Form vazio NÃO apaga matrícula previamente registrada.
   if (enrollment_id !== undefined) {
     update.enrollment_id = enrollment_id;
+  }
+  // Data de inclusão/matrícula — atualizada apenas quando informada.
+  if (enrollment_date !== undefined) {
+    update.enrollment_date = enrollment_date;
   }
 
   const { error } = await supabase.from("students").update(update).eq("id", studentId);

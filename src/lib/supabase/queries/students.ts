@@ -42,6 +42,21 @@ export interface StudentDetailRow extends StudentListRow {
   has_religious_restriction: boolean | null;
   religious_restriction_notes: string | null;
   enrollment_status: "pendente" | "confirmada";
+  course_status:
+    | "matriculado"
+    | "excluido"
+    | "trancado"
+    | "desistente"
+    | "transferido"
+    | "concluido"
+    | "outro";
+  spouse_name: string | null;
+  enrollment_date: string | null;
+  coordination_notes: string | null;
+  has_specialization: boolean | null;
+  specialization_name: string | null;
+  specialization_institution: string | null;
+  specialization_period: string | null;
   had_prior_military_service: boolean | null;
   prior_military_branch:
     | "corpo_de_bombeiros_militar"
@@ -117,6 +132,20 @@ export interface HealthRestrictionRow {
   medical_doc_waived_reason: string | null;
   medical_doc_waived_by: string | null;
   medical_doc_waived_at: string | null;
+}
+
+export interface StudentWeightHistoryRow {
+  id: string;
+  student_id: string;
+  weight_kg: number;
+  measured_at: string;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_by_role: "aluno" | "coordenacao" | string | null;
+  source: "aluno" | "coordenacao";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface InstructorCardRow {
@@ -367,6 +396,19 @@ export async function fetchHealthRestriction(
   return (data as HealthRestrictionRow | null) ?? null;
 }
 
+export async function fetchStudentWeightHistory(
+  supabase: SupabaseClient<any, any, any>,
+  studentId: string,
+): Promise<StudentWeightHistoryRow[]> {
+  const { data } = await supabase
+    .from("student_weight_history")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("measured_at", { ascending: false })
+    .order("created_at", { ascending: false });
+  return (data ?? []) as StudentWeightHistoryRow[];
+}
+
 // =====================================================================
 // Card do Instrutor (LGPD-safe via view)
 // =====================================================================
@@ -468,6 +510,8 @@ export interface StudentLogisticsRow {
   needs_housing: boolean | null;
   has_family_in_ap: boolean | null;
   local_contact: string | null;
+  gandola_size: string | null;
+  pants_size: string | null;
 }
 
 export async function fetchStudentLogistics(

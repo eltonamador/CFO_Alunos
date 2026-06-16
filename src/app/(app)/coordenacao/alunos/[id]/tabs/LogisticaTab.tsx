@@ -24,9 +24,11 @@ function SubmitButton() {
 export function LogisticaTab({
   studentId,
   logistics,
+  canEditUniform = false,
 }: {
   studentId: string;
   logistics: StudentLogisticsRow | null;
+  canEditUniform?: boolean;
 }) {
   const [state, formAction] = useFormState<ActionResult | null, FormData>(
     updateLogisticsAction,
@@ -96,6 +98,35 @@ export function LogisticaTab({
               name="local_contact"
               defaultValue={logistics?.local_contact ?? ""}
               placeholder="Nome — (96) 9XXXX-XXXX"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold">Fardamento / Uniforme</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="gandola_size">Gandola</Label>
+            <Input
+              id="gandola_size"
+              name="gandola_size"
+              defaultValue={logistics?.gandola_size ?? ""}
+              placeholder="Ex: 42M"
+              disabled={!canEditUniform}
+              className="uppercase"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pants_size">Calça</Label>
+            <Input
+              id="pants_size"
+              name="pants_size"
+              defaultValue={logistics?.pants_size ?? ""}
+              placeholder="Ex: 46M"
+              disabled={!canEditUniform}
+              className="uppercase"
             />
           </div>
         </div>

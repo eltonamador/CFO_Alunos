@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { Alert } from "@/components/ui/Alert";
 import {
   updateStudentAdminAction,
+  updateCourseStatusAction,
   updateEnrollmentStatusAction,
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import { Badge } from "@/components/ui/Badge";
@@ -27,6 +29,23 @@ const MILITARY_BRANCH_LABELS: Record<string, string> = {
   forcas_armadas: "Forças Armadas",
   outra: "Outra",
 };
+
+const COURSE_STATUS_LABELS: Record<StudentDetailRow["course_status"], string> = {
+  matriculado: "Matriculado",
+  excluido: "Excluído",
+  trancado: "Trancado",
+  desistente: "Desistente",
+  transferido: "Transferido",
+  concluido: "Concluído",
+  outro: "Outro",
+};
+
+function formatDateBR(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return null;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
 
 function formatBirthDateWithAge(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -176,6 +195,18 @@ export function ResumoTab({
                     ))}
                   </Select>
                 </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="coordinationNotes">Observações sobre o cadete</Label>
+                  <Textarea
+                    id="coordinationNotes"
+                    name="coordinationNotes"
+                    defaultValue={student.coordination_notes ?? ""}
+                    rows={3}
+                    maxLength={2000}
+                    placeholder="Anotações da coordenação sobre o cadete (texto livre)."
+                  />
+                </div>
               </div>
 
               {state?.ok === false && (
@@ -229,24 +260,33 @@ export function ResumoTab({
                   <span className="num-mono">
                     {student.enrollment_id ?? <span className="text-muted-foreground">—</span>}
                   </span>
-                  <Badge
-                    variant={student.enrollment_status === "confirmada" ? "success" : "warning"}
-                    dot
-                  >
-                    {student.enrollment_status === "confirmada"
-                      ? "Matrícula confirmada"
-                      : "Matrícula pendente"}
-                  </Badge>
+                  {formatDateBR(student.enrollment_date) && (
+                    <Badge variant="success" dot>
+                      Incluído em {formatDateBR(student.enrollment_date)}
+                    </Badge>
+                  )}
                 </dd>
               </div>
-              <Field label="Situação" value={student.situation} />
+              <Field label="Situação no curso" value={COURSE_STATUS_LABELS[student.course_status]} />
+              {canEditAdmin && student.coordination_notes && (
+                <div className="col-span-2">
+                  <Field label="Observações (coordenação)" value={student.coordination_notes} />
+                </div>
+              )}
             </dl>
+          )}
+          {canEditAdmin && (
+            <CourseStatusControl
+              studentId={student.id}
+              currentStatus={student.course_status}
+            />
           )}
           {canEditAdmin && (
             <EnrollmentStatusControl
               studentId={student.id}
               currentStatus={student.enrollment_status}
               currentEnrollmentId={student.enrollment_id}
+              currentEnrollmentDate={student.enrollment_date}
             />
           )}
         </CardContent>
@@ -319,11 +359,33 @@ export function ResumoTab({
       </Card>
 
       <Card>
+        <CardHeader><CardTitle>Especialização operacional / estágio</CardTitle></CardHeader>
+        <CardContent>
+          {student.has_specialization == null ? (
+            <p className="text-sm text-muted-foreground">Não informado.</p>
+          ) : student.has_specialization === false ? (
+            <p className="text-sm font-medium text-foreground">
+              Não possui curso de especialização operacional ou estágio.
+            </p>
+          ) : (
+            <dl className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Field label="Curso/Estágio" value={student.specialization_name} />
+              </div>
+              <Field label="Instituição" value={student.specialization_institution} />
+              <Field label="Ano/Período" value={student.specialization_period} />
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle>Dados pessoais</CardTitle></CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-3">
             <Field label="Nacionalidade" value={student.nationality} />
             <Field label="Estado civil" value={student.marital_status} />
+            <Field label="Cônjuge/companheiro(a)" value={student.spouse_name} />
             <Field label="Naturalidade" value={
               student.naturality_city && student.naturality_state
                 ? `${student.naturality_city} / ${student.naturality_state}`
@@ -343,6 +405,70 @@ export function ResumoTab({
   );
 }
 
+function CourseStatusControl({
+  studentId,
+  currentStatus,
+}: {
+  studentId: string;
+  currentStatus: StudentDetailRow["course_status"];
+}) {
+  const [state, formAction] = useFormState(updateCourseStatusAction, null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+
+  if (!open) {
+    return (
+      <div className="mt-3 flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          Alterar situação no curso
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="mt-3 space-y-3 rounded-md border border-dashed border-border bg-muted/30 p-3">
+      <input type="hidden" name="studentId" value={studentId} />
+      <div className="space-y-1">
+        <Label htmlFor="course_status">Situação no curso</Label>
+        <Select id="course_status" name="course_status" defaultValue={currentStatus}>
+          {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      {state?.ok === false && (
+        <Alert variant="destructive" className="text-xs py-2 px-3">
+          {state.error}
+        </Alert>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(false)}
+        >
+          Cancelar
+        </Button>
+        <SubmitButton />
+      </div>
+    </form>
+  );
+}
+
 // ---------------------------------------------------------------------
 // Controle inline de status da matrícula (somente Coordenação).
 // ---------------------------------------------------------------------
@@ -350,10 +476,12 @@ function EnrollmentStatusControl({
   studentId,
   currentStatus,
   currentEnrollmentId,
+  currentEnrollmentDate,
 }: {
   studentId: string;
   currentStatus: "pendente" | "confirmada";
   currentEnrollmentId: string | null;
+  currentEnrollmentDate: string | null;
 }) {
   const [state, formAction] = useFormState(updateEnrollmentStatusAction, null);
   const [open, setOpen] = React.useState(false);
@@ -402,6 +530,15 @@ function EnrollmentStatusControl({
             defaultValue={currentEnrollmentId ?? ""}
             placeholder="Quando disponível"
             autoComplete="off"
+          />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label htmlFor="enrollment_date">Data de inclusão/matrícula</Label>
+          <Input
+            id="enrollment_date"
+            name="enrollment_date"
+            type="date"
+            defaultValue={currentEnrollmentDate ? currentEnrollmentDate.slice(0, 10) : ""}
           />
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   fetchStudentVehicle,
   listStudents,
   fetchStudentAuditLogs,
+  fetchStudentWeightHistory,
 } from "@/lib/supabase/queries/students";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
 import { Tabs } from "@/components/ui/Tabs";
@@ -32,6 +33,16 @@ import { VeiculoTab } from "./tabs/VeiculoTab";
 import { MateriaisTab } from "./tabs/MateriaisTab";
 import { HistoricoTab } from "./tabs/HistoricoTab";
 import { DocumentsTab } from "@/components/app/documents/DocumentsTab";
+
+const COURSE_STATUS_LABELS: Record<string, string> = {
+  matriculado: "Matriculado",
+  excluido: "Excluído",
+  trancado: "Trancado",
+  desistente: "Desistente",
+  transferido: "Transferido",
+  concluido: "Concluído",
+  outro: "Outro",
+};
 
 const TABS = [
   { value: "resumo", label: "Resumo" },
@@ -61,12 +72,13 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
 
   const tab = searchParams.tab ?? "resumo";
 
-  const [contact, address, emergency, health, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs] =
+  const [contact, address, emergency, health, weightHistory, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs] =
     await Promise.all([
       fetchStudentContact(supabase, params.id),
       fetchStudentAddress(supabase, params.id),
       fetchEmergencyContacts(supabase, params.id),
       fetchHealthRestriction(supabase, params.id),
+      fetchStudentWeightHistory(supabase, params.id),
       signedPhotoUrl(supabase, student.photo_path),
       fetchStudentCanga(supabase, params.id),
       listStudents(supabase),
@@ -107,8 +119,8 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
           <p className="truncate text-sm text-muted-foreground">{student.full_name}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {student.pelotao && <Badge variant="gold" dot>{student.pelotao}</Badge>}
-            <Badge variant={student.situation === "matriculado" ? "success" : "warning"} dot>
-              {student.situation}
+            <Badge variant={student.course_status === "matriculado" ? "success" : "warning"} dot>
+              {COURSE_STATUS_LABELS[student.course_status]}
             </Badge>
             {health?.validation_status === "validado" && health?.operational_summary && (
               <Badge variant="warning">Restrição</Badge>
@@ -143,8 +155,18 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
           />
         )}
         {tab === "emergencia" && <EmergenciaTab studentId={student.id} contacts={emergency} />}
-        {tab === "saude" && <SaudeTab studentId={student.id} health={health} canCurate />}
-        {tab === "logistica" && <LogisticaTab studentId={student.id} logistics={logistics} />}
+        {tab === "saude" && (
+          <SaudeTab
+            studentId={student.id}
+            health={health}
+            weightHistory={weightHistory}
+            currentUserName={session.fullName}
+            canCurate
+          />
+        )}
+        {tab === "logistica" && (
+          <LogisticaTab studentId={student.id} logistics={logistics} canEditUniform />
+        )}
         {tab === "veiculo" && <VeiculoTab studentId={student.id} vehicle={vehicle} />}
         {tab === "documentos" && <DocumentsTab studentId={student.id} />}
         {tab === "materiais" && (

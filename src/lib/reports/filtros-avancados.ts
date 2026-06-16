@@ -47,6 +47,8 @@ export interface FiltrosState {
   temCnh: BoolFilter[];
   temVeiculo: BoolFilter[];
   necessitaAlojamento: BoolFilter[];
+  gandola: string[];
+  calca: string[];
   expMilitar: BoolFilter[];
   instituicaoMilitar: InstituicaoMilitar[];
   pendMaterial: BoolFilter[];
@@ -69,6 +71,8 @@ export const EMPTY_FILTROS: FiltrosState = {
   temCnh: [],
   temVeiculo: [],
   necessitaAlojamento: [],
+  gandola: [],
+  calca: [],
   expMilitar: [],
   instituicaoMilitar: [],
   pendMaterial: [],
@@ -108,6 +112,8 @@ export interface AlunoFiltravel {
   student_logistics: {
     needs_housing: boolean | null;
     has_fixed_residence_macapa: boolean | null;
+    gandola_size: string | null;
+    pants_size: string | null;
   } | null;
   vehicles: {
     has_cnh: boolean | null;
@@ -127,6 +133,12 @@ export interface AlunoFiltravel {
     dietary_restriction: string | null;
     chronic_disease: string | null;
   } | null;
+  weight_summary?: {
+    currentWeightKg: number | null;
+    lastMeasuredAt: string | null;
+    count: number;
+    variationKg: number | null;
+  } | null;
   // Flags pré-computados pela página server
   has_pending_equipment: boolean;
   has_pending_documents: boolean;
@@ -141,7 +153,7 @@ export const STUDENT_SELECT_COLUMNS = `
   had_prior_military_service, prior_military_branch, prior_military_institution,
   religion, has_religious_restriction,
   student_addresses(state, city, origin_in_amapa, from_other_state),
-  student_logistics(needs_housing, has_fixed_residence_macapa),
+  student_logistics(needs_housing, has_fixed_residence_macapa, gandola_size, pants_size),
   vehicles(has_cnh, cnh_category, has_vehicle),
   health_restrictions(
     has_allergies, has_continuous_medication, has_physical_restriction,
@@ -201,6 +213,8 @@ export const hasPhysicalRestriction = (a: AlunoFiltravel) =>
 export const hasCnh = (a: AlunoFiltravel) => Boolean(a.vehicles?.has_cnh);
 export const hasVehicle = (a: AlunoFiltravel) => Boolean(a.vehicles?.has_vehicle);
 export const needsHousing = (a: AlunoFiltravel) => Boolean(a.student_logistics?.needs_housing);
+export const uniformValue = (value: string | null | undefined) =>
+  value?.trim().toUpperCase() || "";
 export const hasPriorMilitary = (a: AlunoFiltravel) =>
   Boolean(a.had_prior_military_service);
 
@@ -217,6 +231,12 @@ function inSet<T>(selected: T[], value: T): boolean {
 function matchBool(selected: BoolFilter[], value: boolean): boolean {
   if (selected.length === 0) return true;
   return selected.includes(value ? "sim" : "nao");
+}
+
+function matchTextSelection(selected: string[], value: string | null | undefined): boolean {
+  if (selected.length === 0) return true;
+  const normalized = uniformValue(value);
+  return selected.map(uniformValue).includes(normalized);
 }
 
 export function applyFiltros(alunos: AlunoFiltravel[], f: FiltrosState): AlunoFiltravel[] {
@@ -257,6 +277,8 @@ export function applyFiltros(alunos: AlunoFiltravel[], f: FiltrosState): AlunoFi
     if (!matchBool(f.temCnh, hasCnh(a))) return false;
     if (!matchBool(f.temVeiculo, hasVehicle(a))) return false;
     if (!matchBool(f.necessitaAlojamento, needsHousing(a))) return false;
+    if (!matchTextSelection(f.gandola, a.student_logistics?.gandola_size)) return false;
+    if (!matchTextSelection(f.calca, a.student_logistics?.pants_size)) return false;
     if (!matchBool(f.expMilitar, hasPriorMilitary(a))) return false;
     if (f.instituicaoMilitar.length > 0) {
       const b = a.prior_military_branch;
@@ -370,7 +392,7 @@ export function describeFiltros(f: FiltrosState): string[] {
   }
   if (f.ficha.length) {
     out.push(
-      `Situação da ficha: ${f.ficha
+      `Preenchimento da ficha: ${f.ficha
         .map((s) => (s === "completa" ? "Completa" : s === "incompleta" ? "Incompleta" : "Não iniciada"))
         .join(", ")}`,
     );
@@ -394,6 +416,8 @@ export function describeFiltros(f: FiltrosState): string[] {
   if (f.temVeiculo.length) out.push(`Possui veículo: ${labelBool(f.temVeiculo)}`);
   if (f.necessitaAlojamento.length)
     out.push(`Necessita alojamento: ${labelBool(f.necessitaAlojamento)}`);
+  if (f.gandola.length) out.push(`Gandola: ${f.gandola.map(uniformValue).join(", ")}`);
+  if (f.calca.length) out.push(`Calca: ${f.calca.map(uniformValue).join(", ")}`);
   if (f.expMilitar.length) out.push(`Experiência militar anterior: ${labelBool(f.expMilitar)}`);
   if (f.instituicaoMilitar.length) {
     out.push(
