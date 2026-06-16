@@ -56,6 +56,15 @@ export function IdentificacaoTab({
   );
   const showPriorMilitaryDetails = hadPriorMilitary === "true";
 
+  const [hasSpecialization, setHasSpecialization] = useState(
+    student.has_specialization === true
+      ? "true"
+      : student.has_specialization === false
+        ? "false"
+        : "",
+  );
+  const showSpecializationDetails = hasSpecialization === "true";
+
   const age = (() => {
     if (!birthDate) return null;
     const d = new Date(birthDate);
@@ -494,6 +503,65 @@ export function IdentificacaoTab({
                   defaultValue={student.prior_military_notes ?? ""}
                   placeholder="Ex: unidade, funções desempenhadas, motivo de saída…"
                   rows={3}
+                />
+              </div>
+            </>
+          )}
+        </div>
+        <FieldHint>
+          Os campos complementares só aparecem quando você responder &quot;Sim&quot;.
+        </FieldHint>
+      </fieldset>
+
+      {/* ── Especialização operacional / estágio ── */}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold">Especialização operacional / estágio</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="has_specialization">
+              Possui curso de especialização operacional ou estágio?
+            </Label>
+            <Select
+              id="has_specialization"
+              name="has_specialization"
+              value={hasSpecialization}
+              onChange={(e) => setHasSpecialization(e.target.value)}
+            >
+              <option value="">Não informar</option>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </Select>
+          </div>
+
+          {showSpecializationDetails && (
+            <>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="specialization_name">Nome do curso/estágio</Label>
+                <Input
+                  id="specialization_name"
+                  name="specialization_name"
+                  defaultValue={student.specialization_name ?? ""}
+                  placeholder="Ex: Salvamento Veicular, Estágio de Combate a Incêndio…"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialization_institution">Instituição (se houver)</Label>
+                <Input
+                  id="specialization_institution"
+                  name="specialization_institution"
+                  defaultValue={student.specialization_institution ?? ""}
+                  placeholder="Ex: CBMAP, CBMDF…"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialization_period">Ano ou período (se houver)</Label>
+                <Input
+                  id="specialization_period"
+                  name="specialization_period"
+                  defaultValue={student.specialization_period ?? ""}
+                  placeholder="Ex: 2024, 2023.2…"
                 />
               </div>
             </>

@@ -11,6 +11,7 @@ import {
   fetchStudentLogistics,
   fetchStudentVehicle,
   fetchStudentWeightHistory,
+  signedPhotoUrl,
 } from "@/lib/supabase/queries/students";
 import { Tabs } from "@/components/ui/Tabs";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
@@ -65,7 +66,7 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
 
   const tab = searchParams.tab ?? "resumo";
 
-  const [contact, address, emergency, health, weightHistory, canga, logistics, vehicle, checklist] = await Promise.all([
+  const [contact, address, emergency, health, weightHistory, canga, logistics, vehicle, checklist, photoUrl] = await Promise.all([
     fetchStudentContact(supabase, session.studentId),
     fetchStudentAddress(supabase, session.studentId),
     fetchEmergencyContacts(supabase, session.studentId),
@@ -75,13 +76,14 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
     fetchStudentLogistics(supabase, session.studentId),
     fetchStudentVehicle(supabase, session.studentId),
     fetchEquipmentChecklist(supabase, session.studentId),
+    signedPhotoUrl(supabase, student.photo_path),
   ]);
 
   return (
     <div className="space-y-4">
       <header className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-4 shadow-card-sm md:px-5">
         <Avatar
-          src={undefined}
+          src={photoUrl ?? undefined}
           alt={student.war_name}
           initials={getStudentSigla(student.student_number, student.war_name)}
           size="xl"

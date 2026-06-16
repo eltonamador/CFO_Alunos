@@ -196,7 +196,7 @@ export function FiltrosClient({ alunos, role }: Props) {
               />
             ))}
           </FilterGroup>
-          <FilterGroup label="Situação da ficha">
+          <FilterGroup label="Preenchimento da ficha">
             {FICHA_OPTIONS.map((o) => (
               <CheckboxRow
                 key={o.value}

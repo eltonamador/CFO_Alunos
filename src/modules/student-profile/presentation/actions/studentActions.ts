@@ -621,6 +621,14 @@ const adminStudentSchema = z.object({
   studentNumber: z.coerce.number().int().min(1).max(100),
   pelotao: z.enum(["CFO I", "CFO II", "CFO III"]),
   cangaStudentId: z.string().uuid().or(z.literal("")).optional().nullable(),
+  coordinationNotes: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.trim()))
+    .refine(
+      (v) => v === undefined || v.length <= 2000,
+      "Observações devem ter até 2000 caracteres.",
+    ),
 });
 
 export async function updateStudentAdminAction(
@@ -636,13 +644,14 @@ export async function updateStudentAdminAction(
     studentNumber: formData.get("studentNumber"),
     pelotao: formData.get("pelotao"),
     cangaStudentId: formData.get("cangaStudentId") || null,
+    coordinationNotes: formData.get("coordinationNotes") ?? undefined,
   });
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const { studentId, studentNumber, pelotao, cangaStudentId } = parsed.data;
+  const { studentId, studentNumber, pelotao, cangaStudentId, coordinationNotes } = parsed.data;
 
   if (cangaStudentId === studentId) {
     return { ok: false, error: "Um aluno não pode ser canga de si mesmo." };
@@ -650,12 +659,13 @@ export async function updateStudentAdminAction(
 
   const supabase = createServerClientUntyped();
 
-  // 1. Atualizar dados cadastrais críticos (número e pelotão/fase)
+  // 1. Atualizar dados cadastrais críticos (número, pelotão/fase e observações)
   const { error: studentError } = await supabase
     .from("students")
     .update({
       student_number: studentNumber,
       pelotao: pelotao,
+      coordination_notes: nullIfEmpty(coordinationNotes),
       updated_by: session.userId,
     })
     .eq("id", studentId);
@@ -854,6 +864,10 @@ const identificationSchema = z.object({
   prior_military_rank: optionalTrimmed(),
   prior_military_duration: optionalTrimmed(),
   prior_military_notes: optionalTrimmed(),
+  has_specialization: z.enum(["true", "false"]).or(z.literal("")).optional(),
+  specialization_name: optionalTrimmed(),
+  specialization_institution: optionalTrimmed(),
+  specialization_period: optionalTrimmed(),
 }).superRefine((data, ctx) => {
   const isAdventist = data.religion === "Adventista";
   const hasRestriction = data.has_religious_restriction === "true";
@@ -909,6 +923,15 @@ const identificationSchema = z.object({
       });
     }
   }
+
+  // Especialização operacional / estágio: exige o nome quando "Sim".
+  if (data.has_specialization === "true" && !data.specialization_name) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["specialization_name"],
+      message: "Informe o nome do curso de especialização ou estágio.",
+    });
+  }
 });
 
 export async function updateIdentificationAction(
@@ -955,8 +978,24 @@ export async function updateIdentificationAction(
     prior_military_rank,
     prior_military_duration,
     prior_military_notes,
+    has_specialization,
+    specialization_name,
+    specialization_institution,
+    specialization_period,
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
+
+  // Especialização operacional / estágio: quando "Não" ou não informado,
+  // limpa os complementares previamente preenchidos.
+  const hasSpecialization =
+    has_specialization === "true"
+      ? true
+      : has_specialization === "false"
+        ? false
+        : null;
+  const specializationNameValue = hasSpecialization === true ? nullIfEmpty(specialization_name) : null;
+  const specializationInstitutionValue = hasSpecialization === true ? nullIfEmpty(specialization_institution) : null;
+  const specializationPeriodValue = hasSpecialization === true ? nullIfEmpty(specialization_period) : null;
 
   // Quando "Não", limpa quaisquer complementares previamente preenchidos.
   const hadPrior =
@@ -1015,6 +1054,10 @@ export async function updateIdentificationAction(
       prior_military_rank: priorRankValue,
       prior_military_duration: priorDurationValue,
       prior_military_notes: priorNotesValue,
+      has_specialization: hasSpecialization,
+      specialization_name: specializationNameValue,
+      specialization_institution: specializationInstitutionValue,
+      specialization_period: specializationPeriodValue,
       updated_by: session.userId,
     })
     .eq("id", studentId)
@@ -1173,6 +1216,10 @@ const enrollmentStatusSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v == null || v.trim() === "" ? undefined : v.trim())),
+  enrollment_date: optionalTrimmed().refine(
+    (v) => v === undefined || /^\d{4}-\d{2}-\d{2}$/.test(v),
+    "Data de inclusão inválida.",
+  ),
 });
 
 export async function updateEnrollmentStatusAction(
@@ -1189,12 +1236,13 @@ export async function updateEnrollmentStatusAction(
     studentId: formData.get("studentId"),
     enrollment_status: formData.get("enrollment_status"),
     enrollment_id: formData.get("enrollment_id") ?? undefined,
+    enrollment_date: formData.get("enrollment_date") ?? undefined,
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const { studentId, enrollment_status, enrollment_id } = parsed.data;
+  const { studentId, enrollment_status, enrollment_id, enrollment_date } = parsed.data;
   const supabase = createServerClientUntyped();
 
   const update: Record<string, unknown> = {
@@ -1205,6 +1253,10 @@ export async function updateEnrollmentStatusAction(
   // confirmada). Form vazio NÃO apaga matrícula previamente registrada.
   if (enrollment_id !== undefined) {
     update.enrollment_id = enrollment_id;
+  }
+  // Data de inclusão/matrícula — atualizada apenas quando informada.
+  if (enrollment_date !== undefined) {
+    update.enrollment_date = enrollment_date;
   }
 
   const { error } = await supabase.from("students").update(update).eq("id", studentId);

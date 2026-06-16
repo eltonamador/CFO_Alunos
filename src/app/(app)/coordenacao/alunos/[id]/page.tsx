@@ -34,6 +34,16 @@ import { MateriaisTab } from "./tabs/MateriaisTab";
 import { HistoricoTab } from "./tabs/HistoricoTab";
 import { DocumentsTab } from "@/components/app/documents/DocumentsTab";
 
+const COURSE_STATUS_LABELS: Record<string, string> = {
+  matriculado: "Matriculado",
+  excluido: "Excluído",
+  trancado: "Trancado",
+  desistente: "Desistente",
+  transferido: "Transferido",
+  concluido: "Concluído",
+  outro: "Outro",
+};
+
 const TABS = [
   { value: "resumo", label: "Resumo" },
   { value: "identificacao", label: "Identificação" },
@@ -109,8 +119,8 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
           <p className="truncate text-sm text-muted-foreground">{student.full_name}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {student.pelotao && <Badge variant="gold" dot>{student.pelotao}</Badge>}
-            <Badge variant={student.situation === "matriculado" ? "success" : "warning"} dot>
-              {student.situation}
+            <Badge variant={student.course_status === "matriculado" ? "success" : "warning"} dot>
+              {COURSE_STATUS_LABELS[student.course_status]}
             </Badge>
             {health?.validation_status === "validado" && health?.operational_summary && (
               <Badge variant="warning">Restrição</Badge>

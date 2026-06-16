@@ -51,6 +51,12 @@ export interface StudentDetailRow extends StudentListRow {
     | "concluido"
     | "outro";
   spouse_name: string | null;
+  enrollment_date: string | null;
+  coordination_notes: string | null;
+  has_specialization: boolean | null;
+  specialization_name: string | null;
+  specialization_institution: string | null;
+  specialization_period: string | null;
   had_prior_military_service: boolean | null;
   prior_military_branch:
     | "corpo_de_bombeiros_militar"

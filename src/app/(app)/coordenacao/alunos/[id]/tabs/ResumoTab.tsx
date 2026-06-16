@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { Alert } from "@/components/ui/Alert";
 import {
   updateStudentAdminAction,
@@ -38,6 +39,13 @@ const COURSE_STATUS_LABELS: Record<StudentDetailRow["course_status"], string> = 
   concluido: "Concluído",
   outro: "Outro",
 };
+
+function formatDateBR(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return null;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
 
 function formatBirthDateWithAge(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -187,6 +195,18 @@ export function ResumoTab({
                     ))}
                   </Select>
                 </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="coordinationNotes">Observações sobre o cadete</Label>
+                  <Textarea
+                    id="coordinationNotes"
+                    name="coordinationNotes"
+                    defaultValue={student.coordination_notes ?? ""}
+                    rows={3}
+                    maxLength={2000}
+                    placeholder="Anotações da coordenação sobre o cadete (texto livre)."
+                  />
+                </div>
               </div>
 
               {state?.ok === false && (
@@ -240,18 +260,19 @@ export function ResumoTab({
                   <span className="num-mono">
                     {student.enrollment_id ?? <span className="text-muted-foreground">—</span>}
                   </span>
-                  <Badge
-                    variant={student.enrollment_status === "confirmada" ? "success" : "warning"}
-                    dot
-                  >
-                    {student.enrollment_status === "confirmada"
-                      ? "Matrícula confirmada"
-                      : "Matrícula pendente"}
-                  </Badge>
+                  {formatDateBR(student.enrollment_date) && (
+                    <Badge variant="success" dot>
+                      Incluído em {formatDateBR(student.enrollment_date)}
+                    </Badge>
+                  )}
                 </dd>
               </div>
               <Field label="Situação no curso" value={COURSE_STATUS_LABELS[student.course_status]} />
-              <Field label="Situação da ficha" value={student.situation} />
+              {canEditAdmin && student.coordination_notes && (
+                <div className="col-span-2">
+                  <Field label="Observações (coordenação)" value={student.coordination_notes} />
+                </div>
+              )}
             </dl>
           )}
           {canEditAdmin && (
@@ -265,6 +286,7 @@ export function ResumoTab({
               studentId={student.id}
               currentStatus={student.enrollment_status}
               currentEnrollmentId={student.enrollment_id}
+              currentEnrollmentDate={student.enrollment_date}
             />
           )}
         </CardContent>
@@ -331,6 +353,27 @@ export function ResumoTab({
                   <Field label="Observações" value={student.prior_military_notes} />
                 </div>
               )}
+            </dl>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Especialização operacional / estágio</CardTitle></CardHeader>
+        <CardContent>
+          {student.has_specialization == null ? (
+            <p className="text-sm text-muted-foreground">Não informado.</p>
+          ) : student.has_specialization === false ? (
+            <p className="text-sm font-medium text-foreground">
+              Não possui curso de especialização operacional ou estágio.
+            </p>
+          ) : (
+            <dl className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Field label="Curso/Estágio" value={student.specialization_name} />
+              </div>
+              <Field label="Instituição" value={student.specialization_institution} />
+              <Field label="Ano/Período" value={student.specialization_period} />
             </dl>
           )}
         </CardContent>
@@ -433,10 +476,12 @@ function EnrollmentStatusControl({
   studentId,
   currentStatus,
   currentEnrollmentId,
+  currentEnrollmentDate,
 }: {
   studentId: string;
   currentStatus: "pendente" | "confirmada";
   currentEnrollmentId: string | null;
+  currentEnrollmentDate: string | null;
 }) {
   const [state, formAction] = useFormState(updateEnrollmentStatusAction, null);
   const [open, setOpen] = React.useState(false);
@@ -485,6 +530,15 @@ function EnrollmentStatusControl({
             defaultValue={currentEnrollmentId ?? ""}
             placeholder="Quando disponível"
             autoComplete="off"
+          />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label htmlFor="enrollment_date">Data de inclusão/matrícula</Label>
+          <Input
+            id="enrollment_date"
+            name="enrollment_date"
+            type="date"
+            defaultValue={currentEnrollmentDate ? currentEnrollmentDate.slice(0, 10) : ""}
           />
         </div>
       </div>

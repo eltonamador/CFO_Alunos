@@ -392,7 +392,7 @@ export function describeFiltros(f: FiltrosState): string[] {
   }
   if (f.ficha.length) {
     out.push(
-      `Situação da ficha: ${f.ficha
+      `Preenchimento da ficha: ${f.ficha
         .map((s) => (s === "completa" ? "Completa" : s === "incompleta" ? "Incompleta" : "Não iniciada"))
         .join(", ")}`,
     );
