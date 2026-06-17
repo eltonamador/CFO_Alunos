@@ -19,7 +19,7 @@ import {
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
-import { Avatar } from "@/components/ui/Avatar";
+import { StudentPhotoUpload } from "@/components/app/StudentPhotoUpload";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { getStudentSigla } from "@/lib/utils";
 import { ResumoTab } from "./tabs/ResumoTab";
@@ -103,11 +103,12 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
 
       {/* Header sticky */}
       <header className="sticky top-14 z-10 -mx-4 flex items-center gap-4 border-b border-border bg-card px-4 py-4 shadow-card-sm md:top-14 md:mx-0 md:rounded-lg md:border md:px-5 md:py-4">
-        <Avatar
-          src={photoUrl ?? undefined}
+        <StudentPhotoUpload
+          studentId={student.id}
+          photoUrl={photoUrl ?? null}
           alt={student.war_name}
           initials={getStudentSigla(student.student_number, student.war_name)}
-          size="xl"
+          canEdit
         />
         <div className="min-w-0 flex-1">
           <SectionEyebrow className="mb-0.5">

@@ -25,7 +25,7 @@ import { LogisticaTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/Logistica
 import { VeiculoTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/VeiculoTab";
 import { MateriaisTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/MateriaisTab";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
-import { Avatar } from "@/components/ui/Avatar";
+import { StudentPhotoUpload } from "@/components/app/StudentPhotoUpload";
 import { Badge } from "@/components/ui/Badge";
 import { getStudentSigla } from "@/lib/utils";
 
@@ -82,11 +82,12 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-4">
       <header className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-4 shadow-card-sm md:px-5">
-        <Avatar
-          src={photoUrl ?? undefined}
+        <StudentPhotoUpload
+          studentId={session.studentId}
+          photoUrl={photoUrl ?? null}
           alt={student.war_name}
           initials={getStudentSigla(student.student_number, student.war_name)}
-          size="xl"
+          canEdit
         />
         <div className="min-w-0 flex-1">
           <SectionEyebrow className="mb-0.5">
