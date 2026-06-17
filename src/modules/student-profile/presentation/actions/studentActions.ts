@@ -1268,3 +1268,75 @@ export async function updateEnrollmentStatusAction(
   return { ok: true };
 }
 
+// =====================================================================
+// Foto do cadete — Aluno (própria) ou Admin
+// Bucket privado "student-photos"; convenção de path <student_id>/<arquivo>.
+// =====================================================================
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"];
+
+export async function updateStudentPhotoAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sessão expirada" };
+
+  const parsed = z
+    .object({ studentId: z.string().uuid() })
+    .safeParse({ studentId: formData.get("studentId") });
+  if (!parsed.success) return { ok: false, error: "Dados inválidos" };
+  if (!canEditOwn(session, parsed.data.studentId)) {
+    return { ok: false, error: "Sem permissão" };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Selecione uma imagem." };
+  }
+  if (file.size > PHOTO_MAX_BYTES) {
+    return { ok: false, error: "Imagem excede 5 MB." };
+  }
+  if (!PHOTO_ALLOWED_MIME.includes(file.type)) {
+    return { ok: false, error: "Formato inválido. Use JPG, PNG ou WEBP." };
+  }
+
+  const supabase = createServerClientUntyped();
+
+  // Lê a foto anterior para remover do storage após a troca.
+  const { data: previous } = await supabase
+    .from("students")
+    .select("photo_path")
+    .eq("id", parsed.data.studentId)
+    .maybeSingle();
+  const oldPath = (previous as { photo_path: string | null } | null)?.photo_path ?? null;
+
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const objectName = `${parsed.data.studentId}/photo-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("student-photos")
+    .upload(objectName, file, { contentType: file.type, upsert: false });
+  if (uploadError) return { ok: false, error: `Falha no upload: ${uploadError.message}` };
+
+  const { error: updateError } = await supabase
+    .from("students")
+    .update({ photo_path: objectName, updated_by: session.userId })
+    .eq("id", parsed.data.studentId);
+  if (updateError) {
+    // Evita arquivo órfão se a atualização do registro falhar.
+    await supabase.storage.from("student-photos").remove([objectName]);
+    return { ok: false, error: updateError.message };
+  }
+
+  // Remove a foto antiga (best-effort).
+  if (oldPath && oldPath !== objectName) {
+    await supabase.storage.from("student-photos").remove([oldPath]);
+  }
+
+  revalidatePath(`/coordenacao/alunos/${parsed.data.studentId}`);
+  revalidatePath("/coordenacao/alunos");
+  revalidatePath("/aluno/ficha");
+  return { ok: true };
+}
+
