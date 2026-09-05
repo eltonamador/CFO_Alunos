@@ -1065,12 +1065,7 @@ export async function buildFichaPersonalizadaPDF(
       address: addressMap.get(s.id) ?? null,
       logistics: logisticsMap.get(s.id) ?? null,
       health: healthMap.get(s.id) ?? null,
-      weight: weightByStudent.get(s.id) ?? {
-        currentWeightKg: null,
-        lastMeasuredAt: null,
-        count: 0,
-        variationKg: null,
-      },
+      weight: weightByStudent.get(s.id) ?? buildWeightSummary([]),
       vehicle: vehicleMap.get(s.id) ?? null,
       emergency: emergencyByStudent.get(s.id) ?? { c1: null, c2: null },
       docs: docsByStudent.get(s.id) ?? { enviados: 0, pendentes: 0, rejeitados: 0 },
