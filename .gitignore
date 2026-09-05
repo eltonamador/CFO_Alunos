@@ -50,6 +50,10 @@ supabase/.temp
 # Claude Code (config local do agente — específico de cada máquina)
 .claude/settings.local.json
 
+# Mídia local de estudo/gravação — arquivos grandes, fora do limite do GitHub
+*.mov
+*.mp4
+
 # Backups e arquivos temporários locais
 .env.local.localdev.bak
 *.bak

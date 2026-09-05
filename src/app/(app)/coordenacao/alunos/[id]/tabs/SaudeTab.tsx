@@ -10,6 +10,7 @@ import {
 } from "@/modules/student-profile/presentation/actions/studentActions";
 import {
   buildWeightSummary,
+  buildWeightTimeline,
   sortWeightHistoryForChart,
   type WeightHistoryEntry,
 } from "@/modules/student-profile/domain/weightHistory";
@@ -113,8 +114,53 @@ function sourceLabel(source: StudentWeightHistoryRow["source"]): string {
   return source === "coordenacao" ? "Coordenação" : "Aluno";
 }
 
+/** Variacao assinada, ex: "+1,2 kg" / "-0,8 kg". */
+function formatDelta(value: number | null | undefined): string {
+  if (value == null) return "—";
+  if (value === 0) return "0 kg";
+  const abs = Math.abs(value).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  });
+  return `${value > 0 ? "+" : "−"}${abs} kg`;
+}
+
+function deltaClass(value: number | null | undefined): string {
+  if (value == null || value === 0) return "text-muted-foreground";
+  return value > 0
+    ? "text-amber-700 dark:text-amber-300"
+    : "text-emerald-700 dark:text-emerald-300";
+}
+
+/** Data de hoje no fuso de Brasilia — a action valida contra o mesmo fuso. */
 function todayInputValue(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function SummaryTile({
+  label,
+  value,
+  className,
+  wrapperClassName,
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+  wrapperClassName?: string;
+}) {
+  return (
+    <div
+      className={`rounded-md border border-border bg-muted/25 px-3 py-2 ${wrapperClassName ?? ""}`}
+    >
+      <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
+      <p className={className ?? "text-sm font-medium"}>{value}</p>
+    </div>
+  );
 }
 
 function WeightEvolutionChart({ entries }: { entries: StudentWeightHistoryRow[] }) {
@@ -263,14 +309,17 @@ function WeightHistoryCard({
     addStudentWeightAction,
     null,
   );
-  const summary = buildWeightSummary(
-    history.map((entry) => ({
-      id: entry.id,
-      weight_kg: Number(entry.weight_kg),
-      measured_at: entry.measured_at,
-      created_at: entry.created_at,
-    })),
+  const normalized = history.map((entry) => ({
+    id: entry.id,
+    weight_kg: Number(entry.weight_kg),
+    measured_at: entry.measured_at,
+    created_at: entry.created_at,
+  }));
+  const summary = buildWeightSummary(normalized);
+  const deltaById = new Map(
+    buildWeightTimeline(normalized).map((entry) => [entry.id, entry.deltaKg]),
   );
+  const today = todayInputValue();
 
   return (
     <Card>
@@ -282,19 +331,29 @@ function WeightHistoryCard({
               Lançamentos periódicos preservados para acompanhar a evolução ao longo do curso.
             </CardDescription>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
-            <div className="rounded-md border border-border bg-muted/25 px-3 py-2">
-              <p className="text-[10px] uppercase text-muted-foreground">Atual</p>
-              <p className="font-display text-base font-semibold">{formatWeight(summary.currentWeightKg)}</p>
-            </div>
-            <div className="rounded-md border border-border bg-muted/25 px-3 py-2">
-              <p className="text-[10px] uppercase text-muted-foreground">Última</p>
-              <p className="text-sm font-medium">{formatDateBR(summary.lastMeasuredAt)}</p>
-            </div>
-            <div className="rounded-md border border-border bg-muted/25 px-3 py-2">
-              <p className="text-[10px] uppercase text-muted-foreground">Registros</p>
-              <p className="font-display text-base font-semibold tabular-nums">{summary.count}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-5 lg:min-w-[560px]">
+            <SummaryTile
+              label="Atual"
+              value={formatWeight(summary.currentWeightKg)}
+              className="font-display text-base font-semibold"
+            />
+            <SummaryTile label="Última" value={formatDateBR(summary.lastMeasuredAt)} />
+            <SummaryTile
+              label="Vs. anterior"
+              value={formatDelta(summary.previousVariationKg)}
+              className={`text-sm font-semibold tabular-nums ${deltaClass(summary.previousVariationKg)}`}
+            />
+            <SummaryTile
+              label="Total"
+              value={formatDelta(summary.variationKg)}
+              className={`text-sm font-semibold tabular-nums ${deltaClass(summary.variationKg)}`}
+            />
+            <SummaryTile
+              label="Registros"
+              value={summary.count}
+              className="font-display text-base font-semibold tabular-nums"
+              wrapperClassName="col-span-2 sm:col-span-1"
+            />
           </div>
         </div>
       </CardHeader>
@@ -308,11 +367,11 @@ function WeightHistoryCard({
           <div className="space-y-1.5">
             <Label htmlFor="measured_at">Data da medição</Label>
             {canCurate ? (
-              <Input id="measured_at" name="measured_at" type="date" defaultValue={todayInputValue()} />
+              <Input id="measured_at" name="measured_at" type="date" defaultValue={today} max={today} />
             ) : (
               <>
-                <Input id="measured_at" type="date" value={todayInputValue()} disabled />
-                <input type="hidden" name="measured_at" value={todayInputValue()} />
+                <Input id="measured_at" type="date" value={today} disabled />
+                <input type="hidden" name="measured_at" value={today} />
               </>
             )}
           </div>
@@ -339,11 +398,12 @@ function WeightHistoryCard({
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-border">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[860px] text-sm">
               <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">Data da medição</th>
                   <th className="px-3 py-2 text-left">Peso</th>
+                  <th className="px-3 py-2 text-left">Variação</th>
                   <th className="px-3 py-2 text-left">Origem</th>
                   <th className="px-3 py-2 text-left">Responsável</th>
                   <th className="px-3 py-2 text-left">Observação</th>
@@ -355,6 +415,11 @@ function WeightHistoryCard({
                   <tr key={entry.id} className="border-b border-border/60 last:border-0">
                     <td className="px-3 py-2">{formatDateBR(entry.measured_at)}</td>
                     <td className="px-3 py-2 font-medium">{formatWeight(Number(entry.weight_kg))}</td>
+                    <td
+                      className={`px-3 py-2 font-medium tabular-nums ${deltaClass(deltaById.get(entry.id))}`}
+                    >
+                      {formatDelta(deltaById.get(entry.id))}
+                    </td>
                     <td className="px-3 py-2">{sourceLabel(entry.source)}</td>
                     <td className="px-3 py-2">{entry.created_by_name ?? "—"}</td>
                     <td className="px-3 py-2">{entry.notes ?? "—"}</td>

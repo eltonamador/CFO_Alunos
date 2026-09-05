@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildWeightSummary,
+  buildWeightTimeline,
   getLatestWeightEntry,
   normalizeWeightInput,
   sortWeightHistoryForChart,
@@ -63,6 +64,7 @@ describe("weight history domain helpers", () => {
       lastMeasuredAt: "2026-04-01",
       count: 3,
       variationKg: 0.6,
+      previousVariationKg: -0.3,
     });
   });
 
@@ -72,6 +74,25 @@ describe("weight history domain helpers", () => {
       lastMeasuredAt: null,
       count: 0,
       variationKg: null,
+      previousVariationKg: null,
     });
+  });
+
+  it("has no previous variation with a single entry", () => {
+    const summary = buildWeightSummary([entries[0]!]);
+    expect(summary.variationKg).toBe(0);
+    expect(summary.previousVariationKg).toBeNull();
+  });
+
+  it("builds a timeline from newest to oldest with per-entry deltas", () => {
+    expect(buildWeightTimeline(entries).map((e) => [e.id, e.deltaKg])).toEqual([
+      ["c", -0.3],
+      ["b", 0.9],
+      ["a", null],
+    ]);
+  });
+
+  it("builds an empty timeline when history is empty", () => {
+    expect(buildWeightTimeline([])).toEqual([]);
   });
 });

@@ -492,9 +492,22 @@ export async function addStudentWeightAction(
   });
   if (insertError) return { ok: false, error: insertError.message };
 
+  // Campo legado de compatibilidade: espelha SEMPRE a medicao mais recente do
+  // historico, e nao necessariamente a que acabou de ser inserida (a Coordenacao
+  // pode lancar uma pesagem retroativa).
+  const { data: latestRow } = await supabase
+    .from("student_weight_history")
+    .select("weight_kg")
+    .eq("student_id", studentId)
+    .order("measured_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestWeightKg = latestRow?.weight_kg != null ? Number(latestRow.weight_kg) : weightKg;
+
   const { error: healthError } = await supabase.from("health_restrictions").upsert({
     student_id: studentId,
-    peso_kg: weightKg,
+    peso_kg: latestWeightKg,
     last_updated_at: new Date().toISOString(),
   });
   if (healthError) return { ok: false, error: healthError.message };

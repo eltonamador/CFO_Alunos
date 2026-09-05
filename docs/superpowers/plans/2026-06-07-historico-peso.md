@@ -24,7 +24,7 @@
 ### Task 2: Supabase Migration
 
 **Files:**
-- Create: `supabase/migrations/0030_student_weight_history.sql`
+- Create: `supabase/migrations/0031_student_weight_history.sql`
 
 - [ ] Add table, constraints, updated_at trigger, index, RLS policies, audit trigger, and legacy backfill from `health_restrictions.peso_kg`.
 - [ ] Keep update/delete blocked by absence of policies.
