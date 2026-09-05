@@ -1,5 +1,5 @@
 -- =====================================================================
--- 0030 - Historico de peso do aluno
+-- 0031 - Historico de peso do aluno
 -- Modelo append-only: novos pesos geram novos lancamentos historicos.
 -- =====================================================================
 
@@ -63,14 +63,17 @@ where h.peso_kg is not null
 
 alter table public.student_weight_history enable row level security;
 
+drop policy if exists "weight_history: self read" on public.student_weight_history;
 create policy "weight_history: self read"
   on public.student_weight_history for select
   using (student_id = public.current_student_id());
 
+drop policy if exists "weight_history: coord read" on public.student_weight_history;
 create policy "weight_history: coord read"
   on public.student_weight_history for select
   using (public.is_coord());
 
+drop policy if exists "weight_history: self insert" on public.student_weight_history;
 create policy "weight_history: self insert"
   on public.student_weight_history for insert
   with check (
@@ -80,6 +83,7 @@ create policy "weight_history: self insert"
     and created_by = auth.uid()
   );
 
+drop policy if exists "weight_history: coord insert" on public.student_weight_history;
 create policy "weight_history: coord insert"
   on public.student_weight_history for insert
   with check (
