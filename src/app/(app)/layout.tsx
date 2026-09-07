@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { getSession } from "@/modules/identity/presentation/session";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { BirthdayBanner } from "@/components/app/BirthdayBanner";
+import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
   try {
@@ -23,13 +25,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (session.isFirstAccess) redirect("/primeiro-acesso");
   if (!session.active) redirect("/login");
 
-  const unreadAnnouncements =
+  const canSeeBirthdayAlerts = session.role === "coordenacao" || session.role === "secretaria";
+  const [unreadAnnouncements, birthdayAlerts] = await Promise.all([
     session.role === "aluno" && session.studentId
-      ? await getUnreadAnnouncementsCount(session.studentId)
-      : 0;
+      ? getUnreadAnnouncementsCount(session.studentId)
+      : Promise.resolve(0),
+    canSeeBirthdayAlerts ? getAdministrativeBirthdayAlerts() : Promise.resolve([]),
+  ]);
 
   return (
     <AppShell session={session} unreadAnnouncements={unreadAnnouncements}>
+      <BirthdayBanner alerts={birthdayAlerts} />
       {children}
     </AppShell>
   );

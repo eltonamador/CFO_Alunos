@@ -45,6 +45,7 @@ type StudentRow = {
   full_name: string;
   war_name: string;
   sex: "M" | "F" | null;
+  birth_date: string | null;
   photo_path: string | null;
   cpf: string | null;
   rg: string | null;

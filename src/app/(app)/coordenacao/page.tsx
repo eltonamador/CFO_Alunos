@@ -3,6 +3,8 @@ import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertCircle, Users, FileText, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { BirthdayCard } from "@/components/app/BirthdayCard";
+import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 export const metadata = { title: "Início — Coordenação" };
 export const dynamic = "force-dynamic";
@@ -39,6 +41,7 @@ function ProgressBar({ done, total, label }: ProgressBarProps) {
 export default async function CoordenacaoHome() {
   const session = await requireRole("coordenacao");
   const supabase = createSupabaseServerClient();
+  const birthdayAlertsPromise = getAdministrativeBirthdayAlerts();
 
   // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
   const { data: rawStudentsData, error } = await supabase
@@ -235,6 +238,7 @@ export default async function CoordenacaoHome() {
   // Alunos sem canga
   const studentsWithCangaIds = new Set((currentCangas.data ?? []).map((c: any) => c.student_id));
   const studentsWithoutCangaCount = totalStudents - studentsWithCangaIds.size;
+  const birthdayAlerts = await birthdayAlertsPromise;
 
   // Criação dos KPIs para exibição
   const kpis = [
@@ -272,6 +276,8 @@ export default async function CoordenacaoHome() {
           </div>
         ))}
       </section>
+
+      <BirthdayCard alerts={birthdayAlerts} />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Seção de Progresso da Turma */}

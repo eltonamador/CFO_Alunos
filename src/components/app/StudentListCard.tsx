@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Cake, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { getStudentSigla, cn } from "@/lib/utils";
 import { STATUS_META, type ProgressResult } from "@/lib/student-progress";
+import {
+  formatBirthdayDate,
+  type BirthdayAlert,
+} from "@/modules/student-profile/domain/birthdayAlerts";
 
 interface Props {
   href: string;
@@ -17,6 +21,7 @@ interface Props {
     variant?: "default" | "primary" | "warning" | "success" | "destructive" | "info" | "gold";
   }[];
   progress?: ProgressResult;
+  birthdayAlert?: BirthdayAlert;
 }
 
 export function StudentListCard({
@@ -28,6 +33,7 @@ export function StudentListCard({
   photoUrl,
   badges = [],
   progress,
+  birthdayAlert,
 }: Props) {
   const numberLabel = studentNumber ? String(studentNumber).padStart(2, "0") : "—";
   const meta = progress ? STATUS_META[progress.status] : null;
@@ -47,8 +53,27 @@ export function StudentListCard({
       </div>
 
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="truncate font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground">
-          {warName} — {numberLabel}
+        <p className="flex items-center gap-1.5 truncate font-display text-base font-semibold uppercase tracking-[0.02em] text-foreground">
+          <span className="truncate">
+            {warName} — {numberLabel}
+          </span>
+          {birthdayAlert && (
+            <span
+              className="inline-flex shrink-0 text-brand-gold-600 dark:text-brand-gold-300"
+              title={
+                birthdayAlert.period === "today"
+                  ? `Aniversário hoje (${formatBirthdayDate(birthdayAlert.occurrenceDate)}) — ${birthdayAlert.age} anos`
+                  : `Aniversário amanhã (${formatBirthdayDate(birthdayAlert.occurrenceDate)}) — fará ${birthdayAlert.age} anos`
+              }
+              aria-label={
+                birthdayAlert.period === "today"
+                  ? `Aniversário hoje, ${formatBirthdayDate(birthdayAlert.occurrenceDate)}, ${birthdayAlert.age} anos`
+                  : `Aniversário amanhã, ${formatBirthdayDate(birthdayAlert.occurrenceDate)}, fará ${birthdayAlert.age} anos`
+              }
+            >
+              <Cake className="h-4 w-4" aria-hidden />
+            </span>
+          )}
         </p>
         {fullName && fullName !== warName && (
           <p className="truncate text-xs text-muted-foreground">{fullName}</p>

@@ -3,13 +3,18 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { countDocumentsByStatus } from "@/lib/supabase/queries/documents";
 import { FileText, CheckCircle2, XCircle, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { BirthdayCard } from "@/components/app/BirthdayCard";
+import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 export const metadata = { title: "Início — Secretaria" };
 
 export default async function SecretariaHome() {
   const session = await requireRole("secretaria");
   const supabase = createSupabaseServerClient();
-  const counts = await countDocumentsByStatus(supabase);
+  const [counts, birthdayAlerts] = await Promise.all([
+    countDocumentsByStatus(supabase),
+    getAdministrativeBirthdayAlerts(),
+  ]);
 
   const pendingCount = counts.enviado + counts.em_analise;
 
@@ -69,6 +74,8 @@ export default async function SecretariaHome() {
           </div>
         ))}
       </section>
+
+      <BirthdayCard alerts={birthdayAlerts} />
 
       {/* Seção de Fila de Validação */}
       <section className="rounded-xl border bg-card p-5 space-y-4 shadow-card-sm">

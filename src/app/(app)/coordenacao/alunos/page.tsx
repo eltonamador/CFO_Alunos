@@ -15,6 +15,7 @@ import {
   type ProgressStatus,
   type ProgressResult,
 } from "@/lib/student-progress";
+import { getBirthdayAlerts } from "@/modules/student-profile/domain/birthdayAlerts";
 
 export const metadata = { title: "Alunos" };
 
@@ -58,6 +59,15 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
     bundle: b,
     progress: calculateStudentProfileProgress(b),
   }));
+  const birthdayAlertsByStudent = new Map(
+    getBirthdayAlerts(
+      bundles.map(({ student }) => ({
+        id: student.id,
+        fullName: student.full_name,
+        birthDate: student.birth_date,
+      })),
+    ).map((alert) => [alert.studentId, alert]),
+  );
 
   const counts: Record<ProgressFilter, number> = {
     todos: enriched.length,
@@ -161,6 +171,7 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
                     : { label: "Matrícula pendente", variant: "warning" as const },
                 ]}
                 progress={progress}
+                birthdayAlert={birthdayAlertsByStudent.get(s.id)}
               />
             );
           })}
