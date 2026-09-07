@@ -74,6 +74,13 @@ function toDateOnly(date: CalendarDate): string {
   return `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 
+export function getDateInTimeZone(
+  now: Date = new Date(),
+  timeZone = BIRTHDAY_TIME_ZONE,
+): string {
+  return toDateOnly(toCalendarDate(now, timeZone));
+}
+
 function sameMonthAndDay(left: CalendarDate, right: CalendarDate): boolean {
   return left.month === right.month && left.day === right.day;
 }

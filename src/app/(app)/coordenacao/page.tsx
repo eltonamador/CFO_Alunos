@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertCircle, Users, FileText, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { BirthdayCard } from "@/components/app/BirthdayCard";
+import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 export const metadata = { title: "Início — Coordenação" };
@@ -278,6 +279,7 @@ export default async function CoordenacaoHome() {
       </section>
 
       <BirthdayCard alerts={birthdayAlerts} />
+      <PushNotificationControl />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Seção de Progresso da Turma */}

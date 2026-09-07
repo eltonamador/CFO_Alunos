@@ -186,6 +186,35 @@ type AnnouncementReadRow = {
   read_at: string;
 };
 
+type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type NotificationDeliveryRow = {
+  id: string;
+  student_id: string;
+  alert_on: string;
+  birthday_on: string;
+  alert_kind: "today" | "tomorrow";
+  channel: "web_push" | "email";
+  recipient_key: string;
+  status: "pending" | "sent" | "failed";
+  payload: Json;
+  provider_message_id: string | null;
+  last_error: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -267,6 +296,28 @@ export interface Database {
         Insert: Partial<AnnouncementReadRow> &
           Pick<AnnouncementReadRow, "announcement_id" | "student_id" | "read_by">;
         Update: Partial<AnnouncementReadRow>;
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: PushSubscriptionRow;
+        Insert: Partial<PushSubscriptionRow> &
+          Pick<PushSubscriptionRow, "user_id" | "endpoint" | "p256dh" | "auth">;
+        Update: Partial<PushSubscriptionRow>;
+        Relationships: [];
+      };
+      notification_deliveries: {
+        Row: NotificationDeliveryRow;
+        Insert: Partial<NotificationDeliveryRow> &
+          Pick<
+            NotificationDeliveryRow,
+            | "student_id"
+            | "alert_on"
+            | "birthday_on"
+            | "alert_kind"
+            | "channel"
+            | "recipient_key"
+          >;
+        Update: Partial<NotificationDeliveryRow>;
         Relationships: [];
       };
     };

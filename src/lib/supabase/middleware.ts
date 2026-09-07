@@ -6,7 +6,12 @@ import type { Database } from "@/lib/supabase/types";
 
 type UserRole = "coordenacao" | "secretaria" | "instrutor" | "aluno";
 
-const PUBLIC_PATHS = ["/login", "/primeiro-acesso", "/offline"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/primeiro-acesso",
+  "/offline",
+  "/api/jobs/birthday-notifications",
+];
 
 const ROLE_HOME: Record<UserRole, string> = {
   coordenacao: "/coordenacao",

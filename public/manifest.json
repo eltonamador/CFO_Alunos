@@ -3,12 +3,14 @@
   "short_name": "CFO Alunos",
   "description": "Gestão dos alunos do Curso de Formação de Oficiais — Corpo de Bombeiros Militar do Amapá.",
   "start_url": "/",
+  "id": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#B91C1C",
   "lang": "pt-BR",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/icons/icon-192.png",

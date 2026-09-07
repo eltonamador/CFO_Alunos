@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBirthdayDate, getBirthdayAlerts } from "./birthdayAlerts";
+import { formatBirthdayDate, getBirthdayAlerts, getDateInTimeZone } from "./birthdayAlerts";
 
 describe("getBirthdayAlerts", () => {
   const now = new Date("2026-09-07T12:00:00.000Z");
@@ -75,5 +75,11 @@ describe("getBirthdayAlerts", () => {
 describe("formatBirthdayDate", () => {
   it("formata uma data civil sem conversão de fuso", () => {
     expect(formatBirthdayDate("2026-09-07")).toBe("07/09/2026");
+  });
+});
+
+describe("getDateInTimeZone", () => {
+  it("gera a data de deduplicação no fuso de Belém/Macapá", () => {
+    expect(getDateInTimeZone(new Date("2026-09-08T01:00:00.000Z"))).toBe("2026-09-07");
   });
 });
