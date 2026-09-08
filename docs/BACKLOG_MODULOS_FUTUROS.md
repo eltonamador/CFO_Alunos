@@ -21,6 +21,11 @@ Cuidados:
 
 ## 2. Intercorrencias
 
+Status atual: parcialmente atendido pelo MVP de Acompanhamento do Cadete
+(FO- / FO+, manifestacao, decisao, punicao e linha do tempo). Ver
+`docs/ACOMPANHAMENTO_CADETE.md`. O escopo abaixo segue valido para as fases
+seguintes.
+
 Objetivo:
 
 - Registrar fatos operacionais relevantes durante o curso, como atraso, falta, problema disciplinar, ocorrencia em instrucao, observacao positiva ou acompanhamento administrativo.

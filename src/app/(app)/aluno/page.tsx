@@ -1,5 +1,6 @@
 import { requireRole } from "@/components/app/RoleGuard";
 import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -207,6 +208,8 @@ export default async function AlunoHome() {
           </p>
         )}
       </header>
+
+      <PendingFollowUpAlert studentId={session.studentId} />
 
       {/* Barras de progresso */}
       <section className="grid gap-3 sm:grid-cols-2">

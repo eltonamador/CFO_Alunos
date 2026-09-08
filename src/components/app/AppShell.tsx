@@ -12,6 +12,7 @@ import {
   Folder,
   CalendarDays,
   Megaphone,
+  ClipboardCheck,
   Info,
   type LucideIcon,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
+    { href: "/coordenacao/acompanhamento", label: "Acompanhamento", icon: ClipboardCheck },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
@@ -53,6 +55,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     { href: "/aluno", label: "Início", icon: Home, exact: true },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
+    { href: "/aluno/acompanhamento", label: "Acompanhamento", icon: ClipboardCheck },
     { href: "/aluno/ficha", label: "Ficha", icon: ClipboardList },
     { href: "/aluno/documentos", label: "Documentos", icon: Folder },
     { href: "/aluno/materiais", label: "Materiais", icon: Boxes },
@@ -93,18 +96,25 @@ function getUserDisplayName(session: SessionProfile): string {
 export function AppShell({
   session,
   unreadAnnouncements = 0,
+  pendingFollowUps = 0,
   children,
 }: {
   session: SessionProfile;
   unreadAnnouncements?: number;
+  /** FO− aguardando manifestação (aluno) ou decisão (coordenação). */
+  pendingFollowUps?: number;
   children: React.ReactNode;
 }) {
   const baseNav = NAV_BY_ROLE[session.role];
-  const nav: NavItem[] = baseNav.map((item) =>
-    item.href === "/aluno/comunicados" && unreadAnnouncements > 0
-      ? { ...item, badge: unreadAnnouncements }
-      : item,
-  );
+  const nav: NavItem[] = baseNav.map((item) => {
+    if (item.href === "/aluno/comunicados" && unreadAnnouncements > 0) {
+      return { ...item, badge: unreadAnnouncements };
+    }
+    if (item.href.endsWith("/acompanhamento") && pendingFollowUps > 0) {
+      return { ...item, badge: pendingFollowUps };
+    }
+    return item;
+  });
   const userInitials = getUserInitials(session);
   const userDisplayName = getUserDisplayName(session);
 

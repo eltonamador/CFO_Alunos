@@ -4,6 +4,10 @@
     {
       "path": "/api/jobs/birthday-notifications",
       "schedule": "5 3 * * *"
+    },
+    {
+      "path": "/api/jobs/followup-deadlines",
+      "schedule": "20 3 * * *"
     }
   ]
 }
