@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { notifyFollowUpRegistered } from "../infrastructure/notificationDelivery";
 import { getSession, type SessionProfile } from "@/modules/identity/presentation/session";
 import {
   FOLLOW_UP_TYPES,
@@ -210,6 +211,16 @@ export async function createFollowUpAction(
     auth.session,
     { type, reason: reason.label },
   );
+
+  // Aviso ao cadete: o registro ja esta salvo, entao um canal externo
+  // lento ou fora do ar nao pode atrasar nem derrubar a resposta. Damos
+  // um teto de tempo e seguimos — o lembrete de prazo cobre o resto.
+  if (needsManifestation) {
+    await Promise.race([
+      notifyFollowUpRegistered(record.id),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
+  }
 
   revalidateFollowUp(studentId);
 

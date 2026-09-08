@@ -1,6 +1,7 @@
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
+import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -253,6 +254,8 @@ export default async function AlunoHome() {
           </ul>
         )}
       </section>
+
+      <PushNotificationControl description="Receba o aviso de FO− e o lembrete do prazo de manifestação mesmo com o app fechado." />
     </div>
   );
 }

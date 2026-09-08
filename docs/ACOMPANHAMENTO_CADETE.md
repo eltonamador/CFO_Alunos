@@ -118,7 +118,46 @@ para `follow_up_records`, `follow_up_decisions` e `follow_up_punishments`.
 | `/aluno/acompanhamento` | Cadete | próprios registros, com destaque para o que exige resposta |
 | `/aluno/acompanhamento/[id]` | Cadete | detalhe + envio da manifestação |
 
-## 8. Testes
+## 8. Aviso ao cadete
+
+O prazo é de 24 horas. O aviso passivo — badge no menu e alerta no painel —
+só funciona se o cadete abrir o app, então há dois momentos em que ele é
+interrompido ativamente:
+
+| Momento | Quando dispara | Origem |
+|---|---|---|
+| `registrado` | logo após a Coordenação salvar o FO− | a própria server action |
+| `prazo_proximo` | quando restam 12 h ou menos e ele ainda não se manifestou | cron `GET /api/jobs/followup-deadlines` |
+
+Dois canais: **Web Push** (assinatura por aparelho, ativada pelo próprio cadete
+no painel dele) e **e-mail**. O e-mail vai para `student_contacts.email_personal`,
+informado na ficha — o login `<nome de guerra>@abm.br` é interno e não
+corresponde a uma caixa real. Sem e-mail pessoal na ficha, só o push é usado.
+
+`public.follow_up_notifications` é o ledger idempotente: a unicidade
+`(record_id, kind, channel, recipient_key)` garante que o mesmo cadete nunca
+receba o mesmo aviso duas vezes, mesmo com reexecução do cron. A chave do
+destino é gravada como hash, nunca em claro.
+
+**A janela de 12 h conversa com a cadência do cron.** Com execução diária, uma
+janela curta demais deixaria a maioria dos FO− sem lembrete nenhum; com 12 h,
+todo FO− aberto passa por uma execução dentro da sua janela. Se o cron subir
+para de hora em hora, a janela pode encolher.
+
+O envio no registro tem teto de 4 segundos e nunca derruba o registro: o FO−
+já está salvo quando a notificação é tentada. Medido em uso real, a confirmação
+do registro continua saindo em cerca de 1 segundo.
+
+**Limitação conhecida:** uma entrega que falha não é retentada — fica marcada
+como `failed` no ledger. Na prática o cadete ainda tem o alerta no app e, no
+caso do FO− registrado, o lembrete de prazo como segunda chance.
+
+Variáveis necessárias (as mesmas dos alertas de aniversário): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `RESEND_API_KEY`, `BIRTHDAY_EMAIL_FROM`,
+`CRON_SECRET` e `SUPABASE_SERVICE_ROLE_KEY`. Sem elas o módulo funciona
+normalmente, apenas sem aviso externo.
+
+## 9. Testes
 
 Domínio (Vitest): prazo de 24 h, normalização de motivo e ranking de sugestões
 em `src/modules/cadet-followup/domain/followUp.test.ts`.
@@ -133,15 +172,14 @@ pnpm db:reset && pnpm db:test
 
 O mesmo par roda no CI, no job `database`.
 
-## 9. Deliberadamente fora desta fase
+## 10. Deliberadamente fora desta fase
 
 - botões de motivos frequentes (depende de dados reais de uso);
 - ranking de ocorrências, indicadores por cadete/turma, relatórios por período;
 - tabela formal de transgressões, enquadramentos e tabela de punições;
 - reincidência e agravantes;
 - registro em lote e registro por instrutor;
-- notificação push/e-mail do FO− (hoje o aviso é o badge no menu e o alerta no
-  painel do cadete);
+- retentativa automática de notificação que falhou;
 - prorrogação/recurso da manifestação e múltiplas manifestações por FO.
 
 A estrutura já separa registro, motivo, manifestação, decisão, punição,

@@ -3,6 +3,11 @@
 Os alertas internos continuam sendo calculados a partir de `students.birth_date`. A entrega
 externa usa o mesmo cálculo e o fuso `America/Belem`.
 
+> O envio de push e e-mail vive em `src/modules/notifications/` desde que o
+> módulo de Acompanhamento do Cadete passou a notificar também. As funções
+> continuam exportadas de `externalBirthdayDelivery.ts`, então nada mudou para
+> quem chama.
+
 ## Arquitetura
 
 - **Web Push:** assinatura feita no PWA instalado ou no navegador, persistida em

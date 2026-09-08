@@ -13,24 +13,23 @@ const subscriptionSchema = z.object({
   }),
 });
 
-async function requireAdministrativeSession() {
+/**
+ * Qualquer perfil autenticado gerencia as próprias assinaturas: a
+ * Coordenação recebe aniversários, o cadete recebe os avisos de FO−.
+ * A RLS garante que ninguém alcance a assinatura de outro usuário.
+ */
+async function requireAuthenticatedSession() {
   const session = await getSession();
   if (!session)
     return {
       session: null,
       response: NextResponse.json({ error: "Não autenticado" }, { status: 401 }),
     };
-  if (session.role !== "coordenacao" && session.role !== "secretaria") {
-    return {
-      session: null,
-      response: NextResponse.json({ error: "Acesso negado" }, { status: 403 }),
-    };
-  }
   return { session, response: null };
 }
 
 export async function GET() {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
 
   const supabase = createSupabaseServerClient();
@@ -52,7 +51,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
   if (!env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
     return NextResponse.json({ error: "Web Push ainda não foi configurado" }, { status: 503 });
@@ -85,7 +84,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
 
   const body = (await request.json().catch(() => null)) as { endpoint?: unknown } | null;

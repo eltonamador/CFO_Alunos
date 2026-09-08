@@ -49,6 +49,19 @@ begin
   return n;
 end $$;
 
+create function pg_temp.try_as(p_uid uuid, p_cmd text) returns text
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', p_uid)::text, true);
+  set local role authenticated;
+  execute p_cmd;
+  reset role;
+  return 'ok';
+exception when others then
+  reset role;
+  return sqlstate;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- 1. Estrutura
 -- ---------------------------------------------------------------------
@@ -306,6 +319,49 @@ select is(
       and grantee in ('anon','authenticated')
       and privilege_type = 'SELECT'),
   0, 'view de estatisticas nao e legivel por anon nem authenticated');
+
+-- ---------------------------------------------------------------------
+-- 11. Notificacoes do FO- (0035)
+-- ---------------------------------------------------------------------
+select has_table('public', 'follow_up_notifications', 'ledger de notificacoes existe');
+
+select is(
+  (select count(*)::int from pg_tables
+    where schemaname='public' and tablename='follow_up_notifications' and rowsecurity),
+  1, 'RLS habilitada no ledger de notificacoes');
+
+-- o cadete precisa poder assinar push para receber o aviso de FO-
+select is(
+  pg_temp.try_as('22222222-2222-2222-2222-222222222222', $q$
+    insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+    values ('22222222-2222-2222-2222-222222222222',
+            'https://push.example/cadete', 'chave-p256dh', 'chave-auth')
+  $q$),
+  'ok', 'cadete assina push para o proprio usuario');
+
+select is(
+  pg_temp.try_as('22222222-2222-2222-2222-222222222222', $q$
+    insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+    values ('33333333-3333-3333-3333-333333333333',
+            'https://push.example/alheio', 'chave-p256dh', 'chave-auth')
+  $q$),
+  '42501', 'cadete NAO assina push no lugar de outro usuario');
+
+select is(
+  pg_temp.count_as('33333333-3333-3333-3333-333333333333',
+                   'select count(*) from public.push_subscriptions'),
+  0, 'cadete nao enxerga assinatura alheia');
+
+-- o ledger e escrito apenas pela rotina com service_role
+select is(
+  pg_temp.try_as('22222222-2222-2222-2222-222222222222', $q$
+    insert into public.follow_up_notifications
+      (record_id, student_id, kind, channel, recipient_key)
+    values ('aaaaaaaa-0000-0000-0000-000000000001',
+            (select student_id from public.profiles where id='22222222-2222-2222-2222-222222222222'),
+            'registrado', 'web_push', 'chave')
+  $q$),
+  '42501', 'cadete NAO escreve no ledger de notificacoes');
 
 select * from finish();
 rollback;
