@@ -117,7 +117,22 @@ para `follow_up_records`, `follow_up_decisions` e `follow_up_punishments`.
 | `/aluno/acompanhamento` | Cadete | próprios registros, com destaque para o que exige resposta |
 | `/aluno/acompanhamento/[id]` | Cadete | detalhe + envio da manifestação |
 
-## 8. Deliberadamente fora desta fase
+## 8. Testes
+
+Domínio (Vitest): prazo de 24 h, normalização de motivo e ranking de sugestões
+em `src/modules/cadet-followup/domain/followUp.test.ts`.
+
+Banco (pgTAP): `supabase/tests/followup.test.sql` cobre o que o typecheck não
+alcança — isolamento por RLS entre cadetes, a impossibilidade de o cadete
+alterar o próprio FO e a idempotência da expiração de prazo.
+
+```bash
+pnpm db:reset && pnpm db:test
+```
+
+O mesmo par roda no CI, no job `database`.
+
+## 9. Deliberadamente fora desta fase
 
 - botões de motivos frequentes (depende de dados reais de uso);
 - ranking de ocorrências, indicadores por cadete/turma, relatórios por período;
