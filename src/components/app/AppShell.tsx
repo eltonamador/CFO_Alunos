@@ -12,6 +12,7 @@ import {
   Folder,
   CalendarDays,
   Megaphone,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 import { logoutAction } from "@/modules/identity/presentation/actions/authActions";
@@ -170,6 +171,13 @@ export function AppShell({
             </div>
           </div>
           <ThemeToggle className="mb-1 w-full text-white/85 hover:bg-white/10 hover:text-white" />
+          <Link
+            href="/sobre"
+            className="mb-1 flex min-h-[44px] w-full items-center gap-2 rounded-md px-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            <Info className="h-4 w-4" aria-hidden />
+            <span>Sobre o aplicativo</span>
+          </Link>
           <form action={logoutAction}>
             <Button
               type="submit"
@@ -203,6 +211,14 @@ export function AppShell({
               </span>
             </Link>
             <div className="flex items-center gap-1">
+              <Link
+                href="/sobre"
+                aria-label="Sobre o aplicativo"
+                title="Sobre o aplicativo"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-foreground/60 transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Info className="h-[18px] w-[18px]" aria-hidden />
+              </Link>
               <ThemeToggle showLabel={false} />
               <form action={logoutAction}>
                 <Button type="submit" variant="ghost" size="sm">
