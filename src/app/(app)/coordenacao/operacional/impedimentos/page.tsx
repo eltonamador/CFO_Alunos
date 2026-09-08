@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatStudentLabel } from "@/modules/operational-duty/infrastructure/queries";
 import { registerDutyImpedimentAction } from "@/modules/operational-duty/presentation/actions";
 
@@ -18,7 +18,7 @@ function todayKey() {
 
 export default async function CoordenacaoImpedimentosPage() {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   try {
     const [{ data: students }, { data: impediments }] = await Promise.all([

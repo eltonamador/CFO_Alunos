@@ -15,7 +15,7 @@ import { PunishmentStatusForm } from "@/components/app/followup/PunishmentStatus
 import { CancelFollowUpForm } from "@/components/app/followup/CancelFollowUpForm";
 import { FollowUpTimeline } from "@/components/app/followup/FollowUpTimeline";
 import { formatDateTime } from "@/components/app/followup/format";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   fetchFollowUp,
   listPunishmentSuggestions,
@@ -32,7 +32,7 @@ export default async function AcompanhamentoDetalhePage({
   params: { id: string };
 }) {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   const record = await fetchFollowUp(supabase, params.id);
   if (!record) notFound();

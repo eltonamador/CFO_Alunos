@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -49,7 +49,7 @@ export async function upsertEquipmentStatusAction(
     return { ok: false, error: "Sem permissão" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("student_equipment_status").upsert(
     {
       student_id: studentId,
@@ -96,7 +96,7 @@ export async function validateEquipmentItemAction(
   const validationStatus = action === "validar" ? "validado" : "reprovado";
   const status = action === "reprovar" ? "inadequado" : undefined;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("student_equipment_status")
     .update({

@@ -16,6 +16,8 @@
     "e2e": "playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/types.ts",
     "db:seed": "supabase db execute --file supabase/seed.sql",
     "db:seed-users": "tsx scripts/seed-users.ts",
     "db:setup": "pnpm db:reset && pnpm db:seed && pnpm db:seed-users"
@@ -67,6 +69,7 @@
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "serwist": "^9.0.10",
+    "supabase": "^2.117.0",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",

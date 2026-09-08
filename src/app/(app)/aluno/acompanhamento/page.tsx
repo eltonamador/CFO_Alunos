@@ -2,7 +2,7 @@ import { requireRole } from "@/components/app/RoleGuard";
 import { Alert } from "@/components/ui/Alert";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { FollowUpList } from "@/components/app/followup/FollowUpList";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expireDeadlines, listFollowUps } from "@/modules/cadet-followup/infrastructure/queries";
 
 export const metadata = { title: "Acompanhamento" };
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AlunoAcompanhamentoPage() {
   const session = await requireRole("aluno");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   await expireDeadlines(supabase);
 

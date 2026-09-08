@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatStudentLabel } from "@/modules/operational-duty/infrastructure/queries";
 import { createAnnouncementAction } from "@/modules/announcements/presentation/actions";
 
@@ -14,7 +14,7 @@ export const metadata = { title: "Comunicados - Coordenacao" };
 
 export default async function CoordenacaoComunicadosPage() {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   try {
     const [{ data: students }, { data: announcements }] = await Promise.all([

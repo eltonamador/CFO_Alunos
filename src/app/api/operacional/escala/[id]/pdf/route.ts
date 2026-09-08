@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { formatStudentLabel } from "@/modules/operational-duty/infrastructure/queries";
 import { __internals } from "@/lib/reports/pdf-builders";
@@ -19,7 +19,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: roster, error: rosterError } = await supabase
     .from("duty_rosters")
     .select("id, period_start, period_end, status")

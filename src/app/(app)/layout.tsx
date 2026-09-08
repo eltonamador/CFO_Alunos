@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { getSession } from "@/modules/identity/presentation/session";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BirthdayBanner } from "@/components/app/BirthdayBanner";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
   try {
-    const supabase = createServerClientUntyped();
+    const supabase = createSupabaseServerClient();
     const [{ data: allIds }, { data: readIds }] = await Promise.all([
       supabase.from("announcements").select("id").eq("status", "publicado"),
       supabase.from("announcement_reads").select("announcement_id").eq("student_id", studentId),
@@ -28,7 +28,7 @@ async function getPendingFollowUpsCount(
   studentId: string | null,
 ): Promise<number> {
   try {
-    const supabase = createServerClientUntyped();
+    const supabase = createSupabaseServerClient();
     let query = supabase
       .from("follow_up_records")
       .select("id", { count: "exact", head: true });

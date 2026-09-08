@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { Tabs } from "@/components/ui/Tabs";
 import { FollowUpList } from "@/components/app/followup/FollowUpList";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   countByStatus,
   expireDeadlines,
@@ -64,7 +64,7 @@ export default async function AcompanhamentoPage({
   searchParams: { fila?: string };
 }) {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // Fecha prazos vencidos antes de montar a central (o cron faz o mesmo diariamente).
   await expireDeadlines(supabase);

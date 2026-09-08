@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expireDeadlines, listFollowUps } from "@/modules/cadet-followup/infrastructure/queries";
 import { DeadlineCountdown } from "./DeadlineCountdown";
 
@@ -11,7 +11,7 @@ import { DeadlineCountdown } from "./DeadlineCountdown";
 export async function PendingFollowUpAlert({ studentId }: { studentId: string | null }) {
   if (!studentId) return null;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   await expireDeadlines(supabase);
 
   const items = await listFollowUps(supabase, {

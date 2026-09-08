@@ -3,7 +3,7 @@ import { requireRole } from "@/components/app/RoleGuard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { QuickFollowUpForm } from "@/components/app/followup/QuickFollowUpForm";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listStudents } from "@/lib/supabase/queries/students";
 import { listReasonSuggestions } from "@/modules/cadet-followup/infrastructure/queries";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NovoAcompanhamentoPage() {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   const [students, reasonsByKind] = await Promise.all([
     listStudents(supabase),

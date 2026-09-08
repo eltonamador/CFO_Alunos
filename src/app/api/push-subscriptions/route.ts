@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 
 const subscriptionSchema = z.object({
@@ -33,7 +33,7 @@ export async function GET() {
   const auth = await requireAdministrativeSession();
   if (!auth.session) return auth.response;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { count, error } = await supabase
     .from("push_subscriptions")
     .select("id", { count: "exact", head: true })
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Assinatura Web Push inválida" }, { status: 400 });
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("push_subscriptions")
     .upsert(
@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Endpoint não informado" }, { status: 400 });
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("push_subscriptions")
     .delete()

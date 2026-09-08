@@ -1,5 +1,5 @@
 import { requireRole } from "@/components/app/RoleGuard";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
 import { fetchStudent } from "@/lib/supabase/queries/students";
 import { MateriaisTab } from "@/app/(app)/coordenacao/alunos/[id]/tabs/MateriaisTab";
@@ -20,7 +20,7 @@ export default async function AlunoMateriaisPage() {
     );
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const [checklist, student] = await Promise.all([
     fetchEquipmentChecklist(supabase, session.studentId),
     fetchStudent(supabase, session.studentId),

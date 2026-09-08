@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession, type SessionProfile } from "@/modules/identity/presentation/session";
 import {
   FOLLOW_UP_TYPES,
@@ -164,7 +164,7 @@ export async function createFollowUpAction(
   }
 
   const { studentId, type, reasonText, notes } = parsed.data;
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   const { data: student } = await supabase
     .from("students")
@@ -250,7 +250,7 @@ export async function submitManifestationAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // Fecha prazos vencidos antes de aceitar — evita manifestação fora do prazo.
   await supabase.rpc("expire_follow_up_deadlines");
@@ -353,7 +353,7 @@ export async function decideFollowUpAction(
   }
 
   const { recordId, outcome, rationale, punishmentText, instructions } = parsed.data;
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   const { data: record } = await supabase
     .from("follow_up_records")
@@ -470,7 +470,7 @@ export async function updatePunishmentStatusAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: record } = await supabase
     .from("follow_up_records")
     .select("id, student_id")
@@ -533,7 +533,7 @@ export async function cancelFollowUpAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: record } = await supabase
     .from("follow_up_records")
     .select("id, student_id")

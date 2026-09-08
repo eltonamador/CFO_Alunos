@@ -3,7 +3,7 @@ import { CalendarDays, Download, Megaphone, ShieldAlert, Users } from "lucide-re
 import { requireRole } from "@/components/app/RoleGuard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getActiveImpedimentViews,
   getDutyAssignmentsForDate,
@@ -36,7 +36,7 @@ function SetupPending({ message }: { message: string }) {
 
 export default async function CoordenacaoOperacionalPage() {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const today = todayKey();
 
   try {

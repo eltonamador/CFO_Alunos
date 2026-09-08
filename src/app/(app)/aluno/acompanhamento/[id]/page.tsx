@@ -9,7 +9,7 @@ import { PunishmentBadge, StatusBadge, TypeBadge } from "@/components/app/follow
 import { ManifestationForm } from "@/components/app/followup/ManifestationForm";
 import { FollowUpTimeline } from "@/components/app/followup/FollowUpTimeline";
 import { formatDateTime } from "@/components/app/followup/format";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expireDeadlines, fetchFollowUp } from "@/modules/cadet-followup/infrastructure/queries";
 import { FOLLOW_UP_TYPE_FULL_LABELS } from "@/modules/cadet-followup/domain/followUp";
 
@@ -22,7 +22,7 @@ export default async function AlunoAcompanhamentoDetalhePage({
   params: { id: string };
 }) {
   const session = await requireRole("aluno");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   await expireDeadlines(supabase);
 

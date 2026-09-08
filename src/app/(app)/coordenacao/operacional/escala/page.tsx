@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatStudentLabel } from "@/modules/operational-duty/infrastructure/queries";
 import {
   generateDutyRosterAction,
@@ -23,7 +23,7 @@ function dateKey(offset = 0) {
 
 export default async function CoordenacaoEscalaPage() {
   await requireRole("coordenacao");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   try {
     const [{ data: latestRoster }, { data: students }] = await Promise.all([

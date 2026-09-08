@@ -1,5 +1,5 @@
 import { requireRole } from "@/components/app/RoleGuard";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -50,7 +50,7 @@ export default async function AlunoHome() {
   let pendencias: Pendencia[] = [];
 
   if (session.studentId) {
-    const supabase = createServerClientUntyped();
+    const supabase = createSupabaseServerClient();
 
     // Busca paralela de todos os dados necessários
     const [studentRes, contactRes, addressRes, healthRes, docsRes, equipStatusRes, equipReqsRes, emergencyRes, logRes, vehRes] =
