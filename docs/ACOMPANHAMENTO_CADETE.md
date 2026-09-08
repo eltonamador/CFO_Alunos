@@ -113,6 +113,7 @@ para `follow_up_records`, `follow_up_decisions` e `follow_up_punishments`.
 | `/coordenacao/acompanhamento` | Coordenação | central por fila (análise, prazo expirado, manifestação, cumprimento, concluídos) |
 | `/coordenacao/acompanhamento/novo` | Coordenação | registro rápido: cadete → tipo → motivo → salvar → próximo |
 | `/coordenacao/acompanhamento/[id]` | Coordenação | fato, manifestação, decisão, punição e histórico |
+| `/coordenacao/acompanhamento/estatisticas` | Coordenação | medição do uso: motivos, campos e tempos por etapa |
 | `/coordenacao/alunos/[id]?tab=acompanhamento` | Coordenação | linha do tempo do cadete |
 | `/aluno/acompanhamento` | Cadete | próprios registros, com destaque para o que exige resposta |
 | `/aluno/acompanhamento/[id]` | Cadete | detalhe + envio da manifestação |

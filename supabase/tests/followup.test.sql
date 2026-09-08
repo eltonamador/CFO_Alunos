@@ -296,5 +296,16 @@ select cmp_ok(
   (select count(*)::int from public.audit_logs where entity like 'follow_up%'),
   '>=', 1, 'auditoria institucional registra o modulo');
 
+-- ---------------------------------------------------------------------
+-- 10. A view de estatisticas nao pode vazar pela API
+--     (views ignoram RLS; o acesso e revogado na 0034)
+-- ---------------------------------------------------------------------
+select is(
+  (select count(*)::int from information_schema.role_table_grants
+    where table_name = 'v_fo_reason_stats'
+      and grantee in ('anon','authenticated')
+      and privilege_type = 'SELECT'),
+  0, 'view de estatisticas nao e legivel por anon nem authenticated');
+
 select * from finish();
 rollback;

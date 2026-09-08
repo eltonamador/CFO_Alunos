@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BarChart3, Plus } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { buttonVariants } from "@/components/ui/Button";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
@@ -90,13 +90,22 @@ export default async function AcompanhamentoPage({
               : "Nenhum registro dependendo da Coordenação no momento."}
           </p>
         </div>
-        <Link
-          href="/coordenacao/acompanhamento/novo"
-          className={buttonVariants({ size: "lg", className: "shrink-0" })}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Registrar FO
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/coordenacao/acompanhamento/estatisticas"
+            className={buttonVariants({ variant: "secondary", size: "lg" })}
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden />
+            Estatísticas
+          </Link>
+          <Link
+            href="/coordenacao/acompanhamento/novo"
+            className={buttonVariants({ size: "lg" })}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Registrar FO
+          </Link>
+        </div>
       </header>
 
       <Tabs
