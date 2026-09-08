@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 interface NavLinkProps {
   href: string;
   label: string;
+  /** Rótulo curto usado só na barra inferior, onde o espaço é apertado. */
+  shortLabel?: string;
   icon?: React.ReactNode;
   variant?: "sidebar" | "bottom";
   exact?: boolean;
@@ -37,7 +39,7 @@ function UnreadDot({ count }: { count: number }) {
   );
 }
 
-export function NavLink({ href, label, icon, variant = "sidebar", exact, badge = 0 }: NavLinkProps) {
+export function NavLink({ href, label, shortLabel, icon, variant = "sidebar", exact, badge = 0 }: NavLinkProps) {
   const pathname = usePathname();
   const active = isActive(pathname, href, exact);
 
@@ -48,7 +50,7 @@ export function NavLink({ href, label, icon, variant = "sidebar", exact, badge =
         aria-current={active ? "page" : undefined}
         aria-label={label}
         className={cn(
-          "relative flex h-full flex-col items-center justify-center gap-0.5 px-2 text-[11px] font-semibold uppercase tracking-[0.04em] transition-colors",
+          "relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 px-1.5 text-[10px] font-semibold uppercase tracking-[0.02em] transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
           active
             ? "text-primary"
@@ -62,7 +64,7 @@ export function NavLink({ href, label, icon, variant = "sidebar", exact, badge =
           {icon}
           <UnreadDot count={badge} />
         </span>
-        <span>{label}</span>
+        <span className="w-full truncate text-center">{shortLabel ?? label}</span>
       </Link>
     );
   }

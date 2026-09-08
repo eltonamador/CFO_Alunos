@@ -26,6 +26,8 @@ import { getStudentSigla } from "@/lib/utils";
 interface NavItem {
   href: string;
   label: string;
+  /** Usado apenas na barra inferior do celular, onde o espaço é apertado. */
+  shortLabel?: string;
   icon: LucideIcon;
   exact?: boolean;
   badge?: number;
@@ -35,7 +37,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
-    { href: "/coordenacao/acompanhamento", label: "Acompanhamento", icon: ClipboardCheck },
+    { href: "/coordenacao/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
@@ -55,7 +57,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     { href: "/aluno", label: "Início", icon: Home, exact: true },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
-    { href: "/aluno/acompanhamento", label: "Acompanhamento", icon: ClipboardCheck },
+    { href: "/aluno/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
     { href: "/aluno/ficha", label: "Ficha", icon: ClipboardList },
     { href: "/aluno/documentos", label: "Documentos", icon: Folder },
     { href: "/aluno/materiais", label: "Materiais", icon: Boxes },
@@ -246,13 +248,16 @@ export function AppShell({
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card md:hidden">
         <div
           className="grid h-16 min-w-full items-center overflow-x-auto"
-          style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(74px, 1fr))` }}
+          // Colunas de 74px: alvo de toque confortavel. Com muitos itens a
+          // barra rola na horizontal em vez de espremer os rotulos.
+          style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(84px, 1fr))` }}
         >
           {nav.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
               label={item.label}
+              shortLabel={item.shortLabel}
               variant="bottom"
               exact={item.exact}
               badge={item.badge}
