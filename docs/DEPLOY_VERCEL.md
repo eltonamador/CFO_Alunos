@@ -52,6 +52,30 @@ Em **Settings → Environment Variables**, adiciona TODAS abaixo. Para cada uma,
 
 > 🔐 **CRÍTICO**: marca `SUPABASE_SERVICE_ROLE_KEY` como **Sensitive** (cadeado). Isso impede que ela apareça em logs/UI da Vercel mesmo para colaboradores do projeto.
 
+### Notificações externas (aniversários + FO−)
+
+Sem estas seis, os dois crons (`vercel.json`) rodam normalmente mas os avisos não saem — a
+aplicação verifica cada uma e faz *no-op* silencioso quando falta alguma, nunca falha o build
+nem a rota. Se o projeto ainda não usa notificação externa, pode pular esta seção por ora.
+
+| Variável | Valor | Sensible? | Environments |
+|---|---|---|---|
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | gerado com `pnpm exec web-push generate-vapid-keys` | ❌ vai ao browser | ✅ Prod ✅ Preview ❌ Dev |
+| `VAPID_PRIVATE_KEY` | idem, chave privada do mesmo par | 🔴 **SECRETO** | ✅ Prod ✅ Preview ❌ Dev |
+| `VAPID_SUBJECT` | `mailto:coordenacao@dominio.gov.br` (ou URL HTTPS) | ❌ | ✅ Prod ✅ Preview ❌ Dev |
+| `RESEND_API_KEY` | chave do domínio verificado no Resend | 🔴 **SECRETO** | ✅ Prod ✅ Preview ❌ Dev |
+| `BIRTHDAY_EMAIL_FROM` | `CFO Alunos <avisos@dominio.gov.br>` | ❌ | ✅ Prod ✅ Preview ❌ Dev |
+| `CRON_SECRET` | valor aleatório com 16+ caracteres | 🔴 **SECRETO** | ✅ Prod ✅ Preview ❌ Dev |
+
+> A Vercel injeta `Authorization: Bearer $CRON_SECRET` automaticamente nas chamadas do próprio
+> Vercel Cron quando `CRON_SECRET` está definida no ambiente — não precisa configurar isso em
+> outro lugar. É a mesma variável para os dois jobs (`birthday-notifications` e
+> `followup-deadlines`).
+>
+> Par VAPID é único por ambiente: gere um novo para Preview se quiser isolar dos avisos de
+> produção durante testes. Detalhes de cada canal em `docs/ALERTAS_EXTERNOS_ANIVERSARIO.md` e
+> `docs/ACOMPANHAMENTO_CADETE.md`.
+
 ---
 
 ## Passo 4 — Primeiro deploy
@@ -115,7 +139,13 @@ Em **Settings → Domains** na Vercel:
    - [ ] Edita WhatsApp em **Contato** → salva
    - [ ] Vê a edição refletida
    - [ ] Bottom-nav mobile funciona em DevTools mobile
-7. Logout
+   - [ ] `/aluno/acompanhamento` abre sem erro
+7. Se as variáveis de notificação (seção acima) estão configuradas:
+   - [ ] Como Coordenação, registra um FO− de teste em `/coordenacao/acompanhamento/novo`
+   - [ ] Como o cadete, ativa notificações no painel e confere o alerta de FO− pendente
+   - [ ] Dispara o cron manualmente (`docs/ALERTAS_EXTERNOS_ANIVERSARIO.md`) e confere no
+     Supabase → Table Editor → `follow_up_notifications` que a entrega ficou `sent`
+8. Logout
 
 Se tudo OK: **app em produção, pronto pra alunos**. ✅
 
@@ -129,6 +159,9 @@ Se tudo OK: **app em produção, pronto pra alunos**. ✅
 - [ ] Monitorar Supabase: **Database → Logs** procurando por erros RLS
 - [ ] Configurar alertas Vercel (`Settings → Notifications`)
 - [ ] Habilitar **Vercel Analytics** (gratuito, mede Web Vitals)
+- [ ] Confirmar em **Settings → Cron Jobs** que os dois jobs aparecem como ativos
+- [ ] Se usar notificação externa: validar domínio remetente no Resend antes de liberar aos
+  cadetes — sem isso, `RESEND_API_KEY` funciona mas os e-mails caem em spam ou são recusados
 
 ---
 

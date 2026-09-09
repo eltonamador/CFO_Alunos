@@ -54,6 +54,11 @@ externa usa o mesmo cálculo e o fuso `America/Belem`.
 Cada usuário de Coordenação ou Secretaria deve entrar no dashboard e selecionar **Ativar
 notificações**. A permissão do navegador só é solicitada após esse gesto.
 
+Desde a migration `0035`, o cadete também assina — o mesmo controle aparece no painel dele,
+para receber o aviso de FO− e o lembrete de prazo (ver
+`docs/ACOMPANHAMENTO_CADETE.md`). Cada usuário só gerencia a própria assinatura; RLS impede
+qualquer perfil de ler ou desativar a de outro.
+
 No iPhone/iPad, o site precisa primeiro ser adicionado à Tela de Início. Web Push e badge exigem
 iOS/iPadOS 16.4 ou posterior. Em todos os dispositivos, produção deve usar HTTPS.
 
@@ -68,3 +73,13 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 A resposta informa quantos alertas foram encontrados e quantos envios foram concluídos, falharam
 ou foram deduplicados em cada canal. Repetir a chamada no mesmo dia não repete entregas.
+
+O job de acompanhamento do cadete usa a mesma chave e o mesmo formato:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://SEU-DOMINIO/api/jobs/followup-deadlines
+```
+
+Fecha os prazos de 24h vencidos e envia o lembrete de quem está a 12h ou menos do prazo. Ver
+`docs/ACOMPANHAMENTO_CADETE.md` para o fluxo completo.

@@ -54,15 +54,19 @@ pnpm exec supabase link --project-ref SEU_PROJECT_REF
 
 ---
 
-## Passo 3 — Aplicar as 15 migrations
+## Passo 3 — Aplicar as migrations
 
 ```bash
 pnpm exec supabase db push
 ```
 
-Esse comando aplica TODAS as migrations em ordem (`0001` → `0015`). Cria o schema, RLS, triggers e auditoria.
+Esse comando aplica TODAS as migrations de `supabase/migrations/`, em ordem. Cria o schema, RLS,
+triggers e auditoria — o número de arquivos cresce a cada funcionalidade nova, então não fixe essa
+contagem em memória; confira `ls supabase/migrations | wc -l` se precisar do valor exato.
 
-Confirma no painel Supabase → **Table Editor**: devem aparecer ~20 tabelas em `public`.
+Confirma no painel Supabase → **Table Editor**: a lista de tabelas em `public` deve bater com o
+que aparece localmente (`pnpm exec supabase status`, se tiver ambiente local ativo, ou
+`docs/ACOMPANHAMENTO_CADETE.md` / demais docs de módulo para o que cada um cria).
 
 ---
 
@@ -121,13 +125,18 @@ Em **Authentication → Email Templates**:
 
 Em **Storage** no painel:
 
-Os buckets já são criados pela migration `0013_storage.sql`. Confirma que existem:
-- `photos` (público — fotos de alunos)
-- `documents` (privado — documentos pessoais)
+Os buckets são criados pelas migrations — todos **privados**, acesso só via URL assinada. Confirma
+que os cinco existem:
 
-Verifica as policies (devem estar criadas pela migration) ou cria manualmente:
-- `photos`: leitura pública, upload restrito ao próprio aluno + Coord/Secretaria
-- `documents`: leitura/escrita restritas via RLS
+| Bucket | Migration | Acesso |
+|---|---|---|
+| `student-photos` | `0013` | aluno (próprio) + Coord/Secretaria; instrutor só lê |
+| `student-documents` | `0013` | aluno (próprio) + Coord/Secretaria; instrutor **sem acesso** |
+| `equipment-attachments` | `0013` | aluno (próprio) + Coord/Secretaria |
+| `announcement-attachments` | `0022` | Coordenação escreve; leitura conforme o público do comunicado |
+| `followup-attachments` | `0033` | aluno (anexo da própria manifestação) + Coordenação |
+
+As policies de Storage vêm junto de cada migration — não precisa criar nada manualmente.
 
 ---
 
