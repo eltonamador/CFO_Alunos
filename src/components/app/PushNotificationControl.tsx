@@ -41,7 +41,14 @@ async function persistSubscription(subscription: PushSubscription): Promise<void
   }
 }
 
-export function PushNotificationControl() {
+interface PushNotificationControlProps {
+  /** Texto que explica o que este perfil vai receber. */
+  description?: string;
+}
+
+export function PushNotificationControl({
+  description = "Receba os aniversários mesmo com o sistema fechado.",
+}: PushNotificationControlProps = {}) {
   const [status, setStatus] = useState<Status>("loading");
   const [configuration, setConfiguration] = useState<PushConfiguration | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -170,8 +177,7 @@ export function PushNotificationControl() {
             Notificações externas
           </h2>
           <p className="text-xs text-muted-foreground">
-            Receba os aniversários mesmo com o sistema fechado. No iPhone ou iPad, instale o PWA na
-            tela inicial antes de ativar.
+            {description} No iPhone ou iPad, instale o PWA na tela inicial antes de ativar.
           </p>
           {configuration?.emailConfigured && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">

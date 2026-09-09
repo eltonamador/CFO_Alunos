@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 
 const subscriptionSchema = z.object({
@@ -13,27 +13,26 @@ const subscriptionSchema = z.object({
   }),
 });
 
-async function requireAdministrativeSession() {
+/**
+ * Qualquer perfil autenticado gerencia as próprias assinaturas: a
+ * Coordenação recebe aniversários, o cadete recebe os avisos de FO−.
+ * A RLS garante que ninguém alcance a assinatura de outro usuário.
+ */
+async function requireAuthenticatedSession() {
   const session = await getSession();
   if (!session)
     return {
       session: null,
       response: NextResponse.json({ error: "Não autenticado" }, { status: 401 }),
     };
-  if (session.role !== "coordenacao" && session.role !== "secretaria") {
-    return {
-      session: null,
-      response: NextResponse.json({ error: "Acesso negado" }, { status: 403 }),
-    };
-  }
   return { session, response: null };
 }
 
 export async function GET() {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { count, error } = await supabase
     .from("push_subscriptions")
     .select("id", { count: "exact", head: true })
@@ -52,7 +51,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
   if (!env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
     return NextResponse.json({ error: "Web Push ainda não foi configurado" }, { status: 503 });
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Assinatura Web Push inválida" }, { status: 400 });
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("push_subscriptions")
     .upsert(
@@ -85,7 +84,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const auth = await requireAdministrativeSession();
+  const auth = await requireAuthenticatedSession();
   if (!auth.session) return auth.response;
 
   const body = (await request.json().catch(() => null)) as { endpoint?: unknown } | null;
@@ -93,7 +92,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Endpoint não informado" }, { status: 400 });
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("push_subscriptions")
     .delete()

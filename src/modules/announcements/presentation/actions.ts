@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { getDefaultClassId } from "@/modules/operational-duty/infrastructure/queries";
 
@@ -89,7 +89,7 @@ export async function createAnnouncementAction(
     }
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   try {
     const classId = await getDefaultClassId(supabase);
@@ -180,7 +180,7 @@ export async function confirmAnnouncementReadAction(formData: FormData): Promise
   const parsed = readSchema.safeParse({ announcementId: formData.get("announcementId") });
   if (!parsed.success) return;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   await supabase.from("announcement_reads").upsert(
     {
       announcement_id: parsed.data.announcementId,

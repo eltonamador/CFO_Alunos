@@ -1,7 +1,7 @@
 import { Megaphone, ShieldAlert } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getActiveImpedimentViews,
   getDutyAssignmentsForDate,
@@ -15,7 +15,7 @@ function todayKey() {
 
 export default async function InstrutorOperacionalPage() {
   await requireRole("instrutor");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const today = todayKey();
 
   try {

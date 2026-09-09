@@ -23,3 +23,27 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder-xxxxxxxxxxxxxxxx
+
+  database:
+    name: Banco (migrations + RLS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Sobe o Postgres do Supabase e aplica todas as migrations na ordem.
+      - name: Sobe o Supabase local
+        run: pnpm exec supabase start
+      # Reaplica do zero: garante que um banco novo chega ao mesmo estado.
+      - name: Reset com migrations e seed
+        run: pnpm exec supabase db reset
+      # Testes pgTAP: RLS, integridade do FO e expiracao de prazo.
+      - name: Testes de banco
+        run: pnpm exec supabase test db
+      - name: Encerra o Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup

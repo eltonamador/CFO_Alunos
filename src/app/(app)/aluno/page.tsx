@@ -1,5 +1,7 @@
 import { requireRole } from "@/components/app/RoleGuard";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
+import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -49,7 +51,7 @@ export default async function AlunoHome() {
   let pendencias: Pendencia[] = [];
 
   if (session.studentId) {
-    const supabase = createServerClientUntyped();
+    const supabase = createSupabaseServerClient();
 
     // Busca paralela de todos os dados necessários
     const [studentRes, contactRes, addressRes, healthRes, docsRes, equipStatusRes, equipReqsRes, emergencyRes, logRes, vehRes] =
@@ -208,6 +210,8 @@ export default async function AlunoHome() {
         )}
       </header>
 
+      <PendingFollowUpAlert studentId={session.studentId} />
+
       {/* Barras de progresso */}
       <section className="grid gap-3 sm:grid-cols-2">
         {progress.map((p) => (
@@ -250,6 +254,8 @@ export default async function AlunoHome() {
           </ul>
         )}
       </section>
+
+      <PushNotificationControl description="Receba o aviso de FO− e o lembrete do prazo de manifestação mesmo com o app fechado." />
     </div>
   );
 }

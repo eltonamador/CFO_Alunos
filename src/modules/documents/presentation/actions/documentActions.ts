@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -64,7 +64,7 @@ export async function uploadDocumentAction(
     return { ok: false, error: "Sem permissão" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
   const objectName = `${parsed.data.studentId}/${parsed.data.docType}-${Date.now()}.${ext}`;
 
@@ -121,7 +121,7 @@ export async function reuploadDocumentAction(
     return { ok: false, error: "Formato inválido. Use JPG, PNG ou PDF." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: doc } = await supabase
     .from("documents")
     .select("*")
@@ -194,7 +194,7 @@ export async function decideDocumentAction(
     return { ok: false, error: "Informe o motivo da recusa" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const update =
     decision === "validar"
       ? {

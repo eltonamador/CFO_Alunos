@@ -3,14 +3,23 @@ import { CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { confirmAnnouncementReadAction } from "@/modules/announcements/presentation/actions";
 
 export const metadata = { title: "Comunicados - Aluno" };
 
 export default async function AlunoComunicadosPage() {
   const session = await requireRole("aluno");
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
+
+  if (!session.studentId) {
+    return (
+      <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        Sua conta ainda não está vinculada a um cadete. Procure a Coordenação.
+      </p>
+    );
+  }
+
 
   try {
     const { data: announcements } = await supabase

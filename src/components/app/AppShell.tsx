@@ -12,6 +12,8 @@ import {
   Folder,
   CalendarDays,
   Megaphone,
+  ClipboardCheck,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 import { logoutAction } from "@/modules/identity/presentation/actions/authActions";
@@ -24,6 +26,8 @@ import { getStudentSigla } from "@/lib/utils";
 interface NavItem {
   href: string;
   label: string;
+  /** Usado apenas na barra inferior do celular, onde o espaço é apertado. */
+  shortLabel?: string;
   icon: LucideIcon;
   exact?: boolean;
   badge?: number;
@@ -33,6 +37,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
+    { href: "/coordenacao/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
@@ -52,6 +57,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     { href: "/aluno", label: "Início", icon: Home, exact: true },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
+    { href: "/aluno/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
     { href: "/aluno/ficha", label: "Ficha", icon: ClipboardList },
     { href: "/aluno/documentos", label: "Documentos", icon: Folder },
     { href: "/aluno/materiais", label: "Materiais", icon: Boxes },
@@ -92,18 +98,25 @@ function getUserDisplayName(session: SessionProfile): string {
 export function AppShell({
   session,
   unreadAnnouncements = 0,
+  pendingFollowUps = 0,
   children,
 }: {
   session: SessionProfile;
   unreadAnnouncements?: number;
+  /** FO− aguardando manifestação (aluno) ou decisão (coordenação). */
+  pendingFollowUps?: number;
   children: React.ReactNode;
 }) {
   const baseNav = NAV_BY_ROLE[session.role];
-  const nav: NavItem[] = baseNav.map((item) =>
-    item.href === "/aluno/comunicados" && unreadAnnouncements > 0
-      ? { ...item, badge: unreadAnnouncements }
-      : item,
-  );
+  const nav: NavItem[] = baseNav.map((item) => {
+    if (item.href === "/aluno/comunicados" && unreadAnnouncements > 0) {
+      return { ...item, badge: unreadAnnouncements };
+    }
+    if (item.href.endsWith("/acompanhamento") && pendingFollowUps > 0) {
+      return { ...item, badge: pendingFollowUps };
+    }
+    return item;
+  });
   const userInitials = getUserInitials(session);
   const userDisplayName = getUserDisplayName(session);
 
@@ -170,6 +183,13 @@ export function AppShell({
             </div>
           </div>
           <ThemeToggle className="mb-1 w-full text-white/85 hover:bg-white/10 hover:text-white" />
+          <Link
+            href="/sobre"
+            className="mb-1 flex min-h-[44px] w-full items-center gap-2 rounded-md px-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            <Info className="h-4 w-4" aria-hidden />
+            <span>Sobre o aplicativo</span>
+          </Link>
           <form action={logoutAction}>
             <Button
               type="submit"
@@ -203,6 +223,14 @@ export function AppShell({
               </span>
             </Link>
             <div className="flex items-center gap-1">
+              <Link
+                href="/sobre"
+                aria-label="Sobre o aplicativo"
+                title="Sobre o aplicativo"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-foreground/60 transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Info className="h-[18px] w-[18px]" aria-hidden />
+              </Link>
               <ThemeToggle showLabel={false} />
               <form action={logoutAction}>
                 <Button type="submit" variant="ghost" size="sm">
@@ -220,13 +248,16 @@ export function AppShell({
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card md:hidden">
         <div
           className="grid h-16 min-w-full items-center overflow-x-auto"
-          style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(74px, 1fr))` }}
+          // Colunas de 74px: alvo de toque confortavel. Com muitos itens a
+          // barra rola na horizontal em vez de espremer os rotulos.
+          style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(84px, 1fr))` }}
         >
           {nav.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
               label={item.label}
+              shortLabel={item.shortLabel}
               variant="bottom"
               exact={item.exact}
               badge={item.badge}

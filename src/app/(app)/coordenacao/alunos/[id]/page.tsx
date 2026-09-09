@@ -17,6 +17,7 @@ import {
   fetchStudentWeightHistory,
 } from "@/lib/supabase/queries/students";
 import { fetchEquipmentChecklist } from "@/lib/supabase/queries/equipment";
+import { listFollowUps } from "@/modules/cadet-followup/infrastructure/queries";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
 import { StudentPhotoUpload } from "@/components/app/StudentPhotoUpload";
@@ -32,6 +33,7 @@ import { LogisticaTab } from "./tabs/LogisticaTab";
 import { VeiculoTab } from "./tabs/VeiculoTab";
 import { MateriaisTab } from "./tabs/MateriaisTab";
 import { HistoricoTab } from "./tabs/HistoricoTab";
+import { AcompanhamentoTab } from "./tabs/AcompanhamentoTab";
 import { DocumentsTab } from "@/components/app/documents/DocumentsTab";
 
 const COURSE_STATUS_LABELS: Record<string, string> = {
@@ -55,6 +57,7 @@ const TABS = [
   { value: "veiculo", label: "Veículo/CNH" },
   { value: "documentos", label: "Documentos" },
   { value: "materiais", label: "Materiais" },
+  { value: "acompanhamento", label: "Acompanhamento" },
   { value: "historico", label: "Histórico" },
 ];
 
@@ -72,7 +75,7 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
 
   const tab = searchParams.tab ?? "resumo";
 
-  const [contact, address, emergency, health, weightHistory, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs] =
+  const [contact, address, emergency, health, weightHistory, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs, followUps] =
     await Promise.all([
       fetchStudentContact(supabase, params.id),
       fetchStudentAddress(supabase, params.id),
@@ -86,6 +89,7 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
       fetchStudentVehicle(supabase, params.id),
       fetchEquipmentChecklist(supabase, params.id),
       fetchStudentAuditLogs(supabase, params.id),
+      listFollowUps(supabase, { studentId: params.id }),
     ]);
 
   const studentMap = (allStudents ?? []).reduce((acc: Record<string, string>, curr) => {
@@ -178,6 +182,7 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
             canValidate
           />
         )}
+        {tab === "acompanhamento" && <AcompanhamentoTab items={followUps} />}
         {tab === "historico" && (
           <HistoricoTab
             _studentId={student.id}

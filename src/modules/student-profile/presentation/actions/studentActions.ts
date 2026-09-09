@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/types";
 import { getSession } from "@/modules/identity/presentation/session";
 import { normalizeWeightInput } from "@/modules/student-profile/domain/weightHistory";
 import {
@@ -109,7 +110,7 @@ export async function updateContactAction(
   const { studentId, whatsapp, phone_secondary, email_personal, notes } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("student_contacts").upsert({
     student_id: studentId,
     whatsapp: whatsapp ? maskPhone(whatsapp) : null,
@@ -173,7 +174,7 @@ export async function updateAddressAction(
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error: addressError } = await supabase.from("student_addresses").upsert({
     student_id: studentId,
     street: nullIfEmpty(street),
@@ -244,7 +245,7 @@ export async function upsertEmergencyContactAction(
   const { studentId, priority, full_name, relationship, phone, address, notes } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("emergency_contacts").upsert(
     {
       student_id: studentId,
@@ -348,7 +349,7 @@ export async function updateHealthAction(
   } = parsed.data;
   if (!canEditOwn(session, studentId)) return { ok: false, error: "Sem permissão" };
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // Lê valor anterior para registrar no PendingChange
   const { data: previous } = await supabase
@@ -478,7 +479,7 @@ export async function addStudentWeightAction(
   }
 
   const source = session.role === "aluno" ? "aluno" : "coordenacao";
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   const { error: insertError } = await supabase.from("student_weight_history").insert({
     student_id: studentId,
@@ -538,7 +539,7 @@ export async function updateOperationalSummaryAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("health_restrictions")
     .update({ operational_summary: parsed.data.operational_summary })
@@ -576,7 +577,7 @@ export async function resolvePendingChangeAction(
     return { ok: false, error: "Informe o motivo da recusa" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: pending } = await supabase
     .from("pending_changes")
     .select("*")
@@ -670,7 +671,7 @@ export async function updateStudentAdminAction(
     return { ok: false, error: "Um aluno não pode ser canga de si mesmo." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // 1. Atualizar dados cadastrais críticos (número, pelotão/fase e observações)
   const { error: studentError } = await supabase
@@ -751,7 +752,7 @@ export async function updateCourseStatusAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("students")
     .update({
@@ -803,8 +804,8 @@ export async function updateLogisticsAction(
     return { ok: false, error: "Apenas Coordenação pode alterar dados de fardamento." };
   }
 
-  const supabase = createServerClientUntyped();
-  const updatePayload: Record<string, unknown> = {
+  const supabase = createSupabaseServerClient();
+  const updatePayload: Database["public"]["Tables"]["student_logistics"]["Insert"] = {
     student_id: studentId,
     ...rest,
     has_fixed_residence_macapa: has_fixed_residence_macapa === "true" ? true : has_fixed_residence_macapa === "false" ? false : null,
@@ -1026,7 +1027,7 @@ export async function updateIdentificationAction(
     marital_status ?? "",
   );
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // Lê valor anterior para comparar ou registrar na pendência
   const { data: previousStudent } = await supabase
@@ -1199,7 +1200,7 @@ export async function updateVehicleAction(
   const boolOrNull = (v: "true" | "false" | "" | undefined) =>
     v === "true" ? true : v === "false" ? false : null;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("vehicles").upsert({
     student_id: studentId,
     has_vehicle: boolOrNull(has_vehicle),
@@ -1256,9 +1257,9 @@ export async function updateEnrollmentStatusAction(
   }
 
   const { studentId, enrollment_status, enrollment_id, enrollment_date } = parsed.data;
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
-  const update: Record<string, unknown> = {
+  const update: Database["public"]["Tables"]["students"]["Update"] = {
     enrollment_status,
     updated_by: session.userId,
   };
@@ -1314,7 +1315,7 @@ export async function updateStudentPhotoAction(
     return { ok: false, error: "Formato inválido. Use JPG, PNG ou WEBP." };
   }
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   // Lê a foto anterior para remover do storage após a troca.
   const { data: previous } = await supabase

@@ -3,7 +3,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createServerClientUntyped } from "@/lib/supabase/untyped";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/types";
 import { getSession } from "@/modules/identity/presentation/session";
 import { generateFairRoster } from "../domain/services/generateFairRoster";
 import {
@@ -53,7 +54,7 @@ export async function generateDutyRosterAction(
 
   const startDate = parsed.data.startDate ?? toDateKey(today);
   const endDate = parsed.data.endDate ?? toDateKey(addDays(today, 6));
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
 
   try {
     const classId = await getDefaultClassId(supabase);
@@ -128,7 +129,7 @@ export async function generateDutyRosterAction(
         endDate,
         assignments: generated.assignments.length,
         alerts: generated.alerts,
-      },
+      } as unknown as Json,
       reason: "Geracao automatica de escala operacional",
     });
 
@@ -174,7 +175,7 @@ export async function registerDutyImpedimentAction(
   });
   if (!parsed.success) return;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("duty_impediments").insert({
     student_id: parsed.data.studentId,
     impediment_type: parsed.data.impedimentType,
@@ -212,7 +213,7 @@ export async function manuallyReplaceDutyAssignmentAction(
   });
   if (!parsed.success) return;
 
-  const supabase = createServerClientUntyped();
+  const supabase = createSupabaseServerClient();
   const { data: current, error: currentError } = await supabase
     .from("duty_assignments")
     .select("id, roster_id, class_id, duty_date, role_id, student_id, status")

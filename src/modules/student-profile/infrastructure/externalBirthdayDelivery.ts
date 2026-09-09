@@ -9,7 +9,10 @@ import type {
   PushSubscriptionTarget,
   ReserveBirthdayDeliveryInput,
 } from "@/modules/student-profile/application/externalBirthdayNotifications";
-import webPush from "web-push";
+import {
+  sendPushNotification,
+  sendTransactionalEmail,
+} from "@/modules/notifications/infrastructure/send";
 
 export interface WebPushConfiguration {
   publicKey: string;
@@ -27,9 +30,6 @@ function recipientHash(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function createBirthdayDeliveryRepository(supabase: SupabaseClient<any, any, any>) {
   return {
@@ -85,54 +85,17 @@ export function createBirthdayDeliveryRepository(supabase: SupabaseClient<any, a
   };
 }
 
+/**
+ * Envio de push e e-mail vivem em `@/modules/notifications` desde que o
+ * módulo de acompanhamento passou a notificar também. Estas funções
+ * seguem exportadas daqui para não mudar as chamadas existentes.
+ */
 export async function sendWebPushNotification(
   target: PushSubscriptionTarget,
   content: BirthdayNotificationContent,
   config: WebPushConfiguration,
 ): Promise<NotificationSendResult> {
-  try {
-    await webPush.sendNotification(
-      {
-        endpoint: target.endpoint,
-        keys: { p256dh: target.p256dh, auth: target.auth },
-      },
-      JSON.stringify({
-        ...content,
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-        badgeCount: 1,
-      }),
-      {
-        vapidDetails: {
-          subject: config.subject,
-          publicKey: config.publicKey,
-          privateKey: config.privateKey,
-        },
-        TTL: 60 * 60 * 24,
-        urgency: "normal",
-      },
-    );
-    return { ok: true };
-  } catch (error) {
-    const statusCode =
-      typeof error === "object" && error !== null && "statusCode" in error
-        ? Number(error.statusCode)
-        : undefined;
-    return {
-      ok: false,
-      error: errorMessage(error),
-      permanentFailure: statusCode === 404 || statusCode === 410,
-    };
-  }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return sendPushNotification(target, content, config);
 }
 
 export async function sendBirthdayEmail(
@@ -141,38 +104,5 @@ export async function sendBirthdayEmail(
   idempotencyKey: string,
   config: EmailConfiguration,
 ): Promise<NotificationSendResult> {
-  try {
-    const appLink = new URL(content.url, config.appUrl).toString();
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify({
-        from: config.from,
-        to: [recipient.email],
-        subject: content.title,
-        text: content.body,
-        html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#16140f"><h2>${escapeHtml(content.title)}</h2><p>${escapeHtml(content.body)}</p><p><a href="${escapeHtml(appLink)}">Abrir CFO Alunos</a></p></div>`,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-
-    const responseBody = (await response.json().catch(() => ({}))) as {
-      id?: string;
-      message?: string;
-    };
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: responseBody.message ?? `Resend respondeu HTTP ${response.status}`,
-      };
-    }
-
-    return { ok: true, providerMessageId: responseBody.id };
-  } catch (error) {
-    return { ok: false, error: errorMessage(error) };
-  }
+  return sendTransactionalEmail(recipient, content, idempotencyKey, config);
 }
