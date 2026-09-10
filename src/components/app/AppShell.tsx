@@ -37,6 +37,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
+    { href: "/coordenacao/academico", label: "Gestão Acadêmica", shortLabel: "Acadêmico", icon: GraduationCap },
     { href: "/coordenacao/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
@@ -45,16 +46,19 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   ],
   secretaria: [
     { href: "/secretaria", label: "Início", icon: Home, exact: true },
+    { href: "/secretaria/academico", label: "Gestão Acadêmica", shortLabel: "Acadêmico", icon: GraduationCap },
     { href: "/secretaria/documentos", label: "Documentos", icon: Folder },
     { href: "/secretaria/relatorios", label: "Relatórios", icon: FileText },
   ],
   instrutor: [
     { href: "/instrutor", label: "Buscar", icon: Search, exact: true },
+    { href: "/instrutor/academico", label: "Disciplinas e notas", shortLabel: "Acadêmico", icon: GraduationCap },
     { href: "/instrutor/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/instrutor/turma", label: "Turma", icon: GraduationCap },
   ],
   aluno: [
     { href: "/aluno", label: "Início", icon: Home, exact: true },
+    { href: "/aluno/academico", label: "Minhas notas", shortLabel: "Notas", icon: GraduationCap },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/aluno/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
