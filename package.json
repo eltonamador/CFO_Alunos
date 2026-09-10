@@ -17,6 +17,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
+    "db:test:schedules": "node scripts/test-schedule-repository-db.mjs",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/types.ts",
     "db:seed": "supabase db execute --file supabase/seed.sql",
     "db:seed-users": "tsx scripts/seed-users.ts",

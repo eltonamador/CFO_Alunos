@@ -209,18 +209,46 @@ Objetivo: liberar gradualmente.
 
 Checkpoint: aceite operacional e plano de retorno que desative o módulo sem apagar documentos.
 
-## 8. Dependências e decisões antes da Sprint E2
+## 8. Dependências e decisões após a Sprint E2
 
 Estas decisões não alteram o objetivo, mas precisam ser fechadas antes do schema definitivo:
 
-- Limite de tamanho do PDF.
+- Confirmar ou alterar o limite provisório de 20 MiB por PDF definido na migration de Storage.
 - Provedor ou runtime de OCR disponível na implantação.
 - Canais de notificação já habilitados no ambiente real.
 - Prazo considerado “próximo” no painel do aluno.
 - Se o repositório mostrará PDFs de todas as turmas ou somente da turma do aluno. A regra de menor exposição recomenda somente a própria turma, salvo ato institucional que determine acesso amplo.
 - Procedimento institucional para mensagem corretiva após notificação equivocada.
 
-## 9. Critérios de aceite consolidados
+## 9. Registro da Sprint E2 — migrations
+
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Arquivos adicionados:
+
+- `supabase/migrations/0040_schedule_repository.sql`: sete tabelas, catálogo inicial, invariantes, RLS, auditoria e RPCs transacionais.
+- `supabase/migrations/0041_schedule_repository_storage.sql`: bucket privado `schedule-pdfs`, limite provisório de 20 MiB, PDF obrigatório e acesso sem sobrescrita/exclusão.
+- `supabase/tests/schedule_repository.test.sql`: cenários de permissão, publicação, matching, correção, notificações e imutabilidade.
+- `scripts/test-schedule-repository-db.mjs`: executor PostgreSQL descartável para o teste do núcleo.
+
+Arquivo alterado:
+
+- `package.json`: comando `pnpm db:test:schedules`.
+
+Validação executada:
+
+- `pnpm db:test:schedules`: 43 verificações pgTAP aprovadas.
+- `git diff --check`: sem erros de whitespace.
+
+Pendências para homologação:
+
+- validar `0041` em uma instância Supabase local ou de homologação, pois o PostgreSQL descartável não implementa `storage.objects`;
+- gerar novamente os tipos TypeScript depois de aplicar as migrations no Supabase local;
+- confirmar o limite de 20 MiB e as demais decisões desta seção.
+
+Próximo passo: Sprint E3, começando pelos casos de uso de cadastro de tipo, reserva do documento, upload e listagem do repositório.
+
+## 10. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.
