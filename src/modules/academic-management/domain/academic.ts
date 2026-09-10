@@ -49,14 +49,16 @@ export interface AcademicResult {
 export const DEFAULT_POLICY_PARAMETERS: Readonly<PolicyParameters> = Object.freeze({
   version: 1,
   directPassGrade: 7,
-  vfMinAverage: 5,
+  // O RI (art. 38) encaminha à VF quem não alcançou 7 e não fixa piso mínimo.
+  vfMinAverage: 0,
   vfPassGrade: 5,
   vfReduction: true,
   vfMaxRecordedGrade: 6.75,
   maxVfDisciplines: 3,
   absenceLimitPercent: 25,
-  attendanceMode: "total",
-  absencePenaltyStage: "before_vf",
+  // O art. 43 limita e desconta as faltas não justificadas da nota final.
+  attendanceMode: "unjustified",
+  absencePenaltyStage: "after_vf",
   averageDecimals: 2,
   roundingMode: "half_even",
   comparisonStage: "rounded",

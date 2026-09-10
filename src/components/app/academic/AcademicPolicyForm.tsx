@@ -18,11 +18,17 @@ export function AcademicPolicyForm({
 }) {
   const initial = current ?? DEFAULT_POLICY_PARAMETERS;
   const [values, setValues] = useState({ ...initial });
-  const [attendanceMode, setAttendanceMode] = useState("");
-  const [penaltyStage, setPenaltyStage] = useState("");
-  const [vfMinAverage, setVfMinAverage] = useState("");
-  const [decimals, setDecimals] = useState("");
-  const [comparisonStage, setComparisonStage] = useState("");
+  const [attendanceMode, setAttendanceMode] = useState<PolicyParameters["attendanceMode"]>(
+    initial.attendanceMode,
+  );
+  const [penaltyStage, setPenaltyStage] = useState<PolicyParameters["absencePenaltyStage"]>(
+    initial.absencePenaltyStage,
+  );
+  const [vfMinAverage, setVfMinAverage] = useState(String(initial.vfMinAverage));
+  const [decimals, setDecimals] = useState(String(initial.averageDecimals));
+  const [comparisonStage, setComparisonStage] = useState<PolicyParameters["comparisonStage"]>(
+    initial.comparisonStage,
+  );
   const parameters = JSON.stringify({
     ...values,
     attendanceMode,
@@ -45,59 +51,64 @@ export function AcademicPolicyForm({
       operation="configure_policy"
       hidden={{ offering_id: offeringId, parameters }}
       submitLabel="Registrar política aprovada"
-      disabled={
-        !attendanceMode || !penaltyStage || vfMinAverage === "" || !decimals || !comparisonStage
-      }
+      disabled={vfMinAverage === "" || !decimals}
     >
       <p className="text-sm text-muted-foreground">
-        Os valores abaixo são uma proposta para conferência. A coordenação deve registrar o ato que
-        resolve as divergências antes de habilitar o cálculo. A política aprovada fica fixada a esta
-        oferta.
+        O formulário inicia com a interpretação provisória do RI ABM 2023 adotada pela coordenação.
+        Os parâmetros continuam editáveis e ficam registrados na oferta para permitir correções
+        futuras sem apagar notas.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <AcademicField label="Nome da política">
-          <Input name="name" required minLength={3} placeholder="Política aprovada para a oferta" />
+          <Input
+            name="name"
+            required
+            minLength={3}
+            defaultValue="RI ABM 2023 — aplicação provisória"
+          />
         </AcademicField>
         <AcademicField label="Referência da decisão da coordenação">
           <Input
             name="decision_ref"
             required
             minLength={5}
-            placeholder="Ato, data e identificação da decisão"
+            defaultValue="RI ABM 2023 — aplicação provisória"
+            placeholder="Ato, despacho ou registro da decisão provisória"
           />
         </AcademicField>
         <AcademicField
           label="Faltas que contam para o limite"
-          hint="Escolha explícita necessária: há divergência normativa."
+          hint="Padrão provisório: somente faltas não justificadas, conforme art. 43 do RI."
         >
           <Select
             required
             value={attendanceMode}
-            onChange={(event) => setAttendanceMode(event.target.value)}
+            onChange={(event) =>
+              setAttendanceMode(event.target.value as PolicyParameters["attendanceMode"])
+            }
           >
-            <option value="" disabled>
-              Escolha a regra aprovada
-            </option>
             <option value="total">Justificadas e não justificadas</option>
             <option value="unjustified">Somente não justificadas</option>
           </Select>
         </AcademicField>
-        <AcademicField label="Momento do desconto por faltas" hint="Escolha explícita necessária.">
+        <AcademicField
+          label="Momento do desconto por faltas"
+          hint="Interpretação provisória: desconto na nota final, conforme redação do art. 43 §5º."
+        >
           <Select
             required
             value={penaltyStage}
-            onChange={(event) => setPenaltyStage(event.target.value)}
+            onChange={(event) =>
+              setPenaltyStage(event.target.value as PolicyParameters["absencePenaltyStage"])
+            }
           >
-            <option value="" disabled>
-              Escolha a regra aprovada
-            </option>
             <option value="before_vf">Na média corrente, antes de avaliar a VF</option>
             <option value="after_vf">Na nota final, após VF e redutor quando houver</option>
           </Select>
         </AcademicField>
         <AcademicField
           label="Média mínima para acesso à VF"
-          hint={`Proposta para conferência: ${initial.vfMinAverage}. Informe o valor aprovado.`}
+          hint="Padrão provisório: 0, pois o art. 38 do RI não fixa piso para acesso à VF."
         >
           <Input
             type="number"
@@ -124,16 +135,15 @@ export function AcademicPolicyForm({
         </AcademicField>
         <AcademicField
           label="Momento de comparar os limites"
-          hint="Escolha explícita necessária para resolver a divergência normativa."
+          hint="Padrão provisório: aplicar o arredondamento do RI antes da comparação."
         >
           <Select
             required
             value={comparisonStage}
-            onChange={(event) => setComparisonStage(event.target.value)}
+            onChange={(event) =>
+              setComparisonStage(event.target.value as PolicyParameters["comparisonStage"])
+            }
           >
-            <option value="" disabled>
-              Escolha o critério aprovado
-            </option>
             <option value="rounded">Comparar após arredondar os valores intermediários</option>
             <option value="exact">Comparar com os valores intermediários exatos</option>
           </Select>

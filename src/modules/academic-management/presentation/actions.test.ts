@@ -136,4 +136,30 @@ describe("academic Server Action authorization", () => {
     expect(result).toMatchObject({ ok: false, message: expect.stringContaining("outra pessoa") });
     expect(mocks.revalidate).not.toHaveBeenCalled();
   });
+
+  it("creates a new offering through the transactional RI policy RPC", async () => {
+    const client = fakeClient();
+    mocks.client.mockReturnValue(client);
+    const result = await academicAction(
+      null,
+      form({
+        operation: "create_offering",
+        class_id: id,
+        discipline_id: id,
+        academic_year: "2026",
+        workload_hours: "40",
+        vc_count: "2",
+        decision_ref: "Aplicação provisória conforme RI ABM 2023",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(client.rpc).toHaveBeenCalledWith("academic_create_offering_ri", {
+      p_class_id: id,
+      p_discipline_id: id,
+      p_academic_year: 2026,
+      p_workload_hours: 40,
+      p_vc_count: 2,
+      p_decision_ref: "Aplicação provisória conforme RI ABM 2023",
+    });
+  });
 });

@@ -267,5 +267,28 @@ $q$),'ok','correção da frequência histórica independe da turma atual do cade
 select is((select student_label from public.academic_enrollments where id=pg_temp.ac_id('enrollment1')),
  'TESTE UM — 01','transferência não reescreve snapshot de identificação histórica');
 
+select ok(not has_function_privilege('anon',
+ 'public.academic_create_offering_ri(uuid,uuid,integer,integer,integer,text)','execute'),
+ 'anon não cria oferta com política provisória');
+select is(pg_temp.ac_try('inativo', $q$
+ select public.academic_create_offering_ri(pg_temp.ac_id('class'),pg_temp.ac_id('discipline'),2101,40,2,'Aplicação provisória fictícia')
+$q$),'42501','coordenação inativa não cria oferta provisória');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_offering_ri(pg_temp.ac_id('class'),pg_temp.ac_id('discipline'),2101,40,2,'Aplicação provisória fictícia')
+$q$),'ok','coordenação cria oferta e política RI na mesma transação');
+select is((select parameters ->> 'vfMinAverage' from public.academic_policies
+ where decision_ref='Aplicação provisória fictícia'),'0','RI provisório não inventa piso para acesso à VF');
+select is((select parameters ->> 'attendanceMode' from public.academic_policies
+ where decision_ref='Aplicação provisória fictícia'),'unjustified','RI provisório considera faltas não justificadas no limite');
+select is((select parameters ->> 'absencePenaltyStage' from public.academic_policies
+ where decision_ref='Aplicação provisória fictícia'),'after_vf','RI provisório aplica desconto na nota final');
+select ok((select policy_id is not null from public.academic_offerings
+ where academic_year=2101),'nova oferta nasce vinculada à política provisória');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_offering_ri(pg_temp.ac_id('class'),pg_temp.ac_id('discipline'),2101,40,2,'Tentativa duplicada fictícia')
+$q$),'23505','oferta duplicada falha integralmente');
+select is((select count(*)::int from public.academic_policies
+ where decision_ref='Tentativa duplicada fictícia'),0,'falha da oferta não deixa política órfã');
+
 select * from finish();
 rollback;

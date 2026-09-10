@@ -47,7 +47,13 @@ try {
   // 0013 (Storage) e outros módulos não são necessários para este teste isolado.
   const selected = migrations.filter((name) => {
     const number = Number(name.slice(0, 4));
-    return (number >= 1 && number <= 12) || number === 14 || number === 36 || number === 37;
+    return (
+      (number >= 1 && number <= 12) ||
+      number === 14 ||
+      number === 36 ||
+      number === 37 ||
+      number === 38
+    );
   });
   for (const name of selected) {
     await db.exec(await readFile(join(migrationDirectory, name), "utf8"));

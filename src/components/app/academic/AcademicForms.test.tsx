@@ -77,10 +77,15 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
     expect(screen.getByText(/26–26 de 26 eventos/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Próximo" })).toBeDisabled();
   });
-  it("exige escolhas explícitas para conflitos antes de enviar parâmetros aprovados", () => {
+  it("preenche a interpretação provisória do RI e conserva parâmetros editáveis", () => {
     const { container } = render(<AcademicPolicyForm offeringId="offering" />);
     const submit = screen.getByRole("button", { name: "Registrar política aprovada" });
-    expect(submit).toBeDisabled();
+    expect(submit).toBeEnabled();
+    expect(screen.getByLabelText(/Faltas que contam/)).toHaveValue("unjustified");
+    expect(screen.getByLabelText(/Momento do desconto/)).toHaveValue("after_vf");
+    expect(screen.getByLabelText(/Média mínima para acesso/)).toHaveValue(0);
+    expect(screen.getByLabelText(/Precisão da média/)).toHaveValue("2");
+    expect(screen.getByLabelText(/Momento de comparar/)).toHaveValue("rounded");
     fireEvent.change(screen.getByLabelText(/Faltas que contam/), {
       target: { value: "unjustified" },
     });
@@ -90,9 +95,7 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
     fireEvent.change(screen.getByLabelText(/Média mínima para acesso/), {
       target: { value: "4.5" },
     });
-    expect(submit).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Precisão da média/), { target: { value: "3" } });
-    expect(submit).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Momento de comparar/), { target: { value: "exact" } });
     expect(submit).toBeEnabled();
     expect(screen.getByLabelText(/Referência da decisão/)).toBeRequired();

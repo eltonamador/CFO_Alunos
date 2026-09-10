@@ -10,6 +10,10 @@ import {
 import { ACADEMIC_CATALOG, vcCountEvidence } from "./catalog";
 const policy = (changes: Partial<PolicyParameters> = {}): PolicyParameters => ({
   ...DEFAULT_POLICY_PARAMETERS,
+  // Baseline de contraste mantém a alternativa PPC/RI testada separadamente.
+  vfMinAverage: 5,
+  attendanceMode: "total",
+  absencePenaltyStage: "before_vf",
   ...changes,
 });
 const input = (changes: Partial<AcademicInput> = {}): AcademicInput => ({
@@ -25,6 +29,17 @@ const input = (changes: Partial<AcademicInput> = {}): AcademicInput => ({
 });
 
 describe("explicit policy and decimal arithmetic", () => {
+  it("uses the authorized provisional RI interpretation only as the form preset", () => {
+    expect(DEFAULT_POLICY_PARAMETERS).toMatchObject({
+      directPassGrade: 7,
+      vfMinAverage: 0,
+      vfPassGrade: 5,
+      attendanceMode: "unjustified",
+      absencePenaltyStage: "after_vf",
+      comparisonStage: "rounded",
+      averageDecimals: 2,
+    });
+  });
   it("requires an explicit choice of exact or rounded comparisons", () => {
     expect(validatePolicyParameters({ ...policy(), comparisonStage: undefined })).toBe(false);
     expect(validatePolicyParameters({ ...policy(), comparisonStage: "approximate" })).toBe(false);

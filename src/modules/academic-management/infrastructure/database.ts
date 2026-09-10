@@ -57,6 +57,17 @@ type AcademicDatabase = {
         };
         Returns: Enrollment;
       };
+      academic_create_offering_ri: {
+        Args: {
+          p_class_id: string;
+          p_discipline_id: string;
+          p_academic_year: number;
+          p_workload_hours: number;
+          p_vc_count: number;
+          p_decision_ref: string;
+        };
+        Returns: string;
+      };
     };
   };
 };

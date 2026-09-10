@@ -57,6 +57,13 @@ export function NewOfferingForm({
 }) {
   const [disciplineId, setDisciplineId] = useState("");
   const discipline = disciplines.find((item) => item.id === disciplineId);
+  const provisionalVcCount = discipline
+    ? discipline.workload_hours <= 20
+      ? 1
+      : discipline.workload_hours <= 60
+        ? 2
+        : 3
+    : undefined;
   return (
     <AcademicActionForm
       operation="create_offering"
@@ -64,8 +71,8 @@ export function NewOfferingForm({
       disabled={!disciplines.length || !classes.length}
     >
       <p className="text-sm text-muted-foreground">
-        A oferta vincula uma disciplina à turma e ao ano letivo, preservando o histórico de cada
-        fase.
+        A oferta vincula uma disciplina à turma e ao ano letivo e já recebe a política provisória do
+        RI ABM 2023. Os parâmetros ficam registrados e podem ser corrigidos por nova versão.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <AcademicField label="Turma">
@@ -127,12 +134,26 @@ export function NewOfferingForm({
         </AcademicField>
         <AcademicField
           label="Quantidade de verificações correntes (VC)"
-          hint="Informe a quantidade aprovada para esta oferta."
+          hint="Interpretação provisória: até 20 h/a = 1; de 21 a 60 h/a = 2; acima de 60 h/a = 3. A faixa de 41 a 60 h/a supre a lacuna do RI com a matriz do PPC."
         >
-          <Input name="vc_count" type="number" min="1" max="12" step="1" required />
+          <Input
+            key={`vc-${disciplineId}`}
+            name="vc_count"
+            type="number"
+            min="1"
+            max="12"
+            step="1"
+            defaultValue={provisionalVcCount}
+            required
+          />
         </AcademicField>
         <AcademicField label="Ato ou decisão que autoriza a oferta">
-          <Input name="decision_ref" minLength={5} required />
+          <Input
+            name="decision_ref"
+            minLength={5}
+            required
+            defaultValue="RI ABM 2023 — aplicação provisória"
+          />
         </AcademicField>
       </div>
     </AcademicActionForm>

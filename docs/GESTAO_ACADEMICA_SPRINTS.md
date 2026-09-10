@@ -35,7 +35,7 @@ Concluída. Commit local das telas/integrações: `0f180c4`. Implementação: ca
 
 Arquivos: `src/modules/academic-management/{application,infrastructure,presentation}/`, `src/components/app/academic/`, rotas `src/app/(app)/{coordenacao,instrutor,secretaria,aluno}/academico/`, `src/components/app/AppShell.tsx`.
 
-Verificações: **22 testes de comandos e ações** e **6 testes de interface** passaram; lint e TypeScript passaram. Migrations: nenhuma adicional nesta sprint. A política pede escolhas explícitas e, depois de aprovada, não oferece uma ação de substituição que o banco recusaria. Histórico é carregado integralmente por páginas do banco e apresentado em páginas de 25 eventos.
+Verificações: **22 testes de comandos e ações** e **6 testes de interface** passaram; lint e TypeScript passaram. Migrations: nenhuma adicional nesta sprint. Depois de vinculada, a política não oferece uma ação de substituição que o banco recusaria. Histórico é carregado integralmente por páginas do banco e apresentado em páginas de 25 eventos.
 
 Próximo passo realizado: validação integrada da interface, cálculos e histórico, build e regressão.
 
@@ -45,11 +45,11 @@ Concluída para entrega do código local. Arquivos de integração: `src/app/sw.
 
 Revisão independente corrigiu: espaços não viram nota zero; TCC não usa fórmula comum; VF mínima efetiva considera redutor/desconto; política permite cortes exatos ou arredondados; histórico não fica truncado em 100 eventos; cadetes excluídos não aparecem para matrícula; disciplinas repetidas não duplicam o contador de VF; transferência de turma no mesmo curso não reinicia o contador; oferta inativa não oferece edição; política aprovada é imutável; designação encerrada pode ser sucedida por nova designação; falha de auditoria cancela a nota.
 
-Verificação integrada: **196 testes Vitest em 19 arquivos**, **82 asserções pgTAP**, lint sem warnings, TypeScript e build Next.js passaram. Os 102 testes legados permanecem aprovados. O build foi executado com endereço de Supabase local e chave fictícia; nenhum dado de produção foi consultado. Os testes de banco passaram no PostgreSQL WASM descartável. O guia de implantação descreve como reproduzir os testes e os limites do ambiente.
+Verificação integrada: **198 testes Vitest em 19 arquivos**, **91 asserções pgTAP**, lint sem warnings, TypeScript e build Next.js passaram. Os 102 testes legados permanecem aprovados. O build foi executado com endereço de Supabase local e chave fictícia; nenhum dado de produção foi consultado. Os testes de banco passaram no PostgreSQL WASM descartável. O guia de implantação descreve como reproduzir os testes e os limites do ambiente.
 
 Conferência visual adicional: dashboard, notas, política e histórico em 390 e 1440 px (8 cenários), sem extrapolação horizontal ou erros de renderização. Usou dados artificiais, mocks de ações/autenticação/banco e tipografia fallback em harness separado, sem criar rota de bypass no produto. Não equivale a E2E autenticado. Evidências locais: `../academic-qa/findings.json` e imagens `../academic-qa/{dashboard,notes,policy,history}-{390,1440}.png`, a partir da raiz do checkout. O servidor temporário foi encerrado.
 
-Migrations: somente 0036 e 0037; nenhum banco em uso foi alterado. O projeto original continua no `main` original e conserva apenas o `lista.txt` que já estava não rastreado. As fontes PPC/RI permaneceram somente leitura.
+Migrations: 0036, 0037 e 0038; nenhum banco em uso foi alterado. A 0038 aplica automaticamente a política provisória do RI às novas ofertas, mantendo uma cópia versionada por oferta. O projeto original continua no `main` original e conserva apenas o `lista.txt` que já estava não rastreado. As fontes PPC/RI permaneceram somente leitura.
 
 Pendências: homologação no Supabase real (Auth/PostgREST, sessões e corrida real de duas conexões), decisões normativas da coordenação e implantação. A suíte Playwright legada não foi executada contra o banco real. Média ponderada/frequência global, componentes VC/VI, comportamento, critérios TCC/estágio/atividades, recursos, boletins homologados e materiais didáticos ficam explicitamente para as próximas sprints descritas no guia.
 
@@ -102,4 +102,5 @@ Próximo checkpoint: aplicar em homologação, registrar ato de política e comp
 - `src/modules/academic-management/presentation/actions.ts`
 - `supabase/migrations/0036_academic_management.sql`
 - `supabase/migrations/0037_academic_catalog.sql`
+- `supabase/migrations/0038_academic_ri_provisional_policy.sql`
 - `supabase/tests/academic.test.sql`

@@ -45,8 +45,14 @@ export async function academicAction(
         break;
       }
       case "create_offering": {
-        const { operation: _, ...record } = command;
-        const { error } = await client.from("academic_offerings").insert(record);
+        const { error } = await client.rpc("academic_create_offering_ri", {
+          p_class_id: command.class_id,
+          p_discipline_id: command.discipline_id,
+          p_academic_year: command.academic_year,
+          p_workload_hours: command.workload_hours,
+          p_vc_count: command.vc_count,
+          p_decision_ref: command.decision_ref,
+        });
         if (error) throw academicError(error);
         break;
       }
