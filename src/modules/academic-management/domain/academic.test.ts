@@ -29,16 +29,30 @@ const input = (changes: Partial<AcademicInput> = {}): AcademicInput => ({
 });
 
 describe("explicit policy and decimal arithmetic", () => {
-  it("uses the authorized provisional RI interpretation only as the form preset", () => {
+  it("usa a interpretação provisória do RI revisado de 2026", () => {
     expect(DEFAULT_POLICY_PARAMETERS).toMatchObject({
+      version: 2,
       directPassGrade: 7,
-      vfMinAverage: 0,
+      vfMinAverage: 5,
       vfPassGrade: 5,
       attendanceMode: "unjustified",
-      absencePenaltyStage: "after_vf",
+      absencePenaltyStage: "none",
       comparisonStage: "rounded",
       averageDecimals: 2,
     });
+  });
+  it("não desconta faltas da nota na política RI 2026", () => {
+    const result = calculateAcademicResult(
+      input({
+        policy: { ...DEFAULT_POLICY_PARAMETERS },
+        vcScores: [7, 7],
+        justifiedAbsences: 0,
+        unjustifiedAbsences: 2,
+      }),
+    );
+    expect(result.status).toBe("approved");
+    expect(result.finalGrade).toBe(7);
+    expect(result.absencePenalty).toBe(0);
   });
   it("requires an explicit choice of exact or rounded comparisons", () => {
     expect(validatePolicyParameters({ ...policy(), comparisonStage: undefined })).toBe(false);

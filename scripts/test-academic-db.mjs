@@ -52,7 +52,8 @@ try {
       number === 14 ||
       number === 36 ||
       number === 37 ||
-      number === 38
+      number === 38 ||
+      number === 39
     );
   });
   for (const name of selected) {

@@ -55,9 +55,21 @@ Pendências: homologação no Supabase real (Auth/PostgREST, sessões e corrida 
 
 Próximo checkpoint: aplicar em homologação, registrar ato de política e comparar uma oferta piloto CFO I com apuração manual. Só então publicar e ampliar o uso aos demais componentes.
 
+## Sprint 4 — RI revisado de 2026 e Portaria 550
+
+Concluída no código local. Foram lidos integralmente a Portaria nº 550/2026, com seis páginas, e os trechos acadêmicos pertinentes do RI ABM 2026 revisado, renderizado em 55 páginas. O DOCX não contém alterações controladas ou comentários e não apresenta prova de publicação; por isso, suas regras permanecem identificadas como provisórias.
+
+A política versão2 corrige o piso da VF para5, remove o desconto de faltas da nota e adota as quatro faixas de VC do art.15:1 até20 h/a,2 entre21–40,3 entre41–60 e4 acima de60 h/a. Políticas versão1 continuam válidas e reproduzíveis. A migration `0039_academic_ri_2026_policy.sql` atualiza o contrato de parâmetros e a criação transacional de novas ofertas sem modificar políticas históricas.
+
+A Portaria nº 550 foi convertida em catálogo de referência com24 linhas. Para CFO I de2026, a criação da oferta sugere a carga do ato específico, inclusive38 h/a para Legislação Bombeiro Militar. A página da oferta exibe os instrutores e monitores exatamente como constam do ato, mas exige confirmação antes de criar vínculo ou conceder acesso. Ética e Cidadania e Atividades Socioculturais continuam sem designação; o código26 usado pela Portaria para Estágio é mapeado ao CFO1-25 por nome, com o desalinhamento documentado.
+
+Verificação: **205 testes Vitest em20 arquivos**, **92 asserções pgTAP**, TypeScript, lint e build Next.js passaram. O build usou endereço Supabase local e chave fictícia. Nenhum banco remoto foi acessado ou alterado.
+
+Próximo checkpoint: confirmar o ato de publicação do RI revisado e testar em homologação uma oferta CFO1-09 de2026, verificando carga38 h/a, duas VCs, piso5 para VF e ausência de desconto de faltas.
+
 ## Inventário final de arquivos
 
-44 arquivos no diff da entrega; os dois arquivos preexistentes de produto alterados são `src/app/sw.ts` e `src/components/app/AppShell.tsx`.
+45 arquivos no diff da entrega; os dois arquivos preexistentes de produto alterados são `src/app/sw.ts` e `src/components/app/AppShell.tsx`.
 
 - `docs/GESTAO_ACADEMICA_DIAGNOSTICO.md`
 - `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`
@@ -95,6 +107,9 @@ Próximo checkpoint: aplicar em homologação, registrar ato de política e comp
 - `src/modules/academic-management/domain/academic.test.ts`
 - `src/modules/academic-management/domain/academic.ts`
 - `src/modules/academic-management/domain/catalog.ts`
+- `src/modules/academic-management/domain/designations.ts`
+- `src/modules/academic-management/domain/designations.test.ts`
+- `src/modules/academic-management/domain/portaria-550-cfo1.json`
 - `src/modules/academic-management/infrastructure/database.ts`
 - `src/modules/academic-management/infrastructure/queries.test.ts`
 - `src/modules/academic-management/infrastructure/queries.ts`
@@ -103,4 +118,5 @@ Próximo checkpoint: aplicar em homologação, registrar ato de política e comp
 - `supabase/migrations/0036_academic_management.sql`
 - `supabase/migrations/0037_academic_catalog.sql`
 - `supabase/migrations/0038_academic_ri_provisional_policy.sql`
+- `supabase/migrations/0039_academic_ri_2026_policy.sql`
 - `supabase/tests/academic.test.sql`

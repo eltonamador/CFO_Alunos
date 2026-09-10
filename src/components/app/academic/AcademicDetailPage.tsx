@@ -15,6 +15,7 @@ import { AcademicPolicyForm } from "./AcademicPolicyForm";
 import { AssessmentForm, AssignmentForm, EnrollmentForm } from "./AcademicSetupForms";
 import { AcademicGradebook } from "./AcademicGradebook";
 import { AcademicAudit } from "./AcademicAudit";
+import { designationReferenceFor } from "@/modules/academic-management/domain/designations";
 
 export async function AcademicDetailPage({
   role,
@@ -50,6 +51,7 @@ export async function AcademicDetailPage({
     (student) => !data.enrollments.some((enrollment) => enrollment.student_id === student.id),
   );
   const { offering, discipline, policy } = data;
+  const designationReference = designationReferenceFor(discipline.code, offering.academic_year);
   return (
     <div className="space-y-5">
       <Link
@@ -182,6 +184,19 @@ export async function AcademicDetailPage({
               </div>
             </details>
           )}
+          {designationReference && (
+            <Card className="space-y-2 p-4">
+              <h2 className="font-semibold">Designações de referência</h2>
+              <p className="text-xs text-muted-foreground">{designationReference.sourceRef}</p>
+              <p className="whitespace-pre-wrap break-words text-sm">
+                {designationReference.designationsText}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                O texto do ato é exibido como referência. Confirme cada vínculo no formulário acima;
+                o sistema não presume chefe de cadeira nem conta de acesso.
+              </p>
+            </Card>
+          )}
           <Card className="p-4 text-sm text-muted-foreground">
             Materiais didáticos: a oferta será a referência para publicação futura de conteúdos e
             arquivos da disciplina.
@@ -237,9 +252,11 @@ export async function AcademicDetailPage({
                   ],
                   [
                     "Momento do desconto",
-                    policy.parameters.absencePenaltyStage === "before_vf"
-                      ? "Antes de avaliar a VF"
-                      : "Na nota final, após VF e redutor quando houver",
+                    policy.parameters.absencePenaltyStage === "none"
+                      ? "Sem desconto de faltas na nota"
+                      : policy.parameters.absencePenaltyStage === "before_vf"
+                        ? "Antes de avaliar a VF"
+                        : "Na nota final, após VF e redutor quando houver",
                   ],
                   [
                     "Precisão",

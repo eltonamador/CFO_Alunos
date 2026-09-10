@@ -4,6 +4,7 @@ import type * as ReactDOM from "react-dom";
 import { AcademicPolicyForm } from "./AcademicPolicyForm";
 import { AcademicGradebook } from "./AcademicGradebook";
 import { AcademicAudit } from "./AcademicAudit";
+import { NewOfferingForm } from "./AcademicSetupForms";
 import { formatAcademicNumber } from "./AcademicResult";
 import type { EnrollmentView } from "@/modules/academic-management/application/types";
 
@@ -82,8 +83,8 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
     const submit = screen.getByRole("button", { name: "Registrar política aprovada" });
     expect(submit).toBeEnabled();
     expect(screen.getByLabelText(/Faltas que contam/)).toHaveValue("unjustified");
-    expect(screen.getByLabelText(/Momento do desconto/)).toHaveValue("after_vf");
-    expect(screen.getByLabelText(/Média mínima para acesso/)).toHaveValue(0);
+    expect(screen.getByLabelText(/Momento do desconto/)).toHaveValue("none");
+    expect(screen.getByLabelText(/Média mínima para acesso/)).toHaveValue(5);
     expect(screen.getByLabelText(/Precisão da média/)).toHaveValue("2");
     expect(screen.getByLabelText(/Momento de comparar/)).toHaveValue("rounded");
     fireEvent.change(screen.getByLabelText(/Faltas que contam/), {
@@ -107,6 +108,56 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
       averageDecimals: 3,
       comparisonStage: "exact",
     });
+  });
+
+  it("sugere quatro VCs para disciplina acima de sessenta horas", () => {
+    render(
+      <NewOfferingForm
+        disciplines={[
+          {
+            id: "discipline",
+            code: "CFO1-10",
+            name: "Treinamento Físico Militar I",
+            phase: 1,
+            kind: "disciplina",
+            workload_hours: 160,
+            source_ref: "PPC teste",
+            conflicts: [],
+            active: true,
+          },
+        ]}
+        classes={[{ id: "class", name: "CFO I", course_id: "course" }]}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Disciplina"), { target: { value: "discipline" } });
+    expect(screen.getByLabelText(/Quantidade de verificações/)).toHaveValue(4);
+  });
+
+  it("usa a carga da Portaria 550 para Legislação no CFO I de 2026", () => {
+    render(
+      <NewOfferingForm
+        disciplines={[
+          {
+            id: "legislation",
+            code: "CFO1-09",
+            name: "Legislação Bombeiro Militar",
+            phase: 1,
+            kind: "disciplina",
+            workload_hours: 30,
+            source_ref: "PPC teste",
+            conflicts: ["Matriz 30 × ementário 38"],
+            active: true,
+          },
+        ]}
+        classes={[{ id: "class", name: "CFO I", course_id: "course" }]}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Disciplina"), {
+      target: { value: "legislation" },
+    });
+    expect(screen.getByLabelText(/Carga horária adotada/)).toHaveValue(38);
+    expect(screen.getByLabelText(/Quantidade de verificações/)).toHaveValue(2);
+    expect(screen.getByText(/Portaria nº 550/)).toBeVisible();
   });
 
   it("mantém nota não lançada vazia e envia versão inicial zero", () => {

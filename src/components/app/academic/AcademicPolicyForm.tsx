@@ -54,9 +54,9 @@ export function AcademicPolicyForm({
       disabled={vfMinAverage === "" || !decimals}
     >
       <p className="text-sm text-muted-foreground">
-        O formulário inicia com a interpretação provisória do RI ABM 2023 adotada pela coordenação.
-        Os parâmetros continuam editáveis e ficam registrados na oferta para permitir correções
-        futuras sem apagar notas.
+        O formulário inicia com a interpretação provisória do RI ABM 2026 revisado adotada pela
+        coordenação. Os parâmetros continuam editáveis e ficam registrados na oferta para permitir
+        correções futuras sem apagar notas.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <AcademicField label="Nome da política">
@@ -64,7 +64,7 @@ export function AcademicPolicyForm({
             name="name"
             required
             minLength={3}
-            defaultValue="RI ABM 2023 — aplicação provisória"
+            defaultValue="RI ABM 2026 revisado — aplicação provisória"
           />
         </AcademicField>
         <AcademicField label="Referência da decisão da coordenação">
@@ -72,7 +72,7 @@ export function AcademicPolicyForm({
             name="decision_ref"
             required
             minLength={5}
-            defaultValue="RI ABM 2023 — aplicação provisória"
+            defaultValue="RI ABM 2026 revisado — aplicação provisória"
             placeholder="Ato, despacho ou registro da decisão provisória"
           />
         </AcademicField>
@@ -93,7 +93,7 @@ export function AcademicPolicyForm({
         </AcademicField>
         <AcademicField
           label="Momento do desconto por faltas"
-          hint="Interpretação provisória: desconto na nota final, conforme redação do art. 43 §5º."
+          hint="Padrão provisório: sem desconto na nota. O art. 46 do RI revisado trata o excesso de faltas como reprovação."
         >
           <Select
             required
@@ -102,13 +102,14 @@ export function AcademicPolicyForm({
               setPenaltyStage(event.target.value as PolicyParameters["absencePenaltyStage"])
             }
           >
+            <option value="none">Sem desconto de faltas na nota</option>
             <option value="before_vf">Na média corrente, antes de avaliar a VF</option>
             <option value="after_vf">Na nota final, após VF e redutor quando houver</option>
           </Select>
         </AcademicField>
         <AcademicField
           label="Média mínima para acesso à VF"
-          hint="Padrão provisório: 0, pois o art. 38 do RI não fixa piso para acesso à VF."
+          hint="Padrão provisório: 5, conforme art. 38 do RI revisado de 2026."
         >
           <Input
             type="number"

@@ -10,6 +10,7 @@ import type {
   AcademicStudent,
   Discipline,
 } from "@/modules/academic-management/application/types";
+import { designationReferenceFor } from "@/modules/academic-management/domain/designations";
 
 export function NewDisciplineForm() {
   return (
@@ -56,13 +57,20 @@ export function NewOfferingForm({
   classes: AcademicClass[];
 }) {
   const [disciplineId, setDisciplineId] = useState("");
+  const [academicYear, setAcademicYear] = useState("2026");
   const discipline = disciplines.find((item) => item.id === disciplineId);
-  const provisionalVcCount = discipline
-    ? discipline.workload_hours <= 20
+  const designation = discipline
+    ? designationReferenceFor(discipline.code, Number(academicYear))
+    : undefined;
+  const adoptedWorkload = designation?.workloadHours ?? discipline?.workload_hours;
+  const provisionalVcCount = adoptedWorkload
+    ? adoptedWorkload <= 20
       ? 1
-      : discipline.workload_hours <= 60
+      : adoptedWorkload <= 40
         ? 2
-        : 3
+        : adoptedWorkload <= 60
+          ? 3
+          : 4
     : undefined;
   return (
     <AcademicActionForm
@@ -72,7 +80,8 @@ export function NewOfferingForm({
     >
       <p className="text-sm text-muted-foreground">
         A oferta vincula uma disciplina à turma e ao ano letivo e já recebe a política provisória do
-        RI ABM 2023. Os parâmetros ficam registrados e podem ser corrigidos por nova versão.
+        RI ABM 2026 revisado. Os parâmetros ficam registrados e podem ser corrigidos por nova
+        versão.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <AcademicField label="Turma">
@@ -111,7 +120,8 @@ export function NewOfferingForm({
             min="2020"
             max="2200"
             required
-            placeholder="2026"
+            value={academicYear}
+            onChange={(event) => setAcademicYear(event.target.value)}
           />
         </AcademicField>
         <AcademicField
@@ -123,21 +133,21 @@ export function NewOfferingForm({
           }
         >
           <Input
-            key={disciplineId}
+            key={`${disciplineId}-${academicYear}`}
             name="workload_hours"
             type="number"
             min="1"
             step="1"
-            defaultValue={discipline?.workload_hours}
+            defaultValue={adoptedWorkload}
             required
           />
         </AcademicField>
         <AcademicField
           label="Quantidade de verificações correntes (VC)"
-          hint="Interpretação provisória: até 20 h/a = 1; de 21 a 60 h/a = 2; acima de 60 h/a = 3. A faixa de 41 a 60 h/a supre a lacuna do RI com a matriz do PPC."
+          hint="RI revisado, art. 15: até 20 h/a = 1; de 21 a 40 h/a = 2; de 41 a 60 h/a = 3; acima de 60 h/a = 4."
         >
           <Input
-            key={`vc-${disciplineId}`}
+            key={`vc-${disciplineId}-${academicYear}`}
             name="vc_count"
             type="number"
             min="1"
@@ -152,10 +162,16 @@ export function NewOfferingForm({
             name="decision_ref"
             minLength={5}
             required
-            defaultValue="RI ABM 2023 — aplicação provisória"
+            defaultValue="RI ABM 2026 revisado — aplicação provisória"
           />
         </AcademicField>
       </div>
+      {designation && (
+        <p className="text-xs text-muted-foreground">
+          Para CFO I de 2026, a carga sugerida segue a {designation.sourceRef}. A associação dos
+          instrutores continua sendo confirmada na página da oferta.
+        </p>
+      )}
     </AcademicActionForm>
   );
 }

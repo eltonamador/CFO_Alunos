@@ -1,6 +1,6 @@
 /** Versioned calculation contract. A proposal is never an approved policy. */
 export interface PolicyParameters {
-  version: 1;
+  version: 1 | 2;
   directPassGrade: number;
   vfMinAverage: number;
   vfPassGrade: number;
@@ -9,7 +9,7 @@ export interface PolicyParameters {
   maxVfDisciplines: number;
   absenceLimitPercent: number;
   attendanceMode: "total" | "unjustified";
-  absencePenaltyStage: "before_vf" | "after_vf";
+  absencePenaltyStage: "none" | "before_vf" | "after_vf";
   averageDecimals: 2 | 3 | 7;
   roundingMode: "half_even";
   comparisonStage: "rounded" | "exact";
@@ -45,20 +45,20 @@ export interface AcademicResult {
   absencePenalty: number | null;
 }
 
-/** UI proposal only. Creating an offering MUST NOT implicitly approve these values. */
+/** Provisional RI ABM 2026 preset. Each offering stores its own immutable copy. */
 export const DEFAULT_POLICY_PARAMETERS: Readonly<PolicyParameters> = Object.freeze({
-  version: 1,
+  version: 2,
   directPassGrade: 7,
-  // O RI (art. 38) encaminha à VF quem não alcançou 7 e não fixa piso mínimo.
-  vfMinAverage: 0,
+  // O RI revisado de 2026, art. 38, exige MVC entre 5 e 7 para acesso à VF.
+  vfMinAverage: 5,
   vfPassGrade: 5,
   vfReduction: true,
   vfMaxRecordedGrade: 6.75,
   maxVfDisciplines: 3,
   absenceLimitPercent: 25,
-  // O art. 43 limita e desconta as faltas não justificadas da nota final.
+  // O RI revisado, art. 46, reprova por excesso de faltas sem descontá-las da nota.
   attendanceMode: "unjustified",
-  absencePenaltyStage: "after_vf",
+  absencePenaltyStage: "none",
   averageDecimals: 2,
   roundingMode: "half_even",
   comparisonStage: "rounded",
@@ -72,7 +72,7 @@ export function validatePolicyParameters(input: unknown): input is PolicyParamet
   if (!input || typeof input !== "object" || Array.isArray(input)) return false;
   const p = input as Record<string, unknown>;
   return (
-    p.version === 1 &&
+    (p.version === 1 || p.version === 2) &&
     finiteInRange(p.directPassGrade, Number.MIN_VALUE, 10) &&
     finiteInRange(p.vfMinAverage, 0, 10) &&
     p.vfMinAverage < p.directPassGrade &&
@@ -83,7 +83,9 @@ export function validatePolicyParameters(input: unknown): input is PolicyParamet
     Number.isInteger(p.maxVfDisciplines) &&
     finiteInRange(p.absenceLimitPercent, 0, 100) &&
     (p.attendanceMode === "total" || p.attendanceMode === "unjustified") &&
-    (p.absencePenaltyStage === "before_vf" || p.absencePenaltyStage === "after_vf") &&
+    (p.absencePenaltyStage === "none" ||
+      p.absencePenaltyStage === "before_vf" ||
+      p.absencePenaltyStage === "after_vf") &&
     (p.averageDecimals === 2 || p.averageDecimals === 3 || p.averageDecimals === 7) &&
     p.roundingMode === "half_even" &&
     (p.comparisonStage === "rounded" || p.comparisonStage === "exact") &&
@@ -149,12 +151,12 @@ const baseResult = (): AcademicResult => ({
 });
 
 /**
- * Version 1 semantics (must be included in the approving decision):
+ * Versioned semantics (must be included in the approving decision):
  * - Scores are normalized to two decimals with half-even. comparisonStage=rounded
  *   rounds averages and adjusted results BEFORE comparison; exact keeps fractions
  *   until the status is decided, rounding only display and recorded grade values.
- * - before_vf deducts the RI art.43 penalty from MVC before deciding VF eligibility;
- *   after_vf keeps MVC for eligibility and deducts once from the terminal grade.
+ * - none applies no grade deduction; before_vf and after_vf preserve the former RI
+ *   interpretation for historical policies.
  * - Attendance mode selects counted absences for the discipline threshold only.
  *   Course-wide attendance and the course-wide VF limit need all enrollments.
  * - Policy null never falls back to DEFAULT_POLICY_PARAMETERS.
@@ -262,7 +264,10 @@ export function calculateAcademicResult(input: AcademicInput): AcademicResult {
       p.attendanceMode === "total" ? add(justified, unjustified) : unjustified;
     absentPercent = multiply(divide(countedAbsences, workload), whole(100));
     result.attendancePercent = numeric(rounded(subtract(whole(100), absentPercent), 2));
-    penalty = multiply(divide(unjustified, workload), whole(10));
+    penalty =
+      p.absencePenaltyStage === "none"
+        ? whole(0)
+        : multiply(divide(unjustified, workload), whole(10));
     result.absencePenalty = display(penalty);
   }
   if (input.vcScores.length !== input.vcCount || input.vcScores.some((score) => score === null)) {

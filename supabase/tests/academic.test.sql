@@ -277,11 +277,13 @@ select is(pg_temp.ac_try('coord', $q$
  select public.academic_create_offering_ri(pg_temp.ac_id('class'),pg_temp.ac_id('discipline'),2101,40,2,'Aplicação provisória fictícia')
 $q$),'ok','coordenação cria oferta e política RI na mesma transação');
 select is((select parameters ->> 'vfMinAverage' from public.academic_policies
- where decision_ref='Aplicação provisória fictícia'),'0','RI provisório não inventa piso para acesso à VF');
+ where decision_ref='Aplicação provisória fictícia'),'5','RI 2026 exige média cinco para acesso à VF');
 select is((select parameters ->> 'attendanceMode' from public.academic_policies
  where decision_ref='Aplicação provisória fictícia'),'unjustified','RI provisório considera faltas não justificadas no limite');
 select is((select parameters ->> 'absencePenaltyStage' from public.academic_policies
- where decision_ref='Aplicação provisória fictícia'),'after_vf','RI provisório aplica desconto na nota final');
+ where decision_ref='Aplicação provisória fictícia'),'none','RI 2026 não desconta faltas da nota');
+select is((select parameters ->> 'version' from public.academic_policies
+ where decision_ref='Aplicação provisória fictícia'),'2','nova oferta registra política versão dois');
 select ok((select policy_id is not null from public.academic_offerings
  where academic_year=2101),'nova oferta nasce vinculada à política provisória');
 select is(pg_temp.ac_try('coord', $q$

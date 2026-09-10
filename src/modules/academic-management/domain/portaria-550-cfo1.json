@@ -1,0 +1,194 @@
+[
+  {
+    "disciplineCode": "CFO1-01",
+    "sourceCode": "01",
+    "disciplineName": "SISTEMA DE SEGURANÇA PÚBLICA E ADMINISTRAÇÃO MILITAR",
+    "workloadHours": 20,
+    "designationsText": "CEL QOEM BM MATEUS PICANÇO DE ALMEIDA -\n681334",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-02",
+    "sourceCode": "02",
+    "disciplineName": "HISTÓRIA DO CORPO DE BOMBEIROS MILITAR DO AMAPÁ",
+    "workloadHours": 20,
+    "designationsText": "CAP QOEM BM HAROLD DE SENA TAVARES-\n1195620",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-04",
+    "sourceCode": "04",
+    "disciplineName": "DIREITO ADMINISTRATIVO",
+    "workloadHours": 60,
+    "designationsText": "CAP QOE BM BIANOR MONTEIRO DOS SANTOS\nJÚNIOR-682160",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-05",
+    "sourceCode": "05",
+    "disciplineName": "DIREITO CONSTITUCIONAL",
+    "workloadHours": 30,
+    "designationsText": "CEL QOEM BM PELSONDRÉ MARTINS DA SILVA -\n846961",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-06",
+    "sourceCode": "06",
+    "disciplineName": "DIREITO ADMINISTRATIVO DISCIPLINAR MILITAR I",
+    "workloadHours": 40,
+    "designationsText": "CEL QOEM BM FEM IVANETE MORAES MONTEIRO-\n682411",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-07",
+    "sourceCode": "07",
+    "disciplineName": "DIREITO PENAL MILITAR I",
+    "workloadHours": 30,
+    "designationsText": "CEL QOEM BM PELSONDRÉ MARTINS DA SILVA-\n846961",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-08",
+    "sourceCode": "08",
+    "disciplineName": "DIREITO PROCESSUAL PENAL MILITAR I",
+    "workloadHours": 30,
+    "designationsText": "CAP QOE BM MARCELO AUGUSTO DA SILVA\nOLIVEIRA- 682705",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-09",
+    "sourceCode": "09",
+    "disciplineName": "LEGISLAÇÃO BOMBEIRO MILITAR",
+    "workloadHours": 38,
+    "designationsText": "CEL QOEM BM FEM IVANETE MORAES MONTEIRO-\n682411",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-10",
+    "sourceCode": "10",
+    "disciplineName": "TREINAMENTO FÍSICO MILITAR I",
+    "workloadHours": 160,
+    "designationsText": "INSTRUTORES\nTEN CEL QOEM BM JOSÉ LEANDRO TOMAZ\nMEDEIROS - 896144\nTEN CEL QOE BM MAVY HENRIQUE LIMA DO\nNASCIMENTO - 418277\nCAP QOEM BM JAILSON DE CARVALHO COSTA -\n1195786\n2º TEN QOE BM MATEUS DE CARLO TAMIOZZO -\n944599\n3º SGT QP BM JOAB BRÁZ DE MIRANDA BARROS -\n1114239\n3º SGT QP BM ÉRICK LOBATO MANGABEIRA DA\nSILVA - 1239716",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-11",
+    "sourceCode": "11",
+    "disciplineName": "DEFESA PESSOAL, CONTENÇÃO E IMOBILIZAÇÃO",
+    "workloadHours": 30,
+    "designationsText": "CEL QOEM BM ORIELSON FERREIRA PANTOJA\nCAMPOS- 1239716",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-12",
+    "sourceCode": "12",
+    "disciplineName": "ORDEM UNIDA E INSTRUÇÃO MILITAR I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTORES\nCAP QOEM BM EMANUEL MARLLUS ALMEIDA DE\nCARVALHO - 1195697\nCAP QOEM BM JUCIVALDO SANTANA LADISLAU-\n9998799\n2º TEN QOE BM DIONÍSIO PEREIRA JÚNIOR -\n849774",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-13",
+    "sourceCode": "13",
+    "disciplineName": "ARMAMENTO, MUNIÇÃO E TIRO",
+    "workloadHours": 60,
+    "designationsText": "INSTRUTORES\nMAJ QOEM BM JUCILEIDE MACHADO BARROS-\n1130340\n2º TEN QOE BM ANDRÉ BARROZO DA SILVA -\n848433\n1º SGT QPM JOSÉ TARCÍSIO DA SILVA TEIXEIRA-\n1114310\n2º SGT QPBM GEOMAR DE NAZARÉ FOGASSA-\n1112430\n3°SGT QPBM MARCELO FONSECA DA COSTA-\n1112481\nCB PM MICHAEL TORRINHA CHENG-0969262-2-01\nCB PM RAFAEL MARQUES RODRIGUES0972602-0-01\nSD QPBM LAUANE LOPES DA SILVA-9869816\nMONITORES\nSD QP BM 012 LÚCIO FLÁVIO CUTRIM HENDERSON-\n9869751\nSD QP BM 067 ALEJANDRO DOS SANTOS BRAGA-\n9870067\nSD QP BM 136 DELEON FERNANDES DOS SANTOS,\n9873066\nSD QP BM 155 ARNALDO WESLEY DIAS NUNES-\n9870784\nSD QP BM 355 JEFERSON LEITE HOLANDA,\n10000003\nSD QP BM FEM 394 MAYRA SAMILLY DA SILVA\nBARRETO- 10140441\nSD QP BM 473 CARLOS NAKALYSSON BORGES\nOLIVEIRA-10097627",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-14",
+    "sourceCode": "14",
+    "disciplineName": "TOPOGRAFIA, ORIENTAÇÃO, CARTOGRAFIA E GEOTECNOLOGIAS",
+    "workloadHours": 30,
+    "designationsText": "INSTRUTORES\nCAP QOEM BM LUIZ CÁSSIO DA PENHA CHAGAS-\n1195751\nCAP QOEM BM ALDO NAHUM CARDOSO-1195808\nCAP QOEM BM DIEGO NUNES DA SILVA-1195093",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-15",
+    "sourceCode": "15",
+    "disciplineName": "HIDRÁULICA APLICADA À ATIVIDADE BOMBEIRO MILITAR",
+    "workloadHours": 60,
+    "designationsText": "CAP QOEM BM JASON NELSON BROCHADO\nSANT’ANA-1195638",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-16",
+    "sourceCode": "16",
+    "disciplineName": "ANATOMIA E FISIOLOGIA",
+    "workloadHours": 40,
+    "designationsText": "MAJ QOS BM ENF ANDERSON OLIVEIRA GALENO-\n1195638",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-17",
+    "sourceCode": "17",
+    "disciplineName": "SEGURANÇA CONTRA INCÊNDIO E PÂNICO I",
+    "workloadHours": 60,
+    "designationsText": "CEL QOEM BM ORIELSON FERREIRA PANTOJA\nCAMPOS -683019",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-18",
+    "sourceCode": "18",
+    "disciplineName": "SALVAMENTO VEICULAR I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTORES\nCEL QOSBM KARINA FERREIRA RIBEIRO HOMOBONO-\n668001\nMAJ QOSBM DANGELO DA SILVA RODRIGUES 1069772\nCAP QOEBM BM JASON NELSON BROCHADO SANT’ANA\n1195638\nMAJ QOEM BM FEM JUCILEIDE MACHADO BARROS -\n1130340\nCAP QEMBM UELISON LAZAMÉ ARAUJO 939994\nCAP QOEM BM EMERSON SOUSA PAMPHYLIO 1195689\n1º TENQOEBM ROOSENILSON DIAS MUNIZ 847640\nMAJ QOEBM MÁRCIO MIRANDA DA SILVA 418200\n2º TENQOEBM JOSE WALBSON FIGUEIREDO FERRO 944513\n2º TENQOEBM DIEGO RAMOM PANTOJA DE LIMA 944980\n2º SGT QPBM JONATHA BORGES DE LIMA 1155008\n3º SGT QEPBM MARIA DO SOCORRO DE SOUSA E SOUZA\n1214853\n3º SGT QPBM CRISTIANO RODRIGUES ILÁRIO 1239619\n3º SGT QPBM ANDRÉ BELO DA COSTA 948420\n3º SGT QEPBM FÁTIMA SAMARA BARBOSA VILELA SMITH\n1214730\n3º SGT QPBM MARIELSON NASCIMENTO DA SILVA 1214896\n3º SGT QPBM YURI RHAONE PIRES DIAS 1114336\n3º SGT QPBM TIAGO ALVES DOS SANTOS 1114832\nCB QEP BM RUANCARLO D’ALMEIDA MACHADO 1214861\nSD QPBM GABRIELA DE SOUZA AMANAJÁS 9870857\nSD QPBM LEONAM MENDONÇA E SILVA 9870300\nSD QPCBM MATEUS FELIPE SILVA WOYCEICHOSKI 9871020\nSD QPBM MARCIO PANTOJA PACHECO JUNIOR 9870296\nSD QPBM ALESSANDRO MORAIS DE ALMEIDA 9870369\nSD QPBM JOSÉ GOUVEIA COUTINHO NETO 9873155\nSD QPBM VITOR ALMEIDA TRINDADE 9875093\nSD QPBM YASMIN BORGES VASCONCELOS BRAGA 9999434\nSD QPBM DISLANY VITORIA NEGREIROS DA COSTA 9993967\nSD QPBM RAFAEL SILVA DE SOUSA 10000038\nSD QPBM ANA PAULA GAMA SEIXAS 9998640",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-19",
+    "sourceCode": "19",
+    "disciplineName": "COMBATE A INCÊNDIOS FLORESTAIS I",
+    "workloadHours": 50,
+    "designationsText": "MAJ QOEM BM MÁRCIO FONSECA DA COSTA -\n1175742\n2º TEN QOE BM ANA CECÍLIA BARBOSA DE\nCANTUÁRIA-943894\n2º SGT QP BM 059 IGOR FILIPE DE SOUZA SILVA,\n1216295\n3º SGT QEP BM 042 PAULO ROBERTO ARAUJO-1156560\n3º SGT QP BM BENEDITO BALIEIRO NOBRE JÚNIOR -\n1215760",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-20",
+    "sourceCode": "20",
+    "disciplineName": "COMBATE A INCÊNDIOS URBANO I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTORES\nMAJ QOEM BM CHARLLYS COSTA DOS SANTOS -\n1130366\nCAP QOEM BM FRANCIELTON ARAÚJO AMADOR-\n1195506\n2ºTEN QOE BM KÁRITA NAIRA PASINI LAURINDO-\n944220\n3º SGT QEP BM MONASILVIA DE ABREU SANTIAGO-\n1216333\n3º SGT QP BM CRISTIANO RODRIGUES ILÁRIO-\n1239600\nCB QP BM ANDERSON RAFAEL DOS SANTOS\nPEREIRA-1239600",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-21",
+    "sourceCode": "21",
+    "disciplineName": "ATENDIMENTO PRÉ-HOSPITALAR I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTOR\nMAJ QOS BM MÉD 012 VITORMAURO ARAÚJO DA\nSILVA, 1176030\n2º TEN QOE BM FEM ANA CAROLINE NAIVA DANTAS -\n944734\n2º SGT QP BM AG EDER JOSÉ MONTE DE\nARAÚJO,1160770\n3º SGT QP RENATO JORGE FERREIRA RODRIGUES -\n847666\n3º SGT QEP BM FEM 093 FATIMA SAMARA BARBOSA\nVILELA SMITH, 1214730\nSD QP BM FEM DISLANY VITORIA NEGREIROS DA\nCOSTA, 9993967\nSD QP BM IGOR TIAGO COSTA PEREIRA DOS SANTOS,\n9998713",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-22",
+    "sourceCode": "22",
+    "disciplineName": "SALVAMENTO AQUÁTICO I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTORES\nCAP QOEM BM EVERTON WILLIAN SOUZA MARTINS-\n1195646\n1º SGT QP BM SAMANTHA GAMA AMARAL,1113186\n3º SGT QP BM JACKSON DA SILVA SANTANA,1160680",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-23",
+    "sourceCode": "23",
+    "disciplineName": "SALVAMENTO EM ALTURA I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTORES\nCAP QOEM BM MARLÚCIO ANDERSON DA\nCONCEIÇÃO TRAJANO-1195549\nCAP QOEM BM EMERSON SOUSA PAMPHYLIO-\n1195689",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-24",
+    "sourceCode": "24",
+    "disciplineName": "SALVAMENTO TERRESTRE I",
+    "workloadHours": 80,
+    "designationsText": "INSTRUTOR\nCAP QOEM BM DIEGO NUNES DA SILVA-1195093\nCAP QOEM BM JASON NELSON BROCHADO\nSANT’ANA- 1195638\nCAP QOEM BM JOÃO PAULO PASTANA MACIEL-\n1195581\n2º TEN QOE BM PAULO ROBERTO CARVALHO DOS\nSANTOS-945170\n3º SGT QP BM ANDRÉ BELO DA COSTA-\n948420\nSD QP BM ALESSANDRO MORAIS DE ALMEIDA-\n9870369\nSD QP BM OBERDAN LAURINHO DIAS-9991441\nSD QP BM WANDLAS OLIVEIRA DO ROSÁRIO\nSOBRINHO-9998578\nSD QP BM GABRIEL BARROS DE MIRANDA-9992731",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  },
+  {
+    "disciplineCode": "CFO1-25",
+    "sourceCode": "26",
+    "disciplineName": "ESTÁGIO SUPERVISIONADO",
+    "workloadHours": 250,
+    "designationsText": "INSTRUTORES\nMAJ QOEM BM MÁRCIO FONSECA DA COSTA-1175742\nCAP QOEM BM FEM JOSIANE OLIVEIRA DOS SANTOS-\n1195867\nCAP QOEM BM FRANCIELTON ARAÚJO AMADOR-\n1195506\nCAP QOEM BM DIEGO NUNES DA SILVA-1195093\nCAP QOEM BM EMERSON SOUSA PAMPHYLIO-\n1195689",
+    "sourceRef": "Portaria nº 550, de 08 de setembro de 2026, art. 1º"
+  }
+]
