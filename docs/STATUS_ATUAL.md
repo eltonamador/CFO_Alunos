@@ -89,3 +89,13 @@ Todas as seguintes verificações foram executadas e passaram com sucesso no amb
 * **`pnpm run check`**: lint, typecheck e testes de Vitest com **100% de sucesso**.
 * **`pnpm exec supabase db reset`**: aplicado na ordem correta com sucesso absoluto.
 * **`pnpm run db:seed-users`**: provisionamento de perfis de autenticação local concluído sem erros.
+
+---
+
+## 4. Mudanças planejadas anexadas
+
+### 4.1 Repositório de Escalas em PDF
+
+Registrado como proposta, ainda sem código de produção ou migration. A mudança permitirá à Coordenação cadastrar tipos de escala, publicar PDFs oficiais, extrair atribuições, relacioná-las aos cadetes e emitir avisos individuais automáticos para correspondências de alta confiança. PDFs, reprocessamentos, correções e notificações serão preservados em histórico append-only.
+
+O módulo será independente da Escala Operacional existente. Sua ordem de implementação, modelo de dados proposto, telas, permissões, checkpoints e critérios de aceite estão em `docs/PLANO_REPOSITORIO_ESCALAS_PDF.md`.

@@ -81,8 +81,24 @@ Termos do domínio CFO/CBMAP que devem ser usados de forma **literal e consisten
 | **Vínculo Conta↔Aluno** | Relação 1:1 entre uma conta perfil *Aluno* e um registro de `Student`. |
 | **Log de auditoria (`AuditLog`)** | Registro imutável de alteração sensível: quem, quando, antes, depois, motivo. |
 
+## Repositório de escalas em PDF planejado
+
+Estes termos pertencem a uma mudança planejada e ainda não representam funcionalidade ativa.
+
+| Termo | Definição |
+|---|---|
+| **Tipo de escala (`ScheduleType`)** | Categoria dinâmica cadastrada pela Coordenação para organizar PDFs oficiais. |
+| **Documento de escala (`ScheduleDocument`)** | PDF oficial publicado para uma turma, tipo e período de vigência. O original é preservado. |
+| **Execução de processamento (`ScheduleProcessingRun`)** | Tentativa versionada de extrair um PDF por texto nativo ou OCR. |
+| **Candidato de escala (`ScheduleCandidate`)** | Linha extraída ainda sujeita a casamento, contendo texto original, nome lido, data e função. |
+| **Atribuição de escala publicada (`ScheduleAssignment`)** | Relação entre um candidato confirmado e um `student_id`, com data e função. |
+| **Confiança do casamento** | Resultado explicado da comparação entre a linha extraída e os cadetes da turma; não substitui o `student_id`. |
+| **Reprocessamento** | Nova execução sobre o mesmo PDF, preservando todas as execuções e decisões anteriores. |
+| **Correção de atribuição** | Alteração auditada de cadete, data ou função, com motivo e avisos compensatórios quando necessários. |
+
+**Repositório de escalas em PDF** e **Escala Operacional** são domínios independentes. O primeiro interpreta documentos oficiais publicados; o segundo gera internamente funções da turma.
+
 ## Termos a evitar
 - "Usuário" em UI quando se trata de "Aluno" — use sempre **Aluno** no contexto do CFO.
 - "Plantonista" — não faz parte do escopo.
 - "Aprovar" — preferir **Validar** (porque o ato é de conferência, não autorização).
-
