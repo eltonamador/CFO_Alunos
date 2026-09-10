@@ -1,0 +1,131 @@
+# Regras acadêmicas extraídas das fontes locais CFO CBMAP
+
+A leitura do PPC CFO 2026–2029 e do Regimento Interno da ABM permite preparar cadastro, lançamento e cálculo auditável de notas. As fontes divergem em regras que alteram resultados. O aplicativo deve conservar as duas evidências, permitir registrar decisões fundamentadas da coordenação e distinguir resultados simulados de resultados homologados. Não há evidência suficiente para adotar silenciosamente uma regra como vigente sobre a outra.
+
+## Proveniência e limites da leitura
+
+- PPC: `sources/PPC CFO CBMAP _ Revisao.docx`, título “Projeto Pedagógico do Curso de Formação de Oficiais do Corpo de Bombeiros Militar do Amapá – CFO 2026–2029”, ano 2026. Leitura de todos os parágrafos e 79 tabelas OOXML; sem revisões controladas ou comentários OOXML. O nome do arquivo contém “Revisao”; não foi identificado ato de aprovação do PPC. Não confundir nomes da equipe de elaboração com instrutores designados.
+- Regimento: `sources/regimento interno.pdf`, 109 páginas físicas, inicia com Boletim Geral 222/2023, de 6 de dezembro de 2023. A Portaria 757, de 25 de novembro de 2023, aprova o RI ABM (PDF p.2). As regras examinadas estão principalmente nas pp.5–16. Página PDF 5 = página impressa 2306; p.6 =2307; p.7 =2308; p.8 =2309; p.14 =2315.
+- O DOCX foi renderizado em 143 páginas com LibreOffice do runtime. As páginas PPC neste relatório são dessa renderização, podendo variar em outros leitores; a seção e a tabela constituem localizadores complementares. O material original não foi alterado. Fórmulas RI pp.7–8 e tabela VC p.5 foram verificadas nas imagens completas; matrizes PPC pp.21–24, regras pp.13–14 e os cinco cabeçalhos divergentes do ementário também foram conferidos visualmente.
+- Não foi feita pesquisa de legislação superveniente nem presumida vigência externa além dos arquivos fornecidos. Os hashes SHA256 estão no JSON de catálogo para vincular cálculos à versão documental.
+
+## Regras para o núcleo de avaliações e notas
+
+| Assunto | Texto normativo aplicável | Fonte | Consequência de implementação |
+|---|---|---|---|
+| Escala VC | 0 a 10 pontos, expressas até a casa centesimal | RI art.33, PDF pp.7–8 | Guardar decimal exato; validar intervalo; aceitar zero real e diferenciar ausência de lançamento |
+| Arredondamento | Menor que5 mantém; maior que5 aumenta; 5 seguido de não zero aumenta; empate exato5 só aumenta se dígito anterior ímpar | RI art.33 I–IV, PDF p.7 | Empate para par (`ROUND_HALF_EVEN`). `Math.round` não corresponde à regra |
+| Média corrente | Soma das notas das VCs / número de VCs aplicadas | RI art.34, PDF p.7 | Não usar pesos diferentes entre VCs sem fundamento normativo específico; VC pode conter componentes |
+| Aprovação direta | Média aritmética VC ≥7 | RI arts.34 I e37, PDF pp.7–8 | Resultado precisa ainda considerar frequência e demais impedimentos |
+| Composição VC | Uma VC pode conter mais de uma avaliação; máximo10 pontos | RI art.15 §2 II, PDF p.5 | Separar VC do componente (prova, trabalho, prática etc.); total do grupo ≤10 |
+| VI | Pode complementar VC, a critério docente; soma VI ≤30% de cada VC | RI art.15 §1 I, PDF p.5 | VI como componente vinculado à VC; máximo3 pontos numa VC de10; não somar VI a uma VC já10 |
+| Falta à prova | Ausência a verificação/teste/exame sem motivo justificado recebe0 | RI art.19 §4, PDF p.6 | Estado ausência injustificada exige lançamento0 explícito; célula vazia não vira0 |
+| VF | Abarca todo conteúdo, destina-se a quem não atinge aprovação corrente | RI arts.15 §3 e38, PDF pp.5 e8 | VF separada das VCs, uma tentativa normativa ordinária; segunda chamada não é nova recuperação inventada |
+| Meta VF | NAVF =10 − MVCs | RI art.38 §2 I, PDF p.8 | Exibir nota necessária segundo política e base aprovadas |
+| Média VF | MFVF =(NVF+MVC)/2; <5 reprovação; ≥5 aplica fator | RI art.38 §2 II, PDF p.8 | Exibir média anterior ao redutor e resultado separadamente |
+| Redutor VF | MVFr =(MFVF−5)/2 +5; nota final aprovada entre5 e6,75 | RI art.38 §1 e§2 II b, PDF p.8 | Preservar MVC, NVF, MFVF e MVFr e versão da regra |
+| Limite VF | Reprovação se ficar de VF em mais de3 disciplinas do curso | RI art.40 I, PDF p.8 | Agregar no vínculo do curso inteiro; não presumir reinício a cada ano |
+| Resultado global | Média ponderada de todas as notas das disciplinas; três casas decimais | RI art.35 I–II, PDF p.7 | Exigir pesos definidos; não presumir peso1 nem CH como peso |
+| Menções | E≥9,5; MB≥8; B≥7; R≥5; I<5, na escala até10 | RI art.41, PDF pp.8 | Aplicar à nota final do curso; não denominar automaticamente cada VC |
+
+O artigo33 especifica casas das VCs; o artigo35 especifica casas da média final do curso. O estágio exato de arredondamento da média corrente/intermediária e o uso da média arredondada ou exata na comparação com o corte devem ser deliberados e versionados. Guardar valores intermediários exatos permite reproduzir qualquer política aprovada sem apagar entradas.
+
+Exemplos matemáticos de verificação, sem faltas e sem outros impedimentos: MVC6 e VF4 → MFVF5 → MVFr5; MVC6 e VF8 → MFVF7 → MVFr6; MVC6 e VF3,99 → MFVF4,995, cujo resultado depende da política de arredondamento antes ou depois da comparação. Empates para par: 6,985 para duas casas =6,98 e6,995 =7,00. O último caso ilustra por que não se pode ocultar a política de precisão.
+
+## Conflitos e decisões que não devem ser inventadas
+
+| ID | Questão | Fonte A | Fonte B ou lacuna | Decisão/configuração necessária |
+|---|---|---|---|---|
+| N01 | Quantidade VC | PPC4.3.1 pp.13–14: mínimo1 até30h/a;2 entre31–60;3 acima60 | RI art.15 §2 I p.5:1 até20;2 acima20 até40;3 acima60; sem faixa41–60 | Escolher política e preencher lacuna por decisão formal. Para30h/a há conflito1×2. Não corrigir redação RI silenciosamente |
+| N02 | Piso de acesso VF | PPC4.3.1 p.14:5≤MVC<7 | RI art.38 p.8: quem não atinge nota mínima é reexaminado; não estabelece piso5 | Piso configurável, `null` enquanto pendente. Omitir piso equivale a permitir também MVC<5 e altera resultado |
+| N03 | Frequência para VF | PPC4.3.1 p.14: mínimo75% CH disciplina | RI art.43 p.8 limita apenas faltas injustificadas a25%; art.42 exige90% CH curso | Guardar presenças, faltas justificadas e injustificadas separadas. Decidir base da frequência disciplina e compensações; não tratar esses limiares como substitutos |
+| N04 | Desconto de faltas ×VF | RI art.43 §5: desconto na nota final NFD=ND−(NF×10)/CH | RI art.38 usa MVC para VF; não explicita ordem de desconto, elegibilidade VF, redutor e novo corte | Configurar ordem e base após decisão; mostrar cálculo preliminar e bloquear homologação dos casos afetados enquanto pendente |
+| N05 | Comportamento mínimo | RI arts.34 II e40 III: <7 exclui e não há VF | RI art.87 §1: exclusão automática por média<5 | Não escolher5 ou7 pelo código. Registrar conflito interno e decisão competente |
+| N06 | Pesos CFO | RI art.35 exige média ponderada; art.9 §2 remete cursos ausentes a edital próprio | PPC não apresenta coluna de pesos; matriz CFO não identificada no RI | Peso nullable por componente/oferta, referência ato; impedir média oficial global com pesos ausentes |
+| N07 | Comportamento no currículo | RI arts.59,86 e87 definem disciplina e componente da nota final | PPC remete ao RI, mas matrizes I–III não têm linha própria, CH nem peso | Modelo especial de comportamento separado do catálogo até definição; não inventar CH nem duplicar registros existentes |
+| N08 | Duração hora-aula | PPC seção4 Diretrizes Metodológicas, parágrafo134, p.10:50 minutos | RI art.13, p.5:60 minutos | Duração configurável. Guardar h/a como unidade original e minutos reais; não converter silenciosamente |
+| N09 | Arredondamento intermediário | RI33: notas VC até2 casas; RI35: curso3 casas; RI38 remete ao33 | Não define inequivocamente cada arredondamento intermediário nem momento de comparação | Decidir precisão/estágio dos cálculos e versionar; usar decimal exato antes da política |
+| N10 | Escopo temporal do limite VF | RI40 I diz mais de3 disciplinas “do curso” | CFO tem3 anos; não encontrada autorização para reiniciar contador anualmente | Padrão conceitual é vínculo curso completo, mas formalizar antes de decisão final; mostrar total curso e ano separadamente |
+| N11 | Operacionais e quantidade VC | RI18 exige pelo menos uma VC teórica e máximo50% nota da disciplina | PPC oferece quantidade mínima conforme CH; eventuais disciplinas operacionais pequenas podem ter apenas1VC mínima | Diferenciar VC e componentes; confirmar plano de avaliação e classificação de operacional, não deduzir só pelo nome |
+| N12 | Atividades/TCC | Estágio e atividades compõem CH; TCC tem regulamento próprio (RI9 §3) | Não localizado critério quantitativo completo para nota/peso de estágio, atividades e TCC | Cadastrar tipos distintos, não aplicar VCs automaticamente às82 linhas |
+
+A solução para omissões consta do PPC (p.33): aplicar RI; sem previsão específica, decisão do Comandante da ABM, com recurso final ao Comandante-Geral. Isso não autoriza o software a resolver conflitos automaticamente nem a equiparar uma seleção de interface a um ato normativo.
+
+## Frequência
+
+RI art.42 §2 (p.8): estudante deve cumprir no mínimo90% da CH total do curso. RI art.43 (p.8): faltas **não justificadas** têm limite máximo25% da CH de cada disciplina; ultrapassar reprova. Limite exato25% não é ultrapassagem. O art.43 §5 prescreve `NFD = ND − (NF ×10) / CH`; NF é quantidade de faltas injustificadas em unidades de hora-aula. Não é simples percentual de desconto sobre ND: 2 faltas em40h/a retiram0,5 ponto, qualquer que seja ND.
+
+Art.43 §4: tolerância10 minutos após início da aula; ultrapassagem computa falta referente àquela hora-aula. Art.44 (pp.8–9): motivos admitidos incluem doação sangue, disposição justiça, saúde própria com comprovação pertinente, núpcias, licença paternidade, socorro autorizado durante instrução, socorro em via pública comprovado via CIODES e luto. Justificativa deve ter situação de análise e responsável pela decisão; o mero upload não constitui deferimento. O módulo acadêmico pode guardar o identificador do registro restrito, sem expor documentos médicos a instrutores ou demais cadetes.
+
+PPC4.3.2 (pp.14–15) estende controle às instruções, estágios, serviços, formaturas e atividades acadêmico-militares; remete compensações, restrições médicas, atividades essenciais e limites ao RI. Não foi encontrada fórmula geral de compensação; não transformar falta justificada em presença automaticamente.
+
+RI art.7 §5 (p.4) trata da conclusão institucional do curso:90% CH total prevista, observados mínimos aplicáveis, e100% disciplinas operacionais. Não confundir com regra individual de presença100% em operacional: o dispositivo trata do curso poder ser finalizado.
+
+## Comportamento Escolar
+
+RI arts.59 e86 (pp.10 e14): coordenador do curso é titular; havendo pelotões, respectivos coordenadores respondem pela disciplina Comportamento Escolar1,2 etc. Essa numeração significa pelotões e não CFO1/CFO2/CFO3.
+
+Art.87 (p.14): períodos de30 dias corridos a contar da matrícula; nota conceitual inicial10 a cada período; ganhos/perdas limitados ao período da conduta; teto10; compensação somente no período em que há perdas. Nota final é média aritmética das notas dos meses; mês de encerramento entra mesmo incompleto. Não há piso explícito para a nota do período no trecho, portanto não acrescentar clamp0 sem decisão. Art.87 §2 (p.15): punição disciplinar RDPM leve/média −3; grave−4. Art.101 (p.16): elogio individual+0,2 e coletivo+0,1, após análise/deferimento da coordenação. Art.102 tabela de transgressões escolares atribui pontuações próprias; não confundir essas transgressões com os descontos−3/−4 de punições RDPM.
+
+Não há VF de Comportamento segundo art.34 II. Conflito corte7×5 exige decisão N05. Não excluir automaticamente cadete do sistema: exibir impedimento/pedido de análise e guardar ato competente, datas, autoria e motivação, preservando matrícula e histórico. PPC4.3.4 prevê contraditório, ampla defesa e motivação; RI arts.45–50 separam matrícula, trancamento, desligamento e exclusão.
+
+## Revisões, publicação e responsáveis
+
+- Instrutor elabora avaliações (RI16), entrega mídia à coordenação4 dias úteis antes da aplicação e mantém sigilo junto à coordenação. PLAV deve ser entregue a alunos/coordenação pelo menos7 dias antes (RI19). PLADIS chega ao coordenador10 dias antes do início do curso, e plano de segurança7 dias antes de práticas quando aplicável (RI57).
+- Visto de prova é conhecimento da nota pelo aluno (RI29); práticas e VIs com visto imediato; teóricas em sala ou videochamada. Relação das notas/visto enviada à coordenação pelo sistema de documentos assinados eletronicamente do Estado. RI57 IX: até3 dias úteis após encerramento da disciplina.
+- Recurso RI30 (pp.6–7): pedido verbal ao instrutor no visto; escrito ao instrutor até2 dias corridos pelo sistema oficial, fundamentado no material PLAV. Instrutor responde em até4 dias corridos do recebimento. Se procedente, corrige até1 dia; se improcedente, cadete pode recorrer à coordenação em até1 dia da comunicação. Coordenação responde até2 dias corridos após o prazo anterior. Os prazos de1 dia não qualificam no texto “útil”/“corrido”; política de contagem deve registrar a interpretação.
+- Decisão de revisão pode aumentar ou diminuir a nota (art.30 XI), e erro de elaboração aplica-se a todos os alunos (XII). Falta de resposta no prazo torna recurso procedente (XIII). Registrar alerta/estado e decisão documental; não inventar valor de nota de um deferimento tácito.
+- Anulação/retificação por erro: coordenação e/ou instrutor (art.27); comandante ABM pode anular prova/questão a qualquer tempo com justificativa (art.31). Portanto, lançamentos publicados precisam de revisão versionada, motivo, antes/depois e prova documental.
+- Instrutores designados em atos específicos; militares via cadastro DEPEX, civis mediante seleção (arts.51–52). Monitores auxiliam, não são automaticamente autorizados a homologar resultados (arts.56,58,65).
+- Coordenação controla faltas, elogios e perda de pontos (art.61 XVII); fecha notas no sistema CBMAP mantendo cópia de segurança em Excel (art.61 XXII, p.11). Supervisor verifica acesso aos planos e disponibilidade de materiais (art.64 II–III).
+- Os arquivos não trazem lista de chefes de cadeira/instrutores por disciplina CFO2026–2029. Atribuições devem ser cadastradas como vínculos com período e ato de designação. Não preencher com autores do PPC.
+- Material didático futuro: vínculo à oferta, autoria, versão, visibilidade e disponibilização; PLAV e recursos de estudo podem ser compartilhados; provas futuras e documentos individuais requerem permissões próprias. O sistema oficial de assinatura é referido, mas não foi fornecida integração/API identificada.
+
+## Catálogo validado e divergências de carga horária
+
+Matrizes PPC4.6.1–4.6.3 (pp.21–24): CFO1 tem24 disciplinas+estágio250h/a+atividades30h/a, total1594; CFO2 tem30 disciplinas+estágio250+atividades60, total1750; CFO3 tem22 disciplinas+estágio300+atividades60, total1580. Soma4924h/a, consistente com identificação PPC1.6. A linha vazia na matriz CFO3 não foi transformada em disciplina. São76 disciplinas e6 linhas de atividades,82 componentes.
+
+| Ano | Disciplina | Matriz h/a | Ementário h/a | Âncora do ementário |
+|---|---|---:|---:|---|
+| I | Legislação Bombeiro Militar |30|38|Anexo I, tabela11 (índice zero), p.46|
+| I | Atendimento Pré-Hospitalar I |80|40|Anexo I, tabela18, p.58|
+| II | Gestão de Pessoas |30|40|Anexo I, tabela27, p.72|
+| II | Ordem Unida e Instrução Militar II |70|80|Anexo I, tabela37, p.84|
+| III | Abordagem Técnica à Tentativas de Suicídio |40|43|Anexo I, tabela66, p.124|
+
+As matrizes totais foram somadas numericamente e conferem com os totais impressos. Isso não resolve as divergências das cinco disciplinas. O catálogo conserva `matrixHours`, `syllabusHours` e `workloadStatus`. Registrar a decisão da CH por oferta/versionamento, pois muda avaliações, calendário, desconto de faltas e eventuais pesos se assim normatizados.
+
+Ética e Cidadania na Segurança Pública consta CFO1 com4h/a na matriz, mas não foi encontrado cabeçalho/ementa específica no Anexo I. Não inventar ementa. Defesa Pessoal aparece abreviada na matriz (“DEFESA PESSOAL CONTENÇÃO E IMPO”), e com nome completo no ementário; ambos foram preservados. CFO3 possui Gerenciamento de Ocorrências40h/a e SCI60h/a como linhas distintas; não deduplicá-las pela menção “Gerenciamento” no título SCI da matriz. Ordem Unida CFO3 consta sem numeral na matriz e com III no ementário; o JSON conserva ambos.
+
+O arquivo `catalogo-disciplinas.json` contém as82 linhas, tipos, nomes originais, nomes do ementário, CH, flags, ano, ordem, referências, hashes e totais verificados. Pesos e responsáveis estão nulos/vazios porque não constam das fontes.
+
+## Recomendações de engenharia derivadas da análise
+
+Estas são escolhas propostas de implementação, não novas regras normativas: versões imutáveis de política; decisões de conflito com autor/ato/data; resultados que registrem versão e todas as entradas; ofertas por turma/ano que apontem para componentes curriculares; vínculo cadete/oferta independente de usuário de login; avaliações agrupadas por VC; VF separada; distinção lançado/publicado/homologado; histórico de revisões em vez de sobrescrita; papéis por oferta; frequência com unidade e motivo; painel de pendências e evidência da fórmula. Resultados oficiais devem exigir resolução dos conflitos aplicáveis. O lançamento de dados e a simulação com premissas explicitadas podem avançar enquanto decisões aguardam.
+
+Casos de teste mínimos: limites0 e10; decimal negativo e acima10; nota ausente vs zero; empate para par; quantidade VC30h/a em políticas divergentes; faixa RI41–60 pendente; MVC4,99 sob políticas VF divergentes; MVC5/7 nos limites; VF mínima; redutor; faltas justificadas não penalizam por art.43;25% vs acima25%; frequência curso90% vs89,99%; quarto componente emVF; comportamento semVF/corte pendente; disciplina comCH divergente; média global com peso ausente; mudança de versão não recalcula histórico silenciosamente; recurso que afeta toda turma; segunda atualização concorrente rejeitada ou auditada.
+
+## Hashes das fontes inspecionadas
+
+- `regimento interno.pdf`: SHA256 `cfadd30c804332c43d84fd86c6df86e76c4cf3965ea74b688c497a59c6425d5b`.
+- `PPC CFO CBMAP _ Revisao.docx`: SHA256 `822a4db4eaa233922d41ea46834ac64fdf6a03160911c26285c4f6299f697ace`.
+
+## Política de cálculo implementada na versão 1
+
+A constante `DEFAULT_POLICY_PARAMETERS` é somente proposta para preencher o formulário. Não é aplicada quando a oferta não tem política aprovada. A política somente deve ser usada após registro de decisão/ato pela coordenação. Essa decisão inclui os conflitos aplicáveis e os estágios de arredondamento.
+
+Na versão1, entradas de VC/VF são normalizadas em duas casas por empate para par, conforme escala de entrada das notas. O parâmetro obrigatório `comparisonStage` exige escolha explícita entre `rounded` e `exact`. Em `rounded`, a média VC é calculada aritmeticamente e arredondada para `averageDecimals` antes da comparação; médias ajustadas por faltas, médiaVF, nota após redutor e nota terminal também são arredondadas antes dos cortes seguintes. Em `exact`, essas etapas conservam frações exatas e os cortes são comparados sem arredondamento intermediário; somente os valores exibidos e a nota a registrar são arredondados depois da decisão, sem modificar a situação calculada.
+
+Quando `absencePenaltyStage=before_vf`, o desconto `(faltas injustificadas×10)/CH` é subtraído da MVC antes da elegibilidade, respeitando `comparisonStage`. Quando `after_vf`, a MVC permanece sem desconto para elegibilidade e o desconto é aplicado uma única vez na nota terminal (direta ou após VF/redutor). A frequência é sempre comparada com sua fração exata, mesmo que a exibição seja arredondada. Uma nota terminal fora da escala0–10 gera análise pendente, sem inventar piso0.
+
+Na opção `exact`, a tela inclui aviso de que os valores arredondados não governam os cortes: MVC exata6,995 pode aparecer como7,00 e ainda exigirVF; médiaVF exata4,995 pode aparecer como5,00 e continuar reprovada. É intencional conservar o resultado da comparação exata, e não reinterpretar o rótulo com base no número exibido.
+
+`attendanceMode=total` considera faltas justificadas e injustificadas no limite percentual da disciplina; `unjustified` considera apenas injustificadas. Em ambos os casos só faltas injustificadas produzem o desconto do art.43. Ambas as contagens são obrigatórias para resultado, inclusive zero confirmado. Essa escolha não substitui a regra de frequência global mínima do curso. `maxVfDisciplines` e `courseAttendanceMinimum` são transportados para verificações agregadas futuras; o cálculo individual não decide conclusão do curso.
+
+As fórmulas normativas padrão têm cortes7/5 e redutor `(MFVF−5)/2+5`, com teto6,75. Parâmetros diferentes exigem fundamento específico. O código permite explicitar tais decisões, sem alegar que uma configuração modificada decorra das fontes analisadas. A versão1 não calcula notas de comportamento, estágio, TCC, atividade complementar ou classificação ponderada do curso; esses resultados permanecem pendentes de critérios próprios.
+
+A apresentação distingue `requiredVf` (NAVF referencial `2×mínimoVF−MVC`, anterior ao desconto terminal) de `requiredVfForApproval` (menor nota centesimal que efetivamente aprova na disciplina com a política completa). O segundo valor é obtido por busca monotônica entre0,00 e10,00 usando a mesma função de avaliação da notaVF lançada, incluindo todos os estágios de arredondamento, redutor, teto e desconto. Se nem10,00 aprova, a meta efetiva fica nula e a tela sinaliza necessidade de análise. Não se promete aprovação a partir da NAVF de referência.
+
+Exemplo comMVC6, desconto1 na nota terminal e redutor: NAVF referencial4; com comparação exata (qualquer precisão de exibição), mínima efetiva8; com comparação arredondada e precisão3, também8; com comparação arredondada e precisão2, mínima efetiva7,98, pois MFVF6,99 produz valor reduzido5,995, arredondado para6,00 antes do desconto, resultando5,00. A nota7,97 já não aprova: MFVF6,985 arredonda6,98, redutor5,99 e resultado4,99. O exemplo evidencia por que a decisão sobre a precisão e o momento do arredondamento altera a aprovação e precisa estar explícita no ato.
+
+O TCC (CFO3-08, 60h/a) permanece entre as22 disciplinas da matriz do terceiro ano, mas é cadastrado com tipo de avaliação `tcc`. Mesmo com política ordinária preenchida, o resultado retorna `pending_special`, pois o RI art.9 §3 remete a regulamento próprio que não foi fornecido. A diferenciação não altera as82 linhas nem os totais de carga horária.
