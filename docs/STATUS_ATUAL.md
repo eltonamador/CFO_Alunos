@@ -96,6 +96,10 @@ Todas as seguintes verificações foram executadas e passaram com sucesso no amb
 
 ### 4.1 Repositório de Escalas em PDF
 
-Registrado como proposta, ainda sem código de produção ou migration. A mudança permitirá à Coordenação cadastrar tipos de escala, publicar PDFs oficiais, extrair atribuições, relacioná-las aos cadetes e emitir avisos individuais automáticos para correspondências de alta confiança. PDFs, reprocessamentos, correções e notificações serão preservados em histórico append-only.
+Implementado localmente nas migrations `0040`–`0045`, com cadastro de tipos, upload privado, processamento assíncrono, revisão humana, publicação, associação aos cadetes, notificações, correções e histórico. O módulo permanece independente da Escala Operacional existente. A ativação em produção depende da implantação controlada descrita em `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`.
 
-O módulo será independente da Escala Operacional existente. Sua ordem de implementação, modelo de dados proposto, telas, permissões, checkpoints e critérios de aceite estão em `docs/PLANO_REPOSITORIO_ESCALAS_PDF.md`.
+### 4.2 Gestão Acadêmica
+
+O núcleo de disciplinas e notas para CFO I, II e III foi integrado ao `main` local nas migrations `0036`–`0039`. Inclui catálogo normativo, ofertas, responsáveis, matrículas, VCs/VF, frequência consolidada, cálculo parametrizado, situação acadêmica e auditoria. O RI revisado permanece identificado como fonte provisória até confirmação do ato de publicação; divergências de carga horária continuam visíveis e exigem decisão da Coordenação.
+
+Em 11 de setembro de 2026, o fluxo local completo aprovou 235 testes pgTAP, 216 testes Vitest e 11 cenários Playwright. A implementação foi integrada ao `main` local em 14 commits. Nenhuma migration nova foi aplicada e nenhum commit foi enviado à produção.

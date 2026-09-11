@@ -79,6 +79,16 @@ Arquivos alterados: `playwright.config.ts`, `tests/e2e/helpers/auth.ts`, `tests/
 
 Próximo checkpoint: preparar a implantação controlada das migrations `0036` a `0045`, com backup, conferência do vínculo remoto e roteiro de rollback, sem executá-la antes da autorização explícita.
 
+## Sprint 6 — integração local e preparação da implantação
+
+Concluída em 11 de setembro de 2026. A branch `feat/gestao-academica` foi integrada ao `main` local por avanço direto até `f7cbd31`, preservando `docs/PROMPT_MODULO_REPOSITORIO_ESCALAS.md` e `lista.txt`, que já estavam não rastreados. Não houve push, publicação da aplicação nem alteração do Supabase de produção.
+
+O `node_modules` do checkout principal apontava para um caminho antigo e foi reconstruído a partir do lockfile. Depois do reparo, `pnpm check` aprovou lint, TypeScript e **216 testes Vitest**; um teste opcional de OCR permaneceu ignorado por depender de binários nativos. A homologação integral anterior continua registrada com **235 testes pgTAP** e **11 cenários Playwright** aprovados.
+
+O comando `pnpm db:remote:plan` confirmou o vínculo com `cfo-alunos-prod`, migrations remotas `0001`–`0035` e somente `0036`–`0045` pendentes. O comando operou em `--dry-run`; nenhuma migration, seed ou dado foi escrito no ambiente remoto.
+
+Arquivos alterados neste checkpoint: `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`, `docs/GESTAO_ACADEMICA_SPRINTS.md` e `docs/STATUS_ATUAL.md`. Migrations: nenhuma nova. Pendências para o próximo passo: registrar backup restaurável, conferir os segredos do ambiente de hospedagem, obter autorização explícita para aplicar `0036`–`0045`, publicar a aplicação e validar a oferta piloto CFO1-09/2026.
+
 ## Inventário final de arquivos
 
 45 arquivos no diff da entrega; os dois arquivos preexistentes de produto alterados são `src/app/sw.ts` e `src/components/app/AppShell.tsx`.

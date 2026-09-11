@@ -1,6 +1,6 @@
 # Gestão Acadêmica — uso, homologação e implantação
 
-O núcleo está implementado na branch local `feat/gestao-academica`, a partir de `75fdc30`. A alteração foi preparada no checkout isolado `CFO_Alunos-academico`. Não foi publicada nem aplicada ao Supabase em uso. O diagnóstico do banco se baseia nas migrations do repositório; a correspondência do esquema remoto ainda deve ser conferida.
+O núcleo foi integrado por avanço direto ao `main` local em 11 de setembro de 2026, trazendo 14 commits de implementação. Nenhum commit foi enviado ao remoto e nenhuma migration foi aplicada ao Supabase de produção. O plano remoto confirmou que a produção contém `0001`–`0035` e que `0036`–`0045` continuam pendentes.
 
 ## O que está entregue
 
@@ -37,6 +37,12 @@ Instrutor vê somente ofertas em que está designado e pode cadastrar avaliaçõ
 | `0037_academic_catalog.sql`               | Insere os 82 componentes do PPC; `ON CONFLICT(code) DO NOTHING` preserva registros existentes                                                                                                                                    |
 | `0038_academic_ri_provisional_policy.sql` | Cria a oferta e sua política provisória do RI na mesma transação                                                                                                                                                                 |
 | `0039_academic_ri_2026_policy.sql`        | Mantém políticas versão1 e passa novas ofertas à versão2 do RI revisado: piso VF5, sem desconto de faltas e contrato compatível                                                                                                  |
+| `0040_schedule_repository.sql`            | Cria o repositório de escalas, tipos, documentos, atribuições, notificações, auditoria e respectivas políticas RLS                                                                                                               |
+| `0041_schedule_repository_storage.sql`    | Cria e protege o bucket privado usado pelos PDFs oficiais de escala                                                                                                                                                              |
+| `0042_schedule_upload_lifecycle.sql`      | Separa upload e publicação, registra processamento e permite falha/reprocessamento sem perder o documento original                                                                                                               |
+| `0043_schedule_processing_pipeline.sql`   | Implementa fila e pipeline assíncrono de extração e associação dos cadetes                                                                                                                                                       |
+| `0044_schedule_review_notifications.sql`  | Acrescenta revisão humana, estados de notificação e suporte às entregas externas configuradas                                                                                                                                    |
+| `0045_schedule_assignment_history.sql`    | Preserva correções, substituições e histórico das atribuições de escala                                                                                                                                                          |
 
 A interpretação provisória versão2 adota: aprovação direta7; VF para médias de5 até abaixo de7;
 aprovação após VF com média5 e fator redutor; limite de três disciplinas em VF; faltas não
@@ -52,12 +58,13 @@ As notas são gravadas pela RPC `academic_save_grade`; política pela `academic_
 
 ## Checkpoint de implantação no ambiente real
 
-1. Revisar a branch e confirmar que não há alterações concorrentes do projeto a integrar. O `main` original permanece no estado inspecionado e `lista.txt` permanece intocado.
-2. Conferir migrations já aplicadas no ambiente de destino e ter backup restaurável. Esta execução não auditou nem alterou o estado remoto.
-3. Aplicar as migrations pendentes primeiro em homologação, usando o procedimento Supabase já adotado pelo projeto. Não executar `db:reset`, scripts de saneamento ou seed de usuários no banco em uso.
-4. Testar as quatro contas/perfis com dados artificiais: coordenação, instrutor designado e não designado, secretaria e dois cadetes. Conferir acesso por chamada direta à API, conta inativa, troca de sessão, erro de conexão e lançamento concorrente em duas sessões.
-5. Conferir os atos e regras com a coordenação; começar por uma oferta piloto de CFO I, comparando as médias manualmente com o motor e o relatório normativo. Só expandir a operação depois desse checkpoint.
-6. Publicar a versão do aplicativo com o procedimento existente. A versão anterior do aplicativo pode continuar operando sobre o esquema aditivo.
+1. Registrar um backup restaurável do banco e do Storage e anotar o identificador/data da cópia. Não executar `db:reset`, seed de usuários ou scripts de saneamento no ambiente real.
+2. Executar `pnpm db:remote:plan` e confirmar: projeto `cfo-alunos-prod`, migrations remotas até `0035` e apenas `0036`–`0045` pendentes. Interromper se aparecer qualquer diferença.
+3. Conferir no ambiente de hospedagem `CRON_SECRET`, URL/chave pública do Supabase e chave de servidor. `SCHEDULE_OCR_PROVIDER=disabled` é o padrão seguro enquanto não houver infraestrutura OCR. VAPID e Resend são opcionais; sem eles, as entregas externas ficam indisponíveis e o histórico interno permanece.
+4. Com autorização explícita para produção, aplicar somente as migrations com `pnpm db:remote:apply -- --confirm-production=cfo-alunos-prod` e guardar a saída da execução.
+5. Publicar a aplicação e testar as quatro contas/perfis: coordenação, instrutor designado e não designado, secretaria e dois cadetes. Conferir também upload, revisão e publicação de uma escala artificial.
+6. Criar uma oferta piloto CFO1-09/2026. Conferir 38 h/a, duas VCs, piso 5 para VF, ausência de desconto de faltas e as médias com uma apuração manual aprovada pela Coordenação.
+7. Liberar as demais ofertas somente depois da conferência do piloto e do histórico de auditoria.
 
 Rollback operacional: retornar a versão do aplicativo e retirar o acesso ao novo módulo; **conservar as tabelas e a auditoria**. Não apagar registros acadêmicos para desfazer a implantação. Qualquer correção de esquema posterior deve usar nova migration.
 
@@ -79,9 +86,9 @@ npm install --prefix /private/tmp/cfo-academic-db-runtime --no-save \
 CFO_ACADEMIC_RUNTIME=/private/tmp/cfo-academic-db-runtime node scripts/test-academic-db.mjs
 ```
 
-O harness aplica as migrations legadas necessárias (0001–0012 e 0014), 0036, 0037, 0038 e 0039 em PostgreSQL WASM e executa pgTAP. Não substitui Supabase Auth, PostgREST, Storage, todas as migrations dos outros módulos nem corrida entre conexões. A política de revisão obsoleta, RLS e falha atômica da auditoria foram testadas. O CI Supabase existente continua incluindo `supabase/tests/academic.test.sql` na suíte de banco completo.
+O comando completo de homologação é `pnpm db:local:homologate`. Ele reconstrói o Supabase local com `0001`–`0045`, executa 235 testes pgTAP, regenera os tipos, cria usuários fictícios e roda lint, TypeScript, 216 testes Vitest e 11 cenários Playwright autenticados. O harness PostgreSQL WASM continua disponível para testes isolados, mas não substitui Auth, PostgREST e Storage reais.
 
-O build foi executado com URL local e chave fictícia. Seu primeiro acesso às fontes Google requereu rede; o produto já possuía essa dependência. A suíte Playwright legada não foi apontada ao banco real, pois carrega `.env.local` e depende de cadetes específicos.
+O build e toda a homologação foram executados com dados fictícios e serviços locais. Produção não foi consultada pelos testes e permanece sem as migrations novas.
 
 ## Pendências reservadas para próximas sprints
 
