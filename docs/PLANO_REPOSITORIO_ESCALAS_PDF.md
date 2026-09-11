@@ -373,7 +373,37 @@ Pendências:
 
 Próximo passo: Sprint E7, com filtros operacionais no painel de atribuições, indicadores de pendências de notificação e testes de interface do fluxo de correção.
 
-## 14. Critérios de aceite consolidados
+## 14. Registro da Sprint E7 — operação do painel de atribuições
+
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Entregas:
+
+- busca por cadete, função ou tipo de escala;
+- filtros combináveis por turma, situação da atribuição e estado da notificação;
+- filtro específico para avisos pendentes, em processamento, ausentes ou com falha;
+- contador de atribuições exibidas e de avisos vigentes que exigem atenção;
+- rótulos e cores distintos para notificações enviadas, pendentes e com falha;
+- abertura automática do histórico quando a Coordenação filtra uma situação histórica;
+- estado vazio explícito quando nenhum registro corresponde aos filtros;
+- testes de interface cobrindo filtros, correção, justificativa, histórico e estado vazio.
+
+Validação executada:
+
+- 216 testes unitários e de interface aprovados, com um smoke de OCR opcional;
+- lint e verificação TypeScript aprovados;
+- build de produção aprovado;
+- nenhuma alteração de banco nesta sprint.
+
+Pendências:
+
+- homologar o painel com a Coordenação usando dados representativos;
+- configurar os canais externos de notificação no ambiente implantado;
+- decidir se a próxima evolução incluirá reenvio manual de aviso pela interface.
+
+Próximo passo: homologação local assistida do fluxo completo, seguida da preparação controlada da implantação das migrations `0036` a `0045`.
+
+## 15. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.

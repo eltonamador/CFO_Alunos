@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -21,6 +22,21 @@ const statusLabel: Record<string, string> = {
   cancelled: "Cancelada",
   superseded: "PDF substituído",
 };
+
+const notificationLabel: Record<string, string> = {
+  pending: "Pendente",
+  processing: "Processando",
+  sent: "Enviado",
+  failed: "Falhou",
+  cancelled: "Cancelado",
+};
+
+function notificationVariant(status: string | null) {
+  if (status === "sent") return "success" as const;
+  if (status === "failed") return "destructive" as const;
+  if (status === "pending" || status === "processing") return "warning" as const;
+  return "outline" as const;
+}
 
 function Submit({ label, destructive = false }: { label: string; destructive?: boolean }) {
   const { pending } = useFormStatus();
@@ -106,9 +122,47 @@ export function ScheduleAssignmentManager({
 }: {
   assignments: ScheduleManagedAssignmentView[];
 }) {
+  const [query, setQuery] = useState("");
+  const [classId, setClassId] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [notification, setNotification] = useState("all");
+  const classes = useMemo(
+    () => [...new Map(assignments.map((item) => [item.class_id, item.class_name])).entries()],
+    [assignments],
+  );
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+    return assignments.filter((assignment) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        [assignment.student_name, assignment.duty_function, assignment.schedule_type_name]
+          .filter(Boolean)
+          .some((value) => value!.toLocaleLowerCase("pt-BR").includes(normalizedQuery));
+      const matchesNotification =
+        notification === "all" ||
+        (notification === "attention"
+          ? assignment.notification_status === "failed" ||
+            assignment.notification_status === "pending" ||
+            assignment.notification_status === "processing" ||
+            assignment.notification_status === null
+          : assignment.notification_status === notification);
+      return (
+        matchesQuery &&
+        (classId === "all" || assignment.class_id === classId) &&
+        (status === "all" || assignment.status === status) &&
+        matchesNotification
+      );
+    });
+  }, [assignments, classId, notification, query, status]);
   if (!assignments.length) return null;
-  const current = assignments.filter((assignment) => assignment.status === "published");
-  const history = assignments.filter((assignment) => assignment.status !== "published");
+  const current = filtered.filter((assignment) => assignment.status === "published");
+  const history = filtered.filter((assignment) => assignment.status !== "published");
+  const attentionCount = assignments.filter(
+    (assignment) =>
+      assignment.status === "published" &&
+      assignment.notification_status !== "sent" &&
+      assignment.notification_status !== "cancelled",
+  ).length;
   return (
     <section className="space-y-3" aria-labelledby="schedule-assignments-title">
       <div>
@@ -119,6 +173,54 @@ export function ScheduleAssignmentManager({
           Correções criam uma nova versão e preservam todos os registros anteriores.
         </p>
       </div>
+      <Card className="grid gap-3 p-4 md:grid-cols-4">
+        <label className="space-y-1 text-sm font-medium">
+          <span>Buscar</span>
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Cadete, função ou tipo"
+          />
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          <span>Turma</span>
+          <Select value={classId} onChange={(event) => setClassId(event.target.value)}>
+            <option value="all">Todas</option>
+            {classes.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          <span>Situação</span>
+          <Select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">Todas</option>
+            <option value="published">Vigentes</option>
+            <option value="corrected">Corrigidas</option>
+            <option value="cancelled">Canceladas</option>
+            <option value="superseded">PDF substituído</option>
+          </Select>
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          <span>Notificação</span>
+          <Select value={notification} onChange={(event) => setNotification(event.target.value)}>
+            <option value="all">Todas</option>
+            <option value="attention">Exigem atenção</option>
+            <option value="sent">Enviadas</option>
+            <option value="failed">Falhas</option>
+          </Select>
+        </label>
+        <p className="text-xs text-muted-foreground md:col-span-4" role="status">
+          {filtered.length} de {assignments.length} atribuições · {attentionCount} avisos vigentes exigem
+          atenção
+        </p>
+      </Card>
+      {!filtered.length && (
+        <Alert>Nenhuma atribuição corresponde aos filtros informados.</Alert>
+      )}
       <div className="grid gap-3 lg:grid-cols-2">
         {current.map((assignment) => (
           <Card key={assignment.id} className="p-4">
@@ -132,8 +234,11 @@ export function ScheduleAssignmentManager({
               <div className="flex gap-2">
                 <Badge variant="success">Vigente</Badge>
                 {assignment.notification_status && (
-                  <Badge variant="outline">Aviso: {assignment.notification_status}</Badge>
+                  <Badge variant={notificationVariant(assignment.notification_status)}>
+                    Aviso: {notificationLabel[assignment.notification_status] ?? assignment.notification_status}
+                  </Badge>
                 )}
+                {!assignment.notification_status && <Badge variant="warning">Aviso: ausente</Badge>}
               </div>
             </div>
             <p className="mt-2 text-sm">
@@ -153,7 +258,10 @@ export function ScheduleAssignmentManager({
         ))}
       </div>
       {history.length > 0 && (
-        <details className="rounded-lg border border-border bg-card p-4">
+        <details
+          className="rounded-lg border border-border bg-card p-4"
+          open={status !== "all" && status !== "published"}
+        >
           <summary className="cursor-pointer font-semibold">
             Histórico preservado ({history.length})
           </summary>
