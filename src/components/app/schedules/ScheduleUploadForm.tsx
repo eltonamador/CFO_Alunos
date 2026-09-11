@@ -129,10 +129,19 @@ export function ScheduleUploadForm({
       router.refresh();
       return;
     }
+    const queued = await client.rpc("schedule_request_reprocess", {
+      p_document_id: document.id,
+      p_method: "auto",
+    });
     formRef.current?.reset();
     setSelectedClass("");
     setSelectedType("");
-    setMessage({ ok: true, text: "Escala publicada com sucesso." });
+    setMessage({
+      ok: true,
+      text: queued.error
+        ? "Escala publicada. O processamento automático precisa ser solicitado novamente."
+        : "Escala publicada e adicionada à fila de processamento.",
+    });
     router.refresh();
   }
 

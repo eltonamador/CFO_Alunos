@@ -2644,6 +2644,7 @@ export type Database = {
           id: string;
           method: string;
           metrics: Json;
+          parser_revision: string | null;
           parser_version: string | null;
           requested_by: string | null;
           started_at: string | null;
@@ -2659,6 +2660,7 @@ export type Database = {
           id?: string;
           method?: string;
           metrics?: Json;
+          parser_revision?: string | null;
           parser_version?: string | null;
           requested_by?: string | null;
           started_at?: string | null;
@@ -2674,6 +2676,7 @@ export type Database = {
           id?: string;
           method?: string;
           metrics?: Json;
+          parser_revision?: string | null;
           parser_version?: string | null;
           requested_by?: string | null;
           started_at?: string | null;
@@ -3506,6 +3509,30 @@ export type Database = {
       schedule_can_read_document: {
         Args: { p_document_id: string };
         Returns: boolean;
+      };
+      schedule_claim_processing_run: {
+        Args: { p_parser_revision: string };
+        Returns: {
+          attempt: number;
+          class_id: string;
+          document_id: string;
+          method: string;
+          period_start: string;
+          run_id: string;
+          schedule_type_name: string;
+          storage_path: string;
+        }[];
+      };
+      schedule_complete_processing_run: {
+        Args: {
+          p_candidates?: Json;
+          p_error_code?: string;
+          p_error_message?: string;
+          p_metrics?: Json;
+          p_run_id: string;
+          p_status: string;
+        };
+        Returns: number;
       };
       schedule_confirm_candidate: {
         Args: { p_candidate_id: string; p_reason: string; p_student_id: string };

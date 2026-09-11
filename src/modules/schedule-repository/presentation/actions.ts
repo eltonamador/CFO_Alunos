@@ -67,3 +67,15 @@ export async function toggleScheduleTypeAction(formData: FormData): Promise<void
   revalidatePath("/coordenacao/escalas");
   revalidatePath("/coordenacao/escalas/tipos");
 }
+
+export async function reprocessScheduleAction(formData: FormData): Promise<void> {
+  if (!(await activeCoordination())) return;
+  const parsed = z.string().uuid().safeParse(formData.get("document_id"));
+  if (!parsed.success) return;
+  const supabase = createSupabaseServerClient();
+  await supabase.rpc("schedule_request_reprocess", {
+    p_document_id: parsed.data,
+    p_method: "auto",
+  });
+  revalidatePath("/coordenacao/escalas");
+}

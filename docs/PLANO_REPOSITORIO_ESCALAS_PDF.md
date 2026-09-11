@@ -275,7 +275,40 @@ Pendências:
 
 Próximo passo: Sprint E4, com extração assíncrona, parser de PDF nativo, OCR e histórico de tentativas.
 
-## 11. Critérios de aceite consolidados
+## 11. Registro da Sprint E4 — processamento assíncrono
+
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Entregas:
+
+- migration `0043_schedule_processing_pipeline.sql`, com fila exclusiva por documento, claim usando `FOR UPDATE SKIP LOCKED`, conclusão atômica e cancelamento de itens de versões superadas;
+- upload passa a solicitar o processamento automaticamente, de modo idempotente;
+- job `/api/jobs/schedule-processing`, protegido por `CRON_SECRET`, executado a cada dez minutos e limitado a três documentos por rodada;
+- extração de texto nativo com PDF.js em runtime Node/serverless;
+- adaptador opcional `local_tesseract` para OCR, habilitado por `SCHEDULE_OCR_PROVIDER` somente em servidor com `pdftoppm`, Tesseract e idioma português;
+- parser versionado e conservador: publicação automática exige nome único da turma, data válida e função derivada do tipo oficial da escala;
+- métricas, método, revisão do parser, erro e histórico de tentativas visíveis para a Coordenação;
+- reprocessamento pela tela sem apagar a execução anterior;
+- publicação automática e evento de notificação permanecem na mesma transação do resultado do parser.
+
+Validação executada:
+
+- PDF sintético com texto nativo extraído e PDF sem texto suficiente classificado como `OCR_REQUIRED`;
+- smoke test local do adaptador OCR com `pdftoppm`, Tesseract e idioma configurável;
+- 211 testes unitários aprovados;
+- 213 verificações pgTAP aprovadas na suíte integrada;
+- 76 verificações pgTAP aprovadas no teste isolado do repositório;
+- lint, typecheck e build de produção aprovados.
+
+Pendências:
+
+- validar o parser com amostras reais anonimizadas dos quatro tipos de escala;
+- escolher um provedor de OCR compatível com a hospedagem, caso os binários locais não estejam disponíveis;
+- implementar a mesa de revisão dos candidatos ambíguos e a entrega externa das notificações na Sprint E5.
+
+Próximo passo: Sprint E5, com mesa de revisão, painel de atribuições do cadete e entrega idempotente das notificações.
+
+## 12. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.

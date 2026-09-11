@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ScheduleFinalizeButton } from "./ScheduleFinalizeButton";
 import { ScheduleUploadForm } from "./ScheduleUploadForm";
+import { ScheduleProcessingStatus } from "./ScheduleProcessingStatus";
 
 const publicationLabel: Record<string, string> = {
   reserved: "Aguardando confirmação",
@@ -218,6 +219,9 @@ export async function ScheduleRepositoryPage({
               )}
               {canManage && document.publication_status === "reserved" && (
                 <ScheduleFinalizeButton documentId={document.id} />
+              )}
+              {canManage && document.publication_status === "published" && (
+                <ScheduleProcessingStatus document={document} />
               )}
             </Card>
           ))}

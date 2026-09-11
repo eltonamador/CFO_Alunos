@@ -6,6 +6,7 @@ import type {
   ScheduleDocumentView,
   ScheduleFilters,
   ScheduleRepositoryData,
+  ScheduleProcessingRun,
   ScheduleType,
 } from "../application/types";
 
@@ -55,6 +56,30 @@ export async function getScheduleRepository(
   const types = (typesResponse.data ?? []) as ScheduleType[];
   const classes = (classesResponse.data ?? []) as ScheduleClass[];
   const rawDocuments = (documentsResponse.data ?? []) as ScheduleDocument[];
+  const documentIds = rawDocuments.map((document) => document.id);
+  let runs: ScheduleProcessingRun[] = [];
+  let reviewCounts = new Map<string, number>();
+  if (session.role === "coordenacao" && documentIds.length) {
+    const [runsResponse, candidatesResponse] = await Promise.all([
+      supabase
+        .from("schedule_processing_runs")
+        .select("*")
+        .in("document_id", documentIds)
+        .order("attempt", { ascending: false }),
+      supabase
+        .from("schedule_candidates")
+        .select("document_id")
+        .in("document_id", documentIds)
+        .in("match_status", ["needs_review", "not_found"]),
+    ]);
+    const processingError = runsResponse.error ?? candidatesResponse.error;
+    if (processingError) throw scheduleError(processingError);
+    runs = (runsResponse.data ?? []) as ScheduleProcessingRun[];
+    reviewCounts = (candidatesResponse.data ?? []).reduce((counts, candidate) => {
+      counts.set(candidate.document_id, (counts.get(candidate.document_id) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>());
+  }
   const documents: ScheduleDocumentView[] = await Promise.all(
     rawDocuments.map(async (document) => {
       let downloadUrl: string | null = null;
@@ -70,6 +95,8 @@ export async function getScheduleRepository(
         schedule_type_name:
           types.find((item) => item.id === document.schedule_type_id)?.name ?? "Tipo de escala",
         download_url: downloadUrl,
+        latest_run: runs.find((run) => run.document_id === document.id) ?? null,
+        review_count: reviewCounts.get(document.id) ?? 0,
       };
     }),
   );

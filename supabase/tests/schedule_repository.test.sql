@@ -224,5 +224,62 @@ $q$), '23514', 'metadados publicados não são sobrescritos');
 select ok((select count(*) >= 9 from public.schedule_audit_events), 'operações relevantes geram auditoria');
 select is(pg_temp.sc_service_try('delete from public.schedule_audit_events'), '42501', 'auditoria é imutável');
 
+select ok(not has_function_privilege('authenticated','public.schedule_claim_processing_run(text)','execute'),
+  'claim da fila é exclusivo do backend');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_request_reprocess(
+    (select id from public.schedule_documents where checksum_sha256=repeat('a',64)), 'auto')
+$q$), '23514', 'versão superada não aceita novo processamento');
+select is(pg_temp.sc_service_try($q$
+  select * from public.schedule_claim_processing_run('schedule-parser/test')
+$q$), 'ok', 'worker limpa itens da fila referentes a versões superadas');
+select is((select status from public.schedule_processing_runs where document_id=(
+  select id from public.schedule_documents where checksum_sha256=repeat('a',64))),
+  'failed', 'fila obsoleta é encerrada sem processar o PDF');
+select is((select error_code from public.schedule_processing_runs where document_id=(
+  select id from public.schedule_documents where checksum_sha256=repeat('a',64))),
+  'DOCUMENT_SUPERSEDED', 'fila obsoleta conserva a causa do encerramento');
+
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_request_reprocess(
+    (select id from public.schedule_documents where checksum_sha256=repeat('d',64)), 'native_text')
+$q$), 'ok', 'coordenação enfileira a versão vigente');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_request_reprocess(
+    (select id from public.schedule_documents where checksum_sha256=repeat('d',64)), 'native_text')
+$q$), 'ok', 'pedido repetido é idempotente enquanto ativo');
+select is((select count(*)::int from public.schedule_processing_runs r join public.schedule_documents d
+  on d.id=r.document_id where d.checksum_sha256=repeat('d',64)), 1,
+  'há somente uma execução ativa por documento');
+select is(pg_temp.sc_service_try($q$
+  select * from public.schedule_claim_processing_run('schedule-parser/test')
+$q$), 'ok', 'worker assume a execução vigente');
+select is((select status from public.schedule_processing_runs r join public.schedule_documents d
+  on d.id=r.document_id where d.checksum_sha256=repeat('d',64)),
+  'running', 'claim marca a execução como running');
+select is((select parser_revision from public.schedule_processing_runs r join public.schedule_documents d
+  on d.id=r.document_id where d.checksum_sha256=repeat('d',64)),
+  'schedule-parser/test', 'claim registra a revisão efetiva do parser');
+select is(pg_temp.sc_service_try($q$
+  select public.schedule_complete_processing_run(
+    (select r.id from public.schedule_processing_runs r join public.schedule_documents d
+      on d.id=r.document_id where d.checksum_sha256=repeat('d',64) and r.status='running'),
+    'succeeded',
+    '{"candidateCount":1,"extractionMethod":"native_text"}'::jsonb,
+    jsonb_build_array(jsonb_build_object(
+      'sequence',1,'raw_name','TESTE UM','duty_date','2099-10-10',
+      'duty_function','Aluno de Dia','original_line','10/10/2099 TESTE UM',
+      'match_status','auto_confirmed','confidence',0.99,
+      'match_reasons',jsonb_build_array('nome_exato_unico','data_valida'),
+      'candidate_student_ids',jsonb_build_array(pg_temp.sc_id('student1')),
+      'matched_student_id',pg_temp.sc_id('student1')
+    )),null,null)
+$q$), 'ok', 'conclusão persiste candidato e publicação automática atomicamente');
+select is((select processing_status from public.schedule_documents where checksum_sha256=repeat('d',64)),
+  'processed', 'documento recebe o estado final do parser');
+select is((select count(*)::int from public.schedule_assignments a join public.schedule_documents d
+  on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'), 1,
+  'vínculo inequívoco gera designação vigente');
+
 select * from finish();
 rollback;
