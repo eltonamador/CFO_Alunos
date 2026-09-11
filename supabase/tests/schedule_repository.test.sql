@@ -98,16 +98,54 @@ $q$), 'ok', 'coordenação registra PDF e reserva caminho');
 
 select ok((select storage_path = class_id::text || '/' || id::text || '/escala-setembro.pdf'
   from public.schedule_documents where checksum_sha256 = repeat('a',64)), 'caminho deriva de turma e documento');
-select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_documents'), 1, 'instrutor vê PDF publicado');
-select is(pg_temp.sc_count('aluno1','select count(*) from public.schedule_documents'), 1, 'cadete da turma vê PDF');
+select is((select publication_status from public.schedule_documents where checksum_sha256=repeat('a',64)),
+  'reserved', 'documento permanece reservado antes do upload');
+select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_documents'), 0, 'instrutor não vê reserva sem arquivo');
+select is(pg_temp.sc_count('aluno1','select count(*) from public.schedule_documents'), 0, 'cadete não vê reserva sem arquivo');
 select is(pg_temp.sc_count('aluno3','select count(*) from public.schedule_documents'), 0, 'cadete de outra turma não vê PDF');
 select is(pg_temp.sc_count('secretaria','select count(*) from public.schedule_documents'), 0, 'secretaria não vê PDF');
 select is(pg_temp.sc_count('inativo','select count(*) from public.schedule_documents'), 0, 'perfil inativo não vê PDF');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_finalize_document(
+    (select id from public.schedule_documents where checksum_sha256=repeat('a',64)))
+$q$), '23514', 'publicação sem objeto no Storage é rejeitada');
+select is(pg_temp.sc_service_try($q$
+  insert into storage.objects(bucket_id,name)
+  select 'schedule-pdfs',storage_path from public.schedule_documents where checksum_sha256=repeat('a',64)
+$q$), 'ok', 'serviço grava objeto simulado no Storage');
+select is(pg_temp.sc_count('aluno1', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
+  0, 'cadete não acessa objeto antes da publicação');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_finalize_document(
+    (select id from public.schedule_documents where checksum_sha256=repeat('a',64)))
+$q$), 'ok', 'coordenação confirma publicação depois do upload');
+select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_documents'), 1, 'instrutor vê PDF publicado');
+select is(pg_temp.sc_count('aluno1','select count(*) from public.schedule_documents'), 1, 'cadete da turma vê PDF publicado');
+select is(pg_temp.sc_count('instrutor', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
+  1, 'instrutor lê objeto publicado');
+select is(pg_temp.sc_count('aluno1', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
+  1, 'cadete da turma lê objeto publicado');
+select is(pg_temp.sc_count('secretaria', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
+  0, 'secretaria não lê objeto publicado');
 select is(pg_temp.sc_try('coord', $q$
   select public.schedule_register_document(
     pg_temp.sc_id('class'), (select id from public.schedule_types where code='aluno_dia'),
     '../invalido.pdf', 10, repeat('b',64), null, null, null)
 $q$), '23514', 'nome inseguro é rejeitado');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_register_document(
+    pg_temp.sc_id('class'), (select id from public.schedule_types where code='oficial_dia'),
+    'falha-controlada.pdf', 10, repeat('f',64), null, null, null)
+$q$), 'ok', 'falha de upload começa por uma reserva auditada');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_fail_upload(
+    (select id from public.schedule_documents where checksum_sha256=repeat('f',64)),
+    'Falha fictícia do Storage')
+$q$), 'ok', 'coordenação registra falha da reserva');
+select is((select publication_status from public.schedule_documents where checksum_sha256=repeat('f',64)),
+  'upload_failed', 'falha não se transforma em publicação');
+select is(pg_temp.sc_count('aluno1', $$select count(*) from public.schedule_documents where checksum_sha256=repeat('f',64)$$),
+  0, 'cadete não vê upload com falha');
 
 select is(pg_temp.sc_try('coord', $q$
   select public.schedule_request_reprocess(
@@ -159,6 +197,24 @@ $q$), 'ok', 'correção cria nova versão da designação');
 select is((select count(*)::int from public.schedule_assignments), 3, 'histórico conserva versões manuais e automáticas');
 select is((select count(*)::int from public.schedule_notification_events), 4, 'correção avisa destinatários anterior e atual');
 select is(pg_temp.sc_count('aluno2','select count(*) from public.schedule_assignments'), 2, 'novo destinatário vê suas designações');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_register_document(
+    pg_temp.sc_id('class'), (select id from public.schedule_types where code='aluno_dia'),
+    'escala-substituta.pdf', 2048, repeat('d',64), date '2099-10-01', date '2099-10-31',
+    (select id from public.schedule_documents where checksum_sha256=repeat('a',64)))
+$q$), 'ok', 'coordenação reserva versão substituta');
+select isnt((select processing_status from public.schedule_documents where checksum_sha256=repeat('a',64)),
+  'superseded', 'versão anterior continua vigente antes do upload');
+select is(pg_temp.sc_service_try($q$
+  insert into storage.objects(bucket_id,name)
+  select 'schedule-pdfs',storage_path from public.schedule_documents where checksum_sha256=repeat('d',64)
+$q$), 'ok', 'Storage recebe a versão substituta');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_finalize_document(
+    (select id from public.schedule_documents where checksum_sha256=repeat('d',64)))
+$q$), 'ok', 'versão substituta é publicada');
+select is((select processing_status from public.schedule_documents where checksum_sha256=repeat('a',64)),
+  'superseded', 'versão anterior só é superada após confirmação');
 select is(pg_temp.sc_service_try($q$
   delete from public.schedule_documents where checksum_sha256=repeat('a',64)
 $q$), '42501', 'nem serviço apaga documento histórico');

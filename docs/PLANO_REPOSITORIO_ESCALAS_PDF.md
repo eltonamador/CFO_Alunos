@@ -237,18 +237,45 @@ Arquivo alterado:
 
 Validação executada:
 
-- `pnpm db:test:schedules`: 43 verificações pgTAP aprovadas.
+- `pnpm db:test:schedules`: 62 verificações pgTAP aprovadas após incluir o ciclo seguro de upload e as policies do objeto.
 - `git diff --check`: sem erros de whitespace.
 
 Pendências para homologação:
 
-- validar `0041` em uma instância Supabase local ou de homologação, pois o PostgreSQL descartável não implementa `storage.objects`;
-- gerar novamente os tipos TypeScript depois de aplicar as migrations no Supabase local;
 - confirmar o limite de 20 MiB e as demais decisões desta seção.
 
-Próximo passo: Sprint E3, começando pelos casos de uso de cadastro de tipo, reserva do documento, upload e listagem do repositório.
+## 10. Registro da Sprint E3 — repositório e publicação
 
-## 10. Critérios de aceite consolidados
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Entregas:
+
+- migration `0042_schedule_upload_lifecycle.sql`, com reserva invisível, confirmação do objeto no Storage, publicação e falha auditável;
+- módulo independente `schedule-repository`, sem dependências das tabelas de escala operacional;
+- publicação direta do navegador no bucket privado, com assinatura PDF, SHA-256 e limite de 20 MiB;
+- cadastro, inativação e reativação de tipos pela Coordenação;
+- filtros por turma, tipo, vigência e situação;
+- download por URL assinada e histórico das versões substituídas;
+- páginas em `/coordenacao/escalas`, `/instrutor/escalas` e `/aluno/escalas`;
+- geração dos tipos Supabase atualizada.
+
+Validação executada:
+
+- reset completo com as 42 migrations e políticas reais de Storage;
+- 199 testes pgTAP aprovados na suíte integrada;
+- smoke test pela API: Coordenação, Instrutor e cadete da turma visualizaram a publicação; Secretaria recebeu zero registros;
+- 205 testes unitários aprovados;
+- lint, typecheck e build de produção aprovados.
+
+Pendências:
+
+- confirmação institucional do limite provisório de 20 MiB;
+- implantação das migrations pendentes somente após autorização;
+- amostras reais dos quatro tipos de PDF para iniciar parser e OCR.
+
+Próximo passo: Sprint E4, com extração assíncrona, parser de PDF nativo, OCR e histórico de tentativas.
+
+## 11. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.

@@ -2488,7 +2488,8 @@ export type Database = {
           period_end: string | null;
           period_start: string | null;
           processing_status: string;
-          published_at: string;
+          publication_status: string;
+          published_at: string | null;
           published_by: string;
           schedule_type_id: string;
           size_bytes: number;
@@ -2505,7 +2506,8 @@ export type Database = {
           period_end?: string | null;
           period_start?: string | null;
           processing_status?: string;
-          published_at?: string;
+          publication_status?: string;
+          published_at?: string | null;
           published_by: string;
           schedule_type_id: string;
           size_bytes: number;
@@ -2522,7 +2524,8 @@ export type Database = {
           period_end?: string | null;
           period_start?: string | null;
           processing_status?: string;
-          published_at?: string;
+          publication_status?: string;
+          published_at?: string | null;
           published_by?: string;
           schedule_type_id?: string;
           size_bytes?: number;
@@ -3518,6 +3521,60 @@ export type Database = {
         };
         Returns: string;
       };
+      schedule_fail_upload: {
+        Args: { p_document_id: string; p_reason: string };
+        Returns: {
+          checksum_sha256: string;
+          class_id: string;
+          created_at: string;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          period_end: string | null;
+          period_start: string | null;
+          processing_status: string;
+          publication_status: string;
+          published_at: string | null;
+          published_by: string;
+          schedule_type_id: string;
+          size_bytes: number;
+          storage_path: string;
+          supersedes_document_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "schedule_documents";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      schedule_finalize_document: {
+        Args: { p_document_id: string };
+        Returns: {
+          checksum_sha256: string;
+          class_id: string;
+          created_at: string;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          period_end: string | null;
+          period_start: string | null;
+          processing_status: string;
+          publication_status: string;
+          published_at: string | null;
+          published_by: string;
+          schedule_type_id: string;
+          size_bytes: number;
+          storage_path: string;
+          supersedes_document_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "schedule_documents";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       schedule_publish_auto_candidate: {
         Args: { p_candidate_id: string };
         Returns: string;
@@ -3543,7 +3600,8 @@ export type Database = {
           period_end: string | null;
           period_start: string | null;
           processing_status: string;
-          published_at: string;
+          publication_status: string;
+          published_at: string | null;
           published_by: string;
           schedule_type_id: string;
           size_bytes: number;

@@ -37,8 +37,19 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
-    { href: "/coordenacao/academico", label: "Gestão Acadêmica", shortLabel: "Acadêmico", icon: GraduationCap },
-    { href: "/coordenacao/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
+    {
+      href: "/coordenacao/academico",
+      label: "Gestão Acadêmica",
+      shortLabel: "Acadêmico",
+      icon: GraduationCap,
+    },
+    { href: "/coordenacao/escalas", label: "Escalas PDF", icon: Folder },
+    {
+      href: "/coordenacao/acompanhamento",
+      label: "Acompanhamento",
+      shortLabel: "Acomp.",
+      icon: ClipboardCheck,
+    },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
@@ -46,22 +57,39 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   ],
   secretaria: [
     { href: "/secretaria", label: "Início", icon: Home, exact: true },
-    { href: "/secretaria/academico", label: "Gestão Acadêmica", shortLabel: "Acadêmico", icon: GraduationCap },
+    {
+      href: "/secretaria/academico",
+      label: "Gestão Acadêmica",
+      shortLabel: "Acadêmico",
+      icon: GraduationCap,
+    },
     { href: "/secretaria/documentos", label: "Documentos", icon: Folder },
     { href: "/secretaria/relatorios", label: "Relatórios", icon: FileText },
   ],
   instrutor: [
     { href: "/instrutor", label: "Buscar", icon: Search, exact: true },
-    { href: "/instrutor/academico", label: "Disciplinas e notas", shortLabel: "Acadêmico", icon: GraduationCap },
+    {
+      href: "/instrutor/academico",
+      label: "Disciplinas e notas",
+      shortLabel: "Acadêmico",
+      icon: GraduationCap,
+    },
+    { href: "/instrutor/escalas", label: "Escalas PDF", icon: Folder },
     { href: "/instrutor/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/instrutor/turma", label: "Turma", icon: GraduationCap },
   ],
   aluno: [
     { href: "/aluno", label: "Início", icon: Home, exact: true },
     { href: "/aluno/academico", label: "Minhas notas", shortLabel: "Notas", icon: GraduationCap },
+    { href: "/aluno/escalas", label: "Escalas PDF", shortLabel: "Escalas", icon: Folder },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
-    { href: "/aluno/acompanhamento", label: "Acompanhamento", shortLabel: "Acomp.", icon: ClipboardCheck },
+    {
+      href: "/aluno/acompanhamento",
+      label: "Acompanhamento",
+      shortLabel: "Acomp.",
+      icon: ClipboardCheck,
+    },
     { href: "/aluno/ficha", label: "Ficha", icon: ClipboardList },
     { href: "/aluno/documentos", label: "Documentos", icon: Folder },
     { href: "/aluno/materiais", label: "Materiais", icon: Boxes },
@@ -91,9 +119,7 @@ function getUserInitials(session: SessionProfile): string {
 
 function getUserDisplayName(session: SessionProfile): string {
   if (session.role === "aluno" && session.warName) {
-    const num = session.studentNumber
-      ? String(session.studentNumber).padStart(2, "0")
-      : null;
+    const num = session.studentNumber ? String(session.studentNumber).padStart(2, "0") : null;
     return num ? `${session.warName} — ${num}` : session.warName;
   }
   return session.fullName;
@@ -142,7 +168,7 @@ export function AppShell({
             <p className="font-display text-sm font-bold uppercase tracking-[0.12em] text-white">
               CFO Alunos
             </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="mt-0.5 flex items-center gap-1.5">
               <Image
                 src="/brasao-abm.png"
                 alt="ABM"

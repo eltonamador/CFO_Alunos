@@ -28,12 +28,25 @@ try {
     create role service_role bypassrls;
     create schema auth;
     create schema extensions;
+    create schema storage;
     create table auth.users(id uuid primary key, email text);
+    create table storage.buckets(
+      id text primary key, name text not null, public boolean not null default false,
+      file_size_limit bigint, allowed_mime_types text[]
+    );
+    create table storage.objects(
+      id uuid primary key default gen_random_uuid(), bucket_id text not null,
+      name text not null, owner_id text, unique(bucket_id, name)
+    );
+    alter table storage.objects enable row level security;
     create function auth.uid() returns uuid language sql stable as $$
       select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
         nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid
     $$;
     grant usage on schema public, auth, extensions to anon, authenticated, service_role;
+    grant usage on schema storage to authenticated, service_role;
+    grant all on storage.buckets, storage.objects to service_role;
+    grant select, insert on storage.objects to authenticated;
     grant execute on function auth.uid() to anon, authenticated, service_role;
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     set search_path = public, extensions;
@@ -42,7 +55,7 @@ try {
   const migrations = (await readdir(migrationDirectory)).sort();
   const selected = migrations.filter((name) => {
     const number = Number(name.slice(0, 4));
-    return (number >= 1 && number <= 12) || number === 14 || number === 40;
+    return (number >= 1 && number <= 12) || number === 14 || (number >= 40 && number <= 42);
   });
   for (const name of selected) {
     await db.exec(await readFile(join(migrationDirectory, name), "utf8"));
