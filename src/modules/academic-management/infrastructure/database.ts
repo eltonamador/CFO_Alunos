@@ -12,7 +12,10 @@ import type {
   Offering,
 } from "../application/types";
 
-/** Local extension until the next Supabase generation; generated legacy types stay untouched. */
+/**
+ * Ajustes do contrato gerado para campos preenchidos por trigger e para a nota
+ * NULL (lançamento pendente), que o gerador do Supabase não consegue inferir.
+ */
 type Table<Row> = {
   Row: { [Key in keyof Row]: Row[Key] };
   Insert: Partial<Row>;
@@ -29,51 +32,53 @@ export type AcademicTables = {
   academic_grades: Table<Grade>;
   academic_audit_events: Table<AcademicAuditEvent>;
 };
+type AcademicFunctions = {
+  academic_save_grade: {
+    Args: {
+      p_assessment_id: string;
+      p_enrollment_id: string;
+      p_score: number | null;
+      p_expected_revision: number;
+      p_reason: string;
+    };
+    Returns: Grade;
+  };
+  academic_configure_policy: {
+    Args: { p_offering_id: string; p_name: string; p_parameters: Json; p_decision_ref: string };
+    Returns: string;
+  };
+  academic_save_attendance: {
+    Args: {
+      p_enrollment_id: string;
+      p_justified: number;
+      p_unjustified: number;
+      p_expected_revision: number;
+      p_reason: string;
+    };
+    Returns: Enrollment;
+  };
+  academic_create_offering_ri: {
+    Args: {
+      p_class_id: string;
+      p_discipline_id: string;
+      p_academic_year: number;
+      p_workload_hours: number;
+      p_vc_count: number;
+      p_decision_ref: string;
+    };
+    Returns: string;
+  };
+};
+
 type AcademicDatabase = {
   public: Omit<Database["public"], "Tables" | "Functions"> & {
-    Tables: Database["public"]["Tables"] & AcademicTables;
-    Functions: Database["public"]["Functions"] & {
-      academic_save_grade: {
-        Args: {
-          p_assessment_id: string;
-          p_enrollment_id: string;
-          p_score: number | null;
-          p_expected_revision: number;
-          p_reason: string;
-        };
-        Returns: Grade;
-      };
-      academic_configure_policy: {
-        Args: { p_offering_id: string; p_name: string; p_parameters: Json; p_decision_ref: string };
-        Returns: string;
-      };
-      academic_save_attendance: {
-        Args: {
-          p_enrollment_id: string;
-          p_justified: number;
-          p_unjustified: number;
-          p_expected_revision: number;
-          p_reason: string;
-        };
-        Returns: Enrollment;
-      };
-      academic_create_offering_ri: {
-        Args: {
-          p_class_id: string;
-          p_discipline_id: string;
-          p_academic_year: number;
-          p_workload_hours: number;
-          p_vc_count: number;
-          p_decision_ref: string;
-        };
-        Returns: string;
-      };
-    };
+    Tables: Omit<Database["public"]["Tables"], keyof AcademicTables> & AcademicTables;
+    Functions: Omit<Database["public"]["Functions"], keyof AcademicFunctions> & AcademicFunctions;
   };
 };
 
 export function createAcademicClient() {
-  // Same session/cookies and RLS client. This cast only extends schema information.
+  // Mesma sessão/cookies e RLS; o cast corrige apenas limitações do gerador SQL→TS.
   return createSupabaseServerClient() as unknown as SupabaseClient<AcademicDatabase>;
 }
 export type AcademicClient = ReturnType<typeof createAcademicClient>;

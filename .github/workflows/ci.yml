@@ -44,6 +44,8 @@ jobs:
       # Testes pgTAP: RLS, integridade do FO e expiracao de prazo.
       - name: Testes de banco
         run: pnpm exec supabase test db
+      - name: Tipos do banco sincronizados
+        run: pnpm db:types && git diff --exit-code -- src/lib/supabase/types.ts
       - name: Encerra o Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

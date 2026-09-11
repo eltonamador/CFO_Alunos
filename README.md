@@ -5,6 +5,7 @@ Sistema de gestão dos alunos do **Curso de Formação de Oficiais (CFO)** da Ac
 > Status: **Fase 2 — Estrutura inicial**. Planejamento completo em [`/docs`](docs/README.md).
 
 ## Stack
+
 - **Next.js 14** (App Router) · **TypeScript** estrito
 - **Tailwind CSS** + shadcn/ui patterns
 - **Supabase** (Postgres + Auth + Storage)
@@ -13,8 +14,10 @@ Sistema de gestão dos alunos do **Curso de Formação de Oficiais (CFO)** da Ac
 - Deploy: **Vercel**
 
 ## Pré-requisitos
+
 - Node.js 20+
 - pnpm 9+
+- Docker Desktop ou Colima
 - Conta Supabase (projeto criado, dev e prod separados recomendados)
 
 ## Setup local
@@ -23,9 +26,8 @@ Sistema de gestão dos alunos do **Curso de Formação de Oficiais (CFO)** da Ac
 # 1. Instalar dependências
 pnpm install
 
-# 2. Copiar e preencher variáveis de ambiente
-cp .env.example .env.local
-# edite .env.local com as chaves do seu projeto Supabase
+# 2. Preparar e validar todo o Supabase local
+pnpm db:local:setup
 
 # 3. Rodar dev server
 pnpm dev
@@ -39,6 +41,11 @@ pnpm e2e          # Playwright (e2e)
 pnpm build        # build de produção
 pnpm check        # lint + typecheck + test
 ```
+
+O setup local inicia o runtime Docker, aplica todas as migrations, executa os
+testes de banco, gera os tipos TypeScript e cria `.env.local` sem imprimir as
+chaves. Diagnóstico e implantação estão em
+[`docs/AUTOMACAO_SUPABASE.md`](docs/AUTOMACAO_SUPABASE.md).
 
 ## Estrutura
 
@@ -64,6 +71,7 @@ public/                 # manifest PWA, ícones
 ```
 
 ## Roadmap por fase
+
 Ver [`docs/09-implementation-plan.md`](docs/09-implementation-plan.md).
 
 - ✅ **F1** Planejamento
@@ -80,6 +88,7 @@ Ver [`docs/09-implementation-plan.md`](docs/09-implementation-plan.md).
 - ⏭️ **F12** Polimento + deploy Vercel
 
 ## Deploy (Vercel) — resumo
+
 1. Push para um repositório Git.
 2. Importar projeto na Vercel.
 3. Configurar variáveis de ambiente (mesmas do `.env.local`).
@@ -89,4 +98,5 @@ Ver [`docs/09-implementation-plan.md`](docs/09-implementation-plan.md).
 Detalhes completos serão documentados ao final da F12.
 
 ## Documentação de domínio
+
 Todos os artefatos DDD estão em [`/docs`](docs/README.md). Comece por [Visão do Produto](docs/01-product-vision.md) e [Linguagem Ubíqua](docs/02-ubiquitous-language.md).
