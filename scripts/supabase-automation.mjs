@@ -30,6 +30,21 @@ function supabase(args, options) {
   return run("pnpm", ["exec", "supabase", ...args], options);
 }
 
+function retry(label, operation, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+      console.warn(`${label} falhou na tentativa ${attempt}/${attempts}; repetindo em 5 segundos...`);
+      spawnSync("sleep", ["5"], { stdio: "ignore" });
+    }
+  }
+  throw lastError;
+}
+
 function linkedRef() {
   const path = resolve(root, "supabase/.temp/project-ref");
   return existsSync(path) ? readFileSync(path, "utf8").trim() : null;
@@ -136,13 +151,22 @@ function localSetup() {
   ensureDocker();
   supabase(["start", "--output", "json"], { capture: true });
   console.log("Supabase local ativo.");
-  supabase(["db", "reset"]);
+  retry("Reset do Supabase local", () => supabase(["db", "reset"]));
   supabase(["test", "db"]);
   generateTypes();
   const status = localStatus();
   if (!status) throw new Error("Supabase local iniciou, mas o status não pôde ser lido.");
   writeLocalEnv(status);
+  run("pnpm", ["exec", "tsx", "scripts/seed-users.ts"]);
   console.log("Ambiente local pronto e validado.");
+}
+
+function localHomologate() {
+  localSetup();
+  run("pnpm", ["exec", "playwright", "install", "chromium"]);
+  run("pnpm", ["check"]);
+  run("pnpm", ["e2e", "--project=chromium"]);
+  console.log("Homologação local concluída com sucesso.");
 }
 
 function remotePlan() {
@@ -165,6 +189,7 @@ function remoteApply(args) {
 const [command, ...args] = process.argv.slice(2);
 const commands = {
   doctor,
+  "local-homologate": localHomologate,
   "local-setup": localSetup,
   "local-types": generateTypes,
   "local-stop": () => supabase(["stop", "--no-backup"]),
@@ -175,7 +200,7 @@ const commands = {
 
 if (!commands[command]) {
   console.error(
-    "Uso: node scripts/supabase-automation.mjs <doctor|link|local-setup|local-types|local-stop|remote-plan|remote-apply>",
+    "Uso: node scripts/supabase-automation.mjs <doctor|link|local-setup|local-homologate|local-types|local-stop|remote-plan|remote-apply>",
   );
   process.exit(2);
 }

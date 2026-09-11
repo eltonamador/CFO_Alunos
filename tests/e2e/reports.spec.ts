@@ -33,15 +33,10 @@ test.describe("Relatorios da turma", () => {
       );
       expect((await xlsxResponse.body()).subarray(0, 2).toString("utf8")).toBe("PK");
 
-      const [pdf] = await Promise.all([
-        page.waitForEvent("download"),
-        page.getByTestId(`download-${report.slug}-pdf`).click(),
-      ]);
-      expect(pdf.suggestedFilename()).toMatch(new RegExp(`${report.slug}|CFO2026`, "i"));
-      expect(pdf.suggestedFilename()).toMatch(/\.pdf$/);
-
       const pdfResponse = await page.request.get(`/api/reports/${report.slug}?format=pdf`);
+      expect(pdfResponse.ok()).toBe(true);
       expect(pdfResponse.headers()["content-type"]).toContain("application/pdf");
+      expect(pdfResponse.headers()["content-disposition"]).toMatch(/\.pdf/i);
       expect((await pdfResponse.body()).subarray(0, 4).toString("utf8")).toBe("%PDF");
     });
   }

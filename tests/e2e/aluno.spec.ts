@@ -13,7 +13,12 @@ test.describe("Portal do Aluno - interface e progresso", () => {
     await expect(progressSection.getByText("Documentos", { exact: true })).toBeVisible();
     await expect(progressSection.getByText("Materiais (quarentena)", { exact: true })).toBeVisible();
     await expect(progressSection.getByText("Materiais (geral)", { exact: true })).toBeVisible();
-    await expect(progressSection).toContainText(/\b100%/);
+    const percentages = progressSection.getByText(/^\d{1,3}%$/);
+    await expect(percentages).toHaveCount(4);
+    for (const value of await percentages.allTextContents()) {
+      expect(Number.parseInt(value, 10)).toBeGreaterThanOrEqual(0);
+      expect(Number.parseInt(value, 10)).toBeLessThanOrEqual(100);
+    }
   });
 
   test("navega para a ficha e mostra as abas principais", async ({ page }) => {

@@ -20,6 +20,7 @@
     "db:test:schedules": "node scripts/test-schedule-repository-db.mjs",
     "db:doctor": "node scripts/supabase-automation.mjs doctor",
     "db:local:setup": "node scripts/supabase-automation.mjs local-setup",
+    "db:local:homologate": "node scripts/supabase-automation.mjs local-homologate",
     "db:local:stop": "node scripts/supabase-automation.mjs local-stop",
     "db:remote:link": "node scripts/supabase-automation.mjs link",
     "db:remote:plan": "node scripts/supabase-automation.mjs remote-plan",

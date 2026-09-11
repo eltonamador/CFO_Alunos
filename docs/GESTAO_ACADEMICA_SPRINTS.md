@@ -1,6 +1,6 @@
 # Gestão Acadêmica — registro de sprints
 
-Base: `75fdc30`, checkout isolado `feat/gestao-academica`, iniciado em 10/09/2026. O checkout original, o arquivo não rastreado `lista.txt` e os documentos em `sources/` foram preservados. Nenhum comando de banco remoto foi executado.
+Base: `75fdc30`, checkout isolado `feat/gestao-academica`, iniciado em 10/09/2026. O checkout original, o arquivo não rastreado `lista.txt` e os documentos em `sources/` foram preservados. O banco remoto foi consultado somente por dry-run; nenhuma migration foi aplicada.
 
 ## Sprint 0 — inspeção e diagnóstico
 
@@ -66,6 +66,18 @@ A Portaria nº 550 foi convertida em catálogo de referência com24 linhas. Para
 Verificação: **205 testes Vitest em20 arquivos**, **92 asserções pgTAP**, TypeScript, lint e build Next.js passaram. O build usou endereço Supabase local e chave fictícia. Nenhum banco remoto foi acessado ou alterado.
 
 Próximo checkpoint: confirmar o ato de publicação do RI revisado e testar em homologação uma oferta CFO1-09 de2026, verificando carga38 h/a, duas VCs, piso5 para VF e ausência de desconto de faltas.
+
+## Sprint 5 — homologação local automatizada
+
+Concluída no ambiente Supabase local. O Chromium gerenciado pelo Playwright foi instalado e a suíte E2E passou a tratar o primeiro acesso obrigatório sem desativar a troca de senha do produto. Como os cenários compartilham contas locais, o Playwright agora usa um worker; isso remove a corrida em que vários testes alteravam simultaneamente a senha do mesmo usuário.
+
+Foram acrescentados dois cenários acadêmicos repetíveis. O primeiro autentica a Coordenação e percorre oferta, política provisória, matrícula de cadete, cadastro de VC, lançamento ou retificação de nota e conferência da auditoria. O segundo cria ou reutiliza a oferta piloto CFO1-09/2026 e confirma na interface a carga38 h/a definida pela Portaria550, duas VCs, o conflito30×38 preservado, piso5 para VF e ausência de desconto de faltas da política RI revisada. A verificação antiga do painel do aluno deixou de presumir cadastro100% completo e agora valida os quatro percentuais no intervalo0–100. Os relatórios PDF são conferidos pela resposta HTTP, assinatura `%PDF`, tipo e nome do arquivo, evitando depender do comportamento do Chromium de abrir ou baixar o documento.
+
+Verificação: **11 cenários Playwright aprovados em Chromium**, incluindo Gestão Acadêmica, autenticação, primeiro acesso, portal do aluno e quatro relatórios em XLSX/PDF. Os cenários acadêmicos também foram executados isoladamente com sucesso. Além disso, **216 testes Vitest**, **235 testes pgTAP**, lint e TypeScript passaram. O novo comando `pnpm db:local:homologate` reproduziu todo o processo desde o reset; quando o health check do Storage expirou na primeira tentativa, o reset foi repetido automaticamente e concluído na segunda. Foram usados apenas usuários e dados fictícios no Supabase local; produção permaneceu intacta.
+
+Arquivos alterados: `playwright.config.ts`, `tests/e2e/helpers/auth.ts`, `tests/e2e/aluno.spec.ts`, `tests/e2e/reports.spec.ts`, `tests/e2e/academic.spec.ts`, `scripts/supabase-automation.mjs`, `package.json` e `docs/AUTOMACAO_SUPABASE.md`. Migrations: nenhuma nesta sprint.
+
+Próximo checkpoint: preparar a implantação controlada das migrations `0036` a `0045`, com backup, conferência do vínculo remoto e roteiro de rollback, sem executá-la antes da autorização explícita.
 
 ## Inventário final de arquivos
 

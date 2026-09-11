@@ -13,7 +13,7 @@ repositório a outro banco por engano.
 - Colima instalado e configurado como runtime Docker.
 - CI executando reset completo e testes pgTAP em cada pull request e push na `main`.
 - CI rejeitando migrations cujo `src/lib/supabase/types.ts` não tenha sido regenerado.
-- Migrations remotas `0001` a `0035` conferidas; `0036` a `0041` continuam pendentes em produção.
+- Migrations remotas `0001` a `0035` conferidas; `0036` a `0045` continuam pendentes em produção.
 
 ## Comandos únicos
 
@@ -30,7 +30,20 @@ pnpm db:local:setup
 
 Inicia o Colima quando necessário, sobe o Supabase, recria o banco pelas
 migrations, executa todos os testes pgTAP, gera `src/lib/supabase/types.ts` e
-cria um `.env.local` local com permissão `0600`. O arquivo não é commitado.
+cria um `.env.local` local com permissão `0600`. Em seguida, provisiona os
+usuários fictícios de Coordenação, Secretaria, Instrutor e cadetes. O arquivo
+de ambiente não é commitado.
+
+```bash
+pnpm db:local:homologate
+```
+
+Executa todo o preparo local acima, garante o Chromium do Playwright, roda
+lint, TypeScript, testes unitários e a suíte E2E autenticada. É o comando único
+para reconstruir e homologar o ambiente local do zero. A suíte usa um worker
+porque o primeiro acesso altera a senha das contas fictícias compartilhadas. O
+reset local é repetido até três vezes quando um serviço do runtime demora além
+do health check do Supabase CLI.
 
 ```bash
 pnpm db:remote:plan
