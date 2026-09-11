@@ -113,3 +113,64 @@ export async function confirmScheduleCandidateAction(
   revalidatePath("/aluno");
   return { ok: true, message: "Vínculo confirmado e notificação enfileirada." };
 }
+
+export async function correctScheduleAssignmentAction(
+  _previous: ScheduleActionResult | null,
+  formData: FormData,
+): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode corrigir atribuições." };
+  }
+  const parsed = z
+    .object({
+      assignmentId: z.string().uuid(),
+      studentId: z.string().uuid(),
+      dutyDate: z.string().date(),
+      dutyFunction: z.string().trim().min(2).max(200),
+      reason: z.string().trim().min(5).max(500),
+    })
+    .safeParse({
+      assignmentId: formData.get("assignment_id"),
+      studentId: formData.get("student_id"),
+      dutyDate: formData.get("duty_date"),
+      dutyFunction: formData.get("duty_function"),
+      reason: formData.get("reason"),
+    });
+  if (!parsed.success) return { ok: false, message: "Revise os campos e a justificativa." };
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.rpc("schedule_correct_assignment", {
+    p_assignment_id: parsed.data.assignmentId,
+    p_student_id: parsed.data.studentId,
+    p_duty_date: parsed.data.dutyDate,
+    p_duty_function: parsed.data.dutyFunction,
+    p_reason: parsed.data.reason,
+  });
+  if (error) return { ok: false, message: "Não foi possível corrigir esta atribuição." };
+  revalidatePath("/coordenacao/escalas");
+  revalidatePath("/aluno/escalas");
+  revalidatePath("/aluno");
+  return { ok: true, message: "Correção registrada e avisos enfileirados." };
+}
+
+export async function cancelScheduleAssignmentAction(
+  _previous: ScheduleActionResult | null,
+  formData: FormData,
+): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode cancelar atribuições." };
+  }
+  const parsed = z
+    .object({ assignmentId: z.string().uuid(), reason: z.string().trim().min(5).max(500) })
+    .safeParse({ assignmentId: formData.get("assignment_id"), reason: formData.get("reason") });
+  if (!parsed.success) return { ok: false, message: "Informe uma justificativa válida." };
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.rpc("schedule_cancel_assignment", {
+    p_assignment_id: parsed.data.assignmentId,
+    p_reason: parsed.data.reason,
+  });
+  if (error) return { ok: false, message: "Não foi possível cancelar esta atribuição." };
+  revalidatePath("/coordenacao/escalas");
+  revalidatePath("/aluno/escalas");
+  revalidatePath("/aluno");
+  return { ok: true, message: "Atribuição cancelada e aviso enfileirado." };
+}

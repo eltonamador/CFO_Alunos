@@ -55,7 +55,7 @@ try {
   const migrations = (await readdir(migrationDirectory)).sort();
   const selected = migrations.filter((name) => {
     const number = Number(name.slice(0, 4));
-    return (number >= 1 && number <= 12) || number === 14 || (number >= 40 && number <= 44);
+    return (number >= 1 && number <= 12) || number === 14 || (number >= 40 && number <= 45);
   });
   for (const name of selected) {
     await db.exec(await readFile(join(migrationDirectory, name), "utf8"));

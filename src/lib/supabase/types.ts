@@ -3594,6 +3594,10 @@ export type Database = {
         Args: { p_document_id: string };
         Returns: boolean;
       };
+      schedule_cancel_assignment: {
+        Args: { p_assignment_id: string; p_reason: string };
+        Returns: undefined;
+      };
       schedule_claim_notification_event: {
         Args: never;
         Returns: {

@@ -20,6 +20,7 @@ import { ScheduleUploadForm } from "./ScheduleUploadForm";
 import { ScheduleProcessingStatus } from "./ScheduleProcessingStatus";
 import { ScheduleReviewQueue } from "./ScheduleReviewQueue";
 import { UpcomingScheduleAssignments } from "./UpcomingScheduleAssignments";
+import { ScheduleAssignmentManager } from "./ScheduleAssignmentManager";
 
 const publicationLabel: Record<string, string> = {
   reserved: "Aguardando confirmação",
@@ -107,6 +108,7 @@ export async function ScheduleRepositoryPage({
       )}
 
       {canManage && <ScheduleReviewQueue candidates={data.reviewCandidates} />}
+      {canManage && <ScheduleAssignmentManager assignments={data.managedAssignments} />}
       {role === "aluno" && <UpcomingScheduleAssignments assignments={data.assignments} />}
 
       <form

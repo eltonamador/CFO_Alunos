@@ -341,7 +341,39 @@ Pendências:
 
 Próximo passo: Sprint E6, com correção versionada, notificações compensatórias e histórico completo por atribuição.
 
-## 13. Critérios de aceite consolidados
+## 13. Registro da Sprint E6 — correções e histórico
+
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Entregas:
+
+- migration `0045_schedule_assignment_history.sql`, com encerramento automático das atribuições do PDF substituído;
+- avisos compensatórios para os cadetes afetados pela substituição, correção ou cancelamento;
+- correção de cadete, data e função por nova versão, com justificativa obrigatória e vínculo com a versão anterior;
+- cancelamento lógico de atribuição vigente, sem exclusão do registro original;
+- bloqueio de correções e cancelamentos em documentos superados;
+- painel da Coordenação para corrigir ou cancelar atribuições e consultar o histórico preservado;
+- indicação do estado mais recente da notificação associada a cada atribuição;
+- tipos Supabase regenerados a partir do banco local.
+
+Validação executada:
+
+- reset completo do Supabase local com as migrations `0001` a `0045`;
+- 213 testes unitários aprovados e um smoke de OCR opcional;
+- 235 verificações pgTAP aprovadas na suíte integrada;
+- 98 verificações pgTAP no teste isolado do repositório, incluindo substituição, correção, cancelamento, histórico, RLS e notificações compensatórias;
+- lint, typecheck, `git diff --check` e build de produção aprovados.
+
+Pendências:
+
+- validar os textos e o fluxo de correção com a Coordenação em homologação;
+- configurar VAPID e/ou Resend no ambiente implantado para efetivar os canais externos;
+- validar o parser e o histórico com PDFs reais anonimizados;
+- implantar as migrations pendentes somente após autorização explícita.
+
+Próximo passo: Sprint E7, com filtros operacionais no painel de atribuições, indicadores de pendências de notificação e testes de interface do fluxo de correção.
+
+## 14. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.

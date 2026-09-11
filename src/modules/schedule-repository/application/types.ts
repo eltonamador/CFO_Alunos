@@ -25,6 +25,7 @@ export interface ScheduleRepositoryData {
   classes: ScheduleClass[];
   reviewCandidates: ScheduleReviewCandidateView[];
   assignments: ScheduleAssignmentView[];
+  managedAssignments: ScheduleManagedAssignmentView[];
 }
 
 export interface ScheduleStudentOption {
@@ -45,6 +46,15 @@ export interface ScheduleReviewCandidateView extends ScheduleCandidate {
 export interface ScheduleAssignmentView extends ScheduleAssignment {
   schedule_type_name: string;
   document_name: string;
+}
+
+export interface ScheduleManagedAssignmentView extends ScheduleAssignmentView {
+  class_id: string;
+  class_name: string;
+  student_name: string;
+  notification_status: string | null;
+  notification_type: string | null;
+  students: ScheduleStudentOption[];
 }
 
 export interface ScheduleFilters {

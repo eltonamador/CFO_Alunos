@@ -215,6 +215,11 @@ select is(pg_temp.sc_try('coord', $q$
 $q$), 'ok', 'versão substituta é publicada');
 select is((select processing_status from public.schedule_documents where checksum_sha256=repeat('a',64)),
   'superseded', 'versão anterior só é superada após confirmação');
+select is((select count(*)::int from public.schedule_assignments a join public.schedule_documents d
+  on d.id=a.document_id where d.checksum_sha256=repeat('a',64) and a.status='published'), 0,
+  'substituição encerra as atribuições vigentes do PDF anterior');
+select is((select count(*)::int from public.schedule_notification_events where event_type='assignment_cancelled'), 2,
+  'substituição enfileira avisos compensatórios para os afetados');
 select is(pg_temp.sc_service_try($q$
   delete from public.schedule_documents where checksum_sha256=repeat('a',64)
 $q$), '42501', 'nem serviço apaga documento histórico');
@@ -335,6 +340,35 @@ select is(pg_temp.sc_service_try($q$
   select e.id,pg_temp.sc_id('other-class'),e.student_id,'email',repeat('b',64)
   from public.schedule_notification_events e limit 1
 $q$), '23514', 'ledger rejeita documento divergente do evento');
+
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_correct_assignment(
+    (select a.id from public.schedule_assignments a join public.schedule_documents d
+      on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'),
+    pg_temp.sc_id('student2'),date '2099-10-11','Acompanhante do Oficial',
+    'Correção completa da atribuição vigente')
+$q$), 'ok', 'coordenação corrige cadete, data e função em nova versão');
+select is((select count(*)::int from public.schedule_assignments a join public.schedule_documents d
+  on d.id=a.document_id where d.checksum_sha256=repeat('d',64)), 2,
+  'correção conserva a atribuição anterior e cria a sucessora');
+select is((select duty_function from public.schedule_assignments a join public.schedule_documents d
+  on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'),
+  'Acompanhante do Oficial', 'versão vigente contém a função corrigida');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_correct_assignment(
+    (select a.id from public.schedule_assignments a join public.schedule_documents d
+      on d.id=a.document_id where d.checksum_sha256=repeat('a',64) limit 1),
+    pg_temp.sc_id('student1'),date '2099-09-30','Aluno de Dia','Tentativa em documento histórico')
+$q$), '23514', 'atribuição de documento superado não pode ser corrigida');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_cancel_assignment(
+    (select a.id from public.schedule_assignments a join public.schedule_documents d
+      on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'),
+    'Cancelamento operacional justificado')
+$q$), 'ok', 'coordenação cancela a versão vigente com justificativa');
+select is((select count(*)::int from public.schedule_assignments a join public.schedule_documents d
+  on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'), 0,
+  'cancelamento remove a atribuição da visão vigente sem apagar histórico');
 
 select * from finish();
 rollback;

@@ -7,6 +7,7 @@ import type {
   ScheduleDocumentView,
   ScheduleFilters,
   ScheduleRepositoryData,
+  ScheduleManagedAssignmentView,
   ScheduleReviewCandidateView,
   ScheduleStudentOption,
   ScheduleProcessingRun,
@@ -63,6 +64,7 @@ export async function getScheduleRepository(
   let runs: ScheduleProcessingRun[] = [];
   let reviewCounts = new Map<string, number>();
   let reviewCandidates: ScheduleReviewCandidateView[] = [];
+  let managedAssignments: ScheduleManagedAssignmentView[] = [];
   if (session.role === "coordenacao" && documentIds.length) {
     const [runsResponse, candidatesResponse] = await Promise.all([
       supabase
@@ -92,15 +94,7 @@ export async function getScheduleRepository(
       .order("created_at")
       .order("sequence");
     if (pending.error) throw scheduleError(pending.error);
-    const classIds = [
-      ...new Set(
-        (pending.data ?? [])
-          .map(
-            (candidate) => rawDocuments.find((item) => item.id === candidate.document_id)?.class_id,
-          )
-          .filter((id): id is string => Boolean(id)),
-      ),
-    ];
+    const classIds = [...new Set(rawDocuments.map((document) => document.class_id))];
     let students: ScheduleStudentOption[] = [];
     if (classIds.length) {
       const response = await supabase
@@ -122,6 +116,46 @@ export async function getScheduleRepository(
           class_name: classes.find((item) => item.id === document.class_id)?.name ?? "Turma",
           document_name: document.original_filename,
           students: students.filter((student) => student.class_id === document.class_id),
+        },
+      ];
+    });
+
+    const assignmentResponse = await supabase
+      .from("schedule_assignments")
+      .select("*")
+      .in("document_id", documentIds)
+      .order("published_at", { ascending: false });
+    if (assignmentResponse.error) throw scheduleError(assignmentResponse.error);
+    const assignmentIds = (assignmentResponse.data ?? []).map((assignment) => assignment.id);
+    const eventResponse = assignmentIds.length
+      ? await supabase
+          .from("schedule_notification_events")
+          .select("assignment_id,status,event_type,created_at")
+          .in("assignment_id", assignmentIds)
+          .order("created_at", { ascending: false })
+      : { data: [], error: null };
+    if (eventResponse.error) throw scheduleError(eventResponse.error);
+    managedAssignments = (assignmentResponse.data ?? []).flatMap((assignment) => {
+      const document = rawDocuments.find((item) => item.id === assignment.document_id);
+      const student = students.find((item) => item.id === assignment.student_id);
+      if (!document || !student) return [];
+      const latestEvent = (eventResponse.data ?? []).find(
+        (event) => event.assignment_id === assignment.id,
+      );
+      return [
+        {
+          ...assignment,
+          class_id: document.class_id,
+          class_name: classes.find((item) => item.id === document.class_id)?.name ?? "Turma",
+          schedule_type_name:
+            types.find((item) => item.id === document.schedule_type_id)?.name ?? "Escala",
+          document_name: document.original_filename,
+          student_name: student.student_number
+            ? `${String(student.student_number).padStart(2, "0")} · ${student.war_name}`
+            : student.war_name,
+          notification_status: latestEvent?.status ?? null,
+          notification_type: latestEvent?.event_type ?? null,
+          students: students.filter((item) => item.class_id === document.class_id),
         },
       ];
     });
@@ -167,7 +201,7 @@ export async function getScheduleRepository(
       };
     });
   }
-  return { documents, types, classes, reviewCandidates, assignments };
+  return { documents, types, classes, reviewCandidates, assignments, managedAssignments };
 }
 
 export async function getScheduleTypes(): Promise<ScheduleType[]> {
