@@ -1,6 +1,6 @@
 # 11 — Status Atual do Projeto (STATUS_ATUAL.md)
 
-Este documento apresenta o diagnóstico e o estado real do projeto **CFO Alunos** em **24 de Maio de 2026**, após a conclusão com sucesso da primeira fase de saneamento de dados e da auditoria completa do sistema para eliminação de inconsistências.
+Este documento apresenta o diagnóstico e o estado real do projeto **CFO Alunos**, atualizado em **11 de setembro de 2026** após a implantação dos módulos de Gestão Acadêmica e Repositório de Escalas em PDF.
 
 ---
 
@@ -96,10 +96,10 @@ Todas as seguintes verificações foram executadas e passaram com sucesso no amb
 
 ### 4.1 Repositório de Escalas em PDF
 
-Implementado localmente nas migrations `0040`–`0045`, com cadastro de tipos, upload privado, processamento assíncrono, revisão humana, publicação, associação aos cadetes, notificações, correções e histórico. O módulo permanece independente da Escala Operacional existente. A ativação em produção depende da implantação controlada descrita em `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`.
+Implantado em produção pelas migrations `0040`–`0045`, com cadastro de tipos, upload privado, processamento assíncrono, revisão humana, publicação, associação aos cadetes, notificações, correções e histórico. O módulo permanece independente da Escala Operacional existente. No plano Hobby da Vercel, processamento e notificações executam uma vez ao dia, às 03:40 e 03:55 UTC.
 
 ### 4.2 Gestão Acadêmica
 
-O núcleo de disciplinas e notas para CFO I, II e III foi integrado ao `main` local nas migrations `0036`–`0039`. Inclui catálogo normativo, ofertas, responsáveis, matrículas, VCs/VF, frequência consolidada, cálculo parametrizado, situação acadêmica e auditoria. O RI revisado permanece identificado como fonte provisória até confirmação do ato de publicação; divergências de carga horária continuam visíveis e exigem decisão da Coordenação.
+O núcleo de disciplinas e notas para CFO I, II e III foi implantado em produção pelas migrations `0036`–`0039`. Inclui catálogo normativo, ofertas, responsáveis, matrículas, VCs/VF, frequência consolidada, cálculo parametrizado, situação acadêmica e auditoria. O RI revisado permanece identificado como fonte provisória até confirmação do ato de publicação; divergências de carga horária continuam visíveis e exigem decisão da Coordenação.
 
-Em 11 de setembro de 2026, o fluxo local completo aprovou 235 testes pgTAP, 216 testes Vitest e 11 cenários Playwright. A implementação foi integrada ao `main` local em 14 commits. Nenhuma migration nova foi aplicada e nenhum commit foi enviado à produção.
+Em 11 de setembro de 2026, o fluxo local completo aprovou 235 testes pgTAP, 216 testes Vitest e 11 cenários Playwright. O CI nº 51 do commit `987aa6b` passou, as migrations remotas ficaram sincronizadas até `0045` e o deploy da Vercel foi validado por smoke test autenticado da Coordenação. Nenhum dado acadêmico ou PDF fictício foi inserido em produção.

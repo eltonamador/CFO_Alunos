@@ -13,7 +13,7 @@ repositório a outro banco por engano.
 - Colima instalado e configurado como runtime Docker.
 - CI executando reset completo e testes pgTAP em cada pull request e push na `main`.
 - CI rejeitando migrations cujo `src/lib/supabase/types.ts` não tenha sido regenerado.
-- Migrations remotas `0001` a `0035` conferidas; `0036` a `0045` continuam pendentes em produção.
+- Migrations remotas `0001` a `0045` conferidas e sincronizadas em produção em 11/09/2026.
 
 ## Comandos únicos
 

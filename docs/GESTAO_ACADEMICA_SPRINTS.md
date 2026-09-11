@@ -89,6 +89,16 @@ O comando `pnpm db:remote:plan` confirmou o vínculo com `cfo-alunos-prod`, migr
 
 Arquivos alterados neste checkpoint: `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`, `docs/GESTAO_ACADEMICA_SPRINTS.md` e `docs/STATUS_ATUAL.md`. Migrations: nenhuma nova. Pendências para o próximo passo: registrar backup restaurável, conferir os segredos do ambiente de hospedagem, obter autorização explícita para aplicar `0036`–`0045`, publicar a aplicação e validar a oferta piloto CFO1-09/2026.
 
+## Sprint 7 — implantação controlada em produção
+
+Concluída em 11 de setembro de 2026. Antes da mudança foi criado o backup restaurável `backups/predeploy-2026-09-11-academic-0036-0045.tar.gz`, contendo schema, papéis, dados e 131 objetos do Storage, com SHA-256 `d49df29e0c0db328a5e6f5b9dca93a2c4a71e0eeadc6ee1548ffbf131f8731b1`. As migrations `0036`–`0045` foram aplicadas ao projeto confirmado `cfo-alunos-prod`; o plano posterior indicou `upToDate: true`, as 16 tabelas foram encontradas e o catálogo acadêmico registrou os 82 componentes previstos.
+
+O commit `987aa6b` ajustou os dois jobs novos ao limite diário da Vercel Hobby: processamento às 03:40 UTC e notificações às 03:55 UTC. O CI nº 51 passou em 2m54s. A Vercel publicou a versão em produção; a variável manual e incorreta `NODE_ENV=development` foi removida e um redeploy incorporou a configuração automática da plataforma.
+
+O smoke test autenticado da Coordenação aprovou as telas Gestão Acadêmica e Escalas em PDF e todas as requisições observadas retornaram HTTP 200. Nenhuma oferta, nota, matrícula acadêmica ou escala artificial foi gravada no ambiente real.
+
+Arquivos alterados neste checkpoint: `vercel.json`, `docs/GESTAO_ACADEMICA_IMPLANTACAO.md`, `docs/GESTAO_ACADEMICA_SPRINTS.md`, `docs/STATUS_ATUAL.md` e `docs/AUTOMACAO_SUPABASE.md`. Migrations aplicadas: `0036`–`0045`; nenhuma migration nova foi criada. Pendências: homologar os perfis Secretaria, Instrutor e Cadete com contas reais de teste controladas, criar e conferir a oferta piloto CFO1-09/2026 e decidir as divergências normativas registradas antes da liberação das demais ofertas.
+
 ## Inventário final de arquivos
 
 45 arquivos no diff da entrega; os dois arquivos preexistentes de produto alterados são `src/app/sw.ts` e `src/components/app/AppShell.tsx`.

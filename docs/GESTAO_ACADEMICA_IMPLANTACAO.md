@@ -1,6 +1,6 @@
 # Gestão Acadêmica — uso, homologação e implantação
 
-O núcleo foi integrado por avanço direto ao `main` local em 11 de setembro de 2026, trazendo 14 commits de implementação. Nenhum commit foi enviado ao remoto e nenhuma migration foi aplicada ao Supabase de produção. O plano remoto confirmou que a produção contém `0001`–`0035` e que `0036`–`0045` continuam pendentes.
+O núcleo foi integrado ao `main` e implantado em produção em 11 de setembro de 2026. As migrations `0036`–`0045` foram aplicadas ao projeto Supabase `cfo-alunos-prod`, o plano remoto posterior confirmou `0001`–`0045` sincronizadas e o commit `987aa6b` foi publicado na Vercel.
 
 ## O que está entregue
 
@@ -56,7 +56,7 @@ As notas são gravadas pela RPC `academic_save_grade`; política pela `academic_
 
 `src/lib/supabase/types.ts`, gerado do banco, não foi editado. A extensão de tipos está isolada em `academic-management/infrastructure/database.ts`. Após gerar os tipos de uma instância de homologação com o esquema completo, essa extensão pode ser incorporada à geração regular, sem remover os demais módulos.
 
-## Checkpoint de implantação no ambiente real
+## Roteiro de implantação no ambiente real
 
 1. Registrar um backup restaurável do banco e do Storage e anotar o identificador/data da cópia. Não executar `db:reset`, seed de usuários ou scripts de saneamento no ambiente real.
 2. Executar `pnpm db:remote:plan` e confirmar: projeto `cfo-alunos-prod`, migrations remotas até `0035` e apenas `0036`–`0045` pendentes. Interromper se aparecer qualquer diferença.
@@ -69,6 +69,15 @@ As notas são gravadas pela RPC `academic_save_grade`; política pela `academic_
 Rollback operacional: retornar a versão do aplicativo e retirar o acesso ao novo módulo; **conservar as tabelas e a auditoria**. Não apagar registros acadêmicos para desfazer a implantação. Qualquer correção de esquema posterior deve usar nova migration.
 
 No plano Hobby da Vercel, cada cron pode executar no máximo uma vez por dia. Por isso, o processamento de escalas foi configurado para 03:40 UTC e as notificações para 03:55 UTC. Frequência maior exige plano Pro ou migração dos agendamentos para outro executor.
+
+## Implantação executada em 11/09/2026
+
+- Backup anterior à mudança: `backups/predeploy-2026-09-11-academic-0036-0045.tar.gz`, com schema, papéis, dados e 131 objetos do Storage. SHA-256: `d49df29e0c0db328a5e6f5b9dca93a2c4a71e0eeadc6ee1548ffbf131f8731b1`.
+- Migrations `0036`–`0045` aplicadas sem erro. A conferência posterior retornou `upToDate: true`; as 16 tabelas novas foram encontradas e o catálogo acadêmico ficou com 82 componentes.
+- CI do commit `987aa6b`: execução nº 51 concluída com sucesso em 2m54s.
+- Deploy de produção concluído na Vercel. Smoke test autenticado da Coordenação aprovou `/coordenacao/academico` e `/coordenacao/escalas`, incluindo catálogo, turma, tipos de escala e formulários; as requisições observadas retornaram HTTP 200.
+- A variável manual `NODE_ENV=development` foi removida da Vercel. A plataforma define esse valor automaticamente; foi feito novo deploy para eliminar o aviso de configuração.
+- Nenhuma oferta, nota ou escala artificial foi criada no banco real. A oferta piloto CFO1-09/2026 e os testes dos demais perfis permanecem como homologação operacional acompanhada.
 
 ## Testes reproduzíveis
 
@@ -90,7 +99,7 @@ CFO_ACADEMIC_RUNTIME=/private/tmp/cfo-academic-db-runtime node scripts/test-acad
 
 O comando completo de homologação é `pnpm db:local:homologate`. Ele reconstrói o Supabase local com `0001`–`0045`, executa 235 testes pgTAP, regenera os tipos, cria usuários fictícios e roda lint, TypeScript, 216 testes Vitest e 11 cenários Playwright autenticados. O harness PostgreSQL WASM continua disponível para testes isolados, mas não substitui Auth, PostgREST e Storage reais.
 
-O build e toda a homologação foram executados com dados fictícios e serviços locais. Produção não foi consultada pelos testes e permanece sem as migrations novas.
+O build e a homologação automatizada foram executados com dados fictícios e serviços locais. Em produção foram feitos somente a aplicação controlada das migrations, a conferência estrutural e smoke tests de leitura com a sessão da Coordenação; não foram lançadas notas nem publicadas escalas de teste.
 
 ## Pendências reservadas para próximas sprints
 
