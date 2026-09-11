@@ -68,6 +68,8 @@ As notas são gravadas pela RPC `academic_save_grade`; política pela `academic_
 
 Rollback operacional: retornar a versão do aplicativo e retirar o acesso ao novo módulo; **conservar as tabelas e a auditoria**. Não apagar registros acadêmicos para desfazer a implantação. Qualquer correção de esquema posterior deve usar nova migration.
 
+No plano Hobby da Vercel, cada cron pode executar no máximo uma vez por dia. Por isso, o processamento de escalas foi configurado para 03:40 UTC e as notificações para 03:55 UTC. Frequência maior exige plano Pro ou migração dos agendamentos para outro executor.
+
 ## Testes reproduzíveis
 
 No checkout, com as dependências existentes:
