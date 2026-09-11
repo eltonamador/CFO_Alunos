@@ -2,6 +2,8 @@ import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
+import { UpcomingScheduleAssignments } from "@/components/app/schedules/UpcomingScheduleAssignments";
+import { getUpcomingScheduleAssignments } from "@/modules/schedule-repository/infrastructure/queries";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -28,16 +30,13 @@ const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
 
 export default async function AlunoHome() {
   const session = await requireRole("aluno");
+  const scheduleAssignments = await getUpcomingScheduleAssignments();
 
   // Usa war_name e student_number já carregados na sessão
   const warName = session.warName;
   const studentNumber = session.studentNumber;
   const numLabel = studentNumber ? String(studentNumber).padStart(2, "0") : null;
-  const greetingId = warName
-    ? numLabel
-      ? `${warName} — ${numLabel}`
-      : warName
-    : session.fullName;
+  const greetingId = warName ? (numLabel ? `${warName} — ${numLabel}` : warName) : session.fullName;
 
   type ProgressItem = { label: string; value: number };
   type Pendencia = { label: string };
@@ -54,58 +53,65 @@ export default async function AlunoHome() {
     const supabase = createSupabaseServerClient();
 
     // Busca paralela de todos os dados necessários
-    const [studentRes, contactRes, addressRes, healthRes, docsRes, equipStatusRes, equipReqsRes, emergencyRes, logRes, vehRes] =
-      await Promise.all([
-        supabase
-          .from("students")
-          .select("cpf,rg,birth_date,marital_status,mother_name,sex,education_level")
-          .eq("id", session.studentId)
-          .maybeSingle(),
-        supabase
-          .from("student_contacts")
-          .select("whatsapp,email_personal")
-          .eq("student_id", session.studentId)
-          .maybeSingle(),
-        supabase
-          .from("student_addresses")
-          .select("street,city,zip,state")
-          .eq("student_id", session.studentId)
-          .maybeSingle(),
-        supabase
-          .from("health_restrictions")
-          .select("blood_type,rh_factor,id")
-          .eq("student_id", session.studentId)
-          .maybeSingle(),
-        supabase
-          .from("documents")
-          .select("doc_type")
-          .eq("student_id", session.studentId)
-          .neq("status", "recusado"),
-        supabase
-          .from("student_equipment_status")
-          .select("requirement_id,status")
-          .eq("student_id", session.studentId),
-        supabase
-          .from("equipment_requirements")
-          .select("id,phase,mandatory")
-          .eq("active", true),
-        supabase
-          .from("emergency_contacts")
-          .select("id")
-          .eq("student_id", session.studentId)
-          .eq("priority", 1)
-          .maybeSingle(),
-        supabase
-          .from("student_logistics")
-          .select("student_id")
-          .eq("student_id", session.studentId)
-          .maybeSingle(),
-        supabase
-          .from("vehicles")
-          .select("student_id")
-          .eq("student_id", session.studentId)
-          .maybeSingle(),
-      ]);
+    const [
+      studentRes,
+      contactRes,
+      addressRes,
+      healthRes,
+      docsRes,
+      equipStatusRes,
+      equipReqsRes,
+      emergencyRes,
+      logRes,
+      vehRes,
+    ] = await Promise.all([
+      supabase
+        .from("students")
+        .select("cpf,rg,birth_date,marital_status,mother_name,sex,education_level")
+        .eq("id", session.studentId)
+        .maybeSingle(),
+      supabase
+        .from("student_contacts")
+        .select("whatsapp,email_personal")
+        .eq("student_id", session.studentId)
+        .maybeSingle(),
+      supabase
+        .from("student_addresses")
+        .select("street,city,zip,state")
+        .eq("student_id", session.studentId)
+        .maybeSingle(),
+      supabase
+        .from("health_restrictions")
+        .select("blood_type,rh_factor,id")
+        .eq("student_id", session.studentId)
+        .maybeSingle(),
+      supabase
+        .from("documents")
+        .select("doc_type")
+        .eq("student_id", session.studentId)
+        .neq("status", "recusado"),
+      supabase
+        .from("student_equipment_status")
+        .select("requirement_id,status")
+        .eq("student_id", session.studentId),
+      supabase.from("equipment_requirements").select("id,phase,mandatory").eq("active", true),
+      supabase
+        .from("emergency_contacts")
+        .select("id")
+        .eq("student_id", session.studentId)
+        .eq("priority", 1)
+        .maybeSingle(),
+      supabase
+        .from("student_logistics")
+        .select("student_id")
+        .eq("student_id", session.studentId)
+        .maybeSingle(),
+      supabase
+        .from("vehicles")
+        .select("student_id")
+        .eq("student_id", session.studentId)
+        .maybeSingle(),
+    ]);
 
     // ── Cadastro % ──────────────────────────────────────────────────────
     const s = studentRes.data as Record<string, unknown> | null;
@@ -165,9 +171,7 @@ export default async function AlunoHome() {
       DONE_STATUSES.has(statusMap.get(r.id) ?? ""),
     ).length;
     const quarentenaPct =
-      quarentenaReqs.length > 0
-        ? Math.round((quarentenaDone / quarentenaReqs.length) * 100)
-        : 0;
+      quarentenaReqs.length > 0 ? Math.round((quarentenaDone / quarentenaReqs.length) * 100) : 0;
 
     const geralDone = reqs.filter((r) => DONE_STATUSES.has(statusMap.get(r.id) ?? "")).length;
     const geralPct = reqs.length > 0 ? Math.round((geralDone / reqs.length) * 100) : 0;
@@ -200,7 +204,7 @@ export default async function AlunoHome() {
     <div className="space-y-6">
       <header>
         <p className="section-eyebrow">Portal do Aluno</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground uppercase">
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
           {greetingId}
         </h1>
         {!session.studentId && (
@@ -211,6 +215,7 @@ export default async function AlunoHome() {
       </header>
 
       <PendingFollowUpAlert studentId={session.studentId} />
+      <UpcomingScheduleAssignments assignments={scheduleAssignments} />
 
       {/* Barras de progresso */}
       <section className="grid gap-3 sm:grid-cols-2">
@@ -219,7 +224,7 @@ export default async function AlunoHome() {
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-medium">{p.label}</p>
               <p
-                className={`text-sm tabular-nums font-semibold ${
+                className={`text-sm font-semibold tabular-nums ${
                   p.value === 100 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
                 }`}
               >
@@ -255,7 +260,7 @@ export default async function AlunoHome() {
         )}
       </section>
 
-      <PushNotificationControl description="Receba o aviso de FO− e o lembrete do prazo de manifestação mesmo com o app fechado." />
+      <PushNotificationControl description="Receba avisos de escala, de FO− e lembretes de prazo mesmo com o app fechado." />
     </div>
   );
 }

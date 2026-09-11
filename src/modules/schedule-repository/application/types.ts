@@ -3,6 +3,8 @@ import type { Tables } from "@/lib/supabase/types";
 export type ScheduleType = Tables<"schedule_types">;
 export type ScheduleDocument = Tables<"schedule_documents">;
 export type ScheduleProcessingRun = Tables<"schedule_processing_runs">;
+export type ScheduleCandidate = Tables<"schedule_candidates">;
+export type ScheduleAssignment = Tables<"schedule_assignments">;
 
 export interface ScheduleClass {
   id: string;
@@ -21,6 +23,28 @@ export interface ScheduleRepositoryData {
   documents: ScheduleDocumentView[];
   types: ScheduleType[];
   classes: ScheduleClass[];
+  reviewCandidates: ScheduleReviewCandidateView[];
+  assignments: ScheduleAssignmentView[];
+}
+
+export interface ScheduleStudentOption {
+  id: string;
+  class_id: string;
+  student_number: number | null;
+  war_name: string;
+  full_name: string;
+}
+
+export interface ScheduleReviewCandidateView extends ScheduleCandidate {
+  class_id: string;
+  class_name: string;
+  document_name: string;
+  students: ScheduleStudentOption[];
+}
+
+export interface ScheduleAssignmentView extends ScheduleAssignment {
+  schedule_type_name: string;
+  document_name: string;
 }
 
 export interface ScheduleFilters {

@@ -45,7 +45,7 @@ begin
 end $$;
 
 select is((select count(*)::int from pg_tables where schemaname = 'public'
-  and tablename like 'schedule_%' and rowsecurity), 7, 'RLS habilitada nas sete tabelas');
+  and tablename like 'schedule_%' and rowsecurity), 8, 'RLS habilitada nas oito tabelas');
 select is((select count(*)::int from public.schedule_types), 4, 'quatro tipos iniciais cadastrados');
 select ok(not has_table_privilege('anon','public.schedule_documents','select'), 'anon sem acesso aos documentos');
 select ok(not has_table_privilege('authenticated','public.schedule_documents','insert'), 'documento não entra por REST direto');
@@ -280,6 +280,61 @@ select is((select processing_status from public.schedule_documents where checksu
 select is((select count(*)::int from public.schedule_assignments a join public.schedule_documents d
   on d.id=a.document_id where d.checksum_sha256=repeat('d',64) and a.status='published'), 1,
   'vínculo inequívoco gera designação vigente');
+select is(pg_temp.sc_service_try($q$
+  insert into public.schedule_candidates(
+    run_id,document_id,sequence,raw_name,duty_date,duty_function,original_line,
+    match_status,confidence,candidate_student_ids)
+  select r.id,r.document_id,99,'TESTE UM',date '2099-09-20','Aluno de Dia',
+    '20/09/2099 TESTE UM','needs_review',0.75,array[pg_temp.sc_id('student1')]
+  from public.schedule_processing_runs r
+  join public.schedule_documents d on d.id=r.document_id
+  where d.checksum_sha256=repeat('a',64)
+$q$), 'ok', 'fixture cria pendência histórica em versão superada');
+select is(pg_temp.sc_try('coord', $q$
+  select public.schedule_confirm_candidate(
+    (select c.id from public.schedule_candidates c join public.schedule_documents d
+      on d.id=c.document_id where d.checksum_sha256=repeat('a',64) and c.sequence=99),
+    pg_temp.sc_id('student1'),'Tentativa histórica indevida')
+$q$), '23514', 'mesa de revisão não confirma candidato de versão superada');
+
+select ok((select count(*) = 1 from pg_tables where schemaname='public'
+  and tablename='schedule_notification_deliveries'),
+  'ledger de entregas externas foi criado');
+select ok(not has_function_privilege('authenticated','public.schedule_claim_notification_event()','execute'),
+  'claim de notificações é exclusivo do backend');
+select is(pg_temp.sc_service_try($q$
+  select * from public.schedule_claim_notification_event()
+$q$), 'ok', 'worker assume o evento mais antigo');
+select is((select count(*)::int from public.schedule_notification_events where status='processing'), 1,
+  'claim marca somente um evento em processamento');
+select is(pg_temp.sc_service_try($q$
+  select public.schedule_reserve_notification_delivery(
+    (select id from public.schedule_notification_events where status='processing'),
+    'web_push',repeat('a',64))
+$q$), 'ok', 'worker reserva uma entrega por canal e destino');
+select is(pg_temp.sc_service_try($q$
+  select public.schedule_complete_notification_delivery(
+    (select id from public.schedule_notification_deliveries where status='processing'),
+    true,false,'provider-test',null)
+$q$), 'ok', 'worker conclui a entrega externa');
+select is(pg_temp.sc_service_try($q$
+  select public.schedule_finalize_notification_event(
+    (select id from public.schedule_notification_events where status='processing'))
+$q$), 'ok', 'worker finaliza o evento após suas entregas');
+select is((select count(*)::int from public.schedule_notification_events where status='sent'), 1,
+  'evento fica enviado quando ao menos um destino recebeu');
+select is((select count(*)::int from public.schedule_notification_deliveries), 1,
+  'ledger conserva uma única entrega');
+select is(pg_temp.sc_count('coord','select count(*) from public.schedule_notification_deliveries'), 1,
+  'coordenação consulta o ledger de entregas');
+select is(pg_temp.sc_count('aluno1','select count(*) from public.schedule_notification_deliveries'), 0,
+  'cadete não acessa detalhes internos dos canais');
+select is(pg_temp.sc_service_try($q$
+  insert into public.schedule_notification_deliveries(
+    event_id,document_id,student_id,channel,recipient_key)
+  select e.id,pg_temp.sc_id('other-class'),e.student_id,'email',repeat('b',64)
+  from public.schedule_notification_events e limit 1
+$q$), '23514', 'ledger rejeita documento divergente do evento');
 
 select * from finish();
 rollback;

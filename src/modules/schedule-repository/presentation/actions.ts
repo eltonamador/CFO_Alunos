@@ -79,3 +79,37 @@ export async function reprocessScheduleAction(formData: FormData): Promise<void>
   });
   revalidatePath("/coordenacao/escalas");
 }
+
+export async function confirmScheduleCandidateAction(
+  _previous: ScheduleActionResult | null,
+  formData: FormData,
+): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode confirmar vínculos." };
+  }
+  const parsed = z
+    .object({
+      candidateId: z.string().uuid(),
+      studentId: z.string().uuid(),
+      reason: z.string().trim().min(5).max(500),
+    })
+    .safeParse({
+      candidateId: formData.get("candidate_id"),
+      studentId: formData.get("student_id"),
+      reason: formData.get("reason"),
+    });
+  if (!parsed.success) {
+    return { ok: false, message: "Selecione o cadete e informe uma justificativa." };
+  }
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.rpc("schedule_confirm_candidate", {
+    p_candidate_id: parsed.data.candidateId,
+    p_student_id: parsed.data.studentId,
+    p_reason: parsed.data.reason,
+  });
+  if (error) return { ok: false, message: "Não foi possível confirmar este vínculo." };
+  revalidatePath("/coordenacao/escalas");
+  revalidatePath("/aluno/escalas");
+  revalidatePath("/aluno");
+  return { ok: true, message: "Vínculo confirmado e notificação enfileirada." };
+}

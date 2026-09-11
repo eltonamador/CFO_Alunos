@@ -308,7 +308,40 @@ Pendências:
 
 Próximo passo: Sprint E5, com mesa de revisão, painel de atribuições do cadete e entrega idempotente das notificações.
 
-## 12. Critérios de aceite consolidados
+## 12. Registro da Sprint E5 — revisão e notificações
+
+Situação: concluída localmente em 10/09/2026; nada aplicado no Supabase real.
+
+Entregas:
+
+- migration `0044_schedule_review_notifications.sql`, com ledger por evento, canal e destino;
+- claim concorrente e recuperação de notificações interrompidas;
+- reenvio apenas das entregas recuperáveis, preservando canais já concluídos;
+- cancelamento de assinaturas Web Push inválidas e retenção do histórico;
+- mesa de revisão para candidatos ambíguos ou não encontrados, restrita à Coordenação;
+- confirmação manual com seleção limitada aos cadetes da turma e justificativa obrigatória;
+- bloqueio de confirmação para candidatos pertencentes a versões superadas;
+- lista de próximas atribuições na página de escalas e no painel inicial do cadete;
+- mensagens distintas para nova atribuição, correção, destinatário incorreto e cancelamento;
+- job `/api/jobs/schedule-notifications`, protegido por `CRON_SECRET`, com execução periódica independente do parser.
+
+Validação executada:
+
+- 213 testes unitários aprovados e um smoke de OCR local disponível sob demanda;
+- 227 verificações pgTAP aprovadas na suíte integrada;
+- 90 verificações pgTAP no teste isolado do repositório, incluindo RLS, revisão histórica e ledger idempotente;
+- migration aplicada somente no Supabase local e tipos TypeScript regenerados;
+- lint, typecheck e build de produção aprovados.
+
+Pendências:
+
+- validar a mesa de revisão com PDFs reais anonimizados;
+- configurar VAPID e/ou Resend no ambiente implantado para efetivar os canais externos;
+- implementar a interface de correção posterior de destinatário, data e função na Sprint E6.
+
+Próximo passo: Sprint E6, com correção versionada, notificações compensatórias e histórico completo por atribuição.
+
+## 13. Critérios de aceite consolidados
 
 - Tipo de escala criado pela UI, sem deploy.
 - PDF original publicado, retido e disponível para download.

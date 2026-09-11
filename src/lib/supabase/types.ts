@@ -2556,6 +2556,90 @@ export type Database = {
           },
         ];
       };
+      schedule_notification_deliveries: {
+        Row: {
+          attempts: number;
+          channel: string;
+          created_at: string;
+          document_id: string;
+          event_id: string;
+          id: string;
+          last_error: string | null;
+          provider_message_id: string | null;
+          recipient_key: string;
+          sent_at: string | null;
+          status: string;
+          student_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          channel: string;
+          created_at?: string;
+          document_id: string;
+          event_id: string;
+          id?: string;
+          last_error?: string | null;
+          provider_message_id?: string | null;
+          recipient_key: string;
+          sent_at?: string | null;
+          status?: string;
+          student_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          channel?: string;
+          created_at?: string;
+          document_id?: string;
+          event_id?: string;
+          id?: string;
+          last_error?: string | null;
+          provider_message_id?: string | null;
+          recipient_key?: string;
+          sent_at?: string | null;
+          status?: string;
+          student_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedule_notification_deliveries_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "schedule_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_notification_deliveries_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "schedule_notification_events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_notification_deliveries_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_notification_deliveries_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_notification_deliveries_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       schedule_notification_events: {
         Row: {
           assignment_id: string;
@@ -3510,6 +3594,19 @@ export type Database = {
         Args: { p_document_id: string };
         Returns: boolean;
       };
+      schedule_claim_notification_event: {
+        Args: never;
+        Returns: {
+          duty_date: string;
+          duty_function: string;
+          event_id: string;
+          event_type: string;
+          idempotency_key: string;
+          original_filename: string;
+          schedule_type_name: string;
+          student_id: string;
+        }[];
+      };
       schedule_claim_processing_run: {
         Args: { p_parser_revision: string };
         Returns: {
@@ -3522,6 +3619,16 @@ export type Database = {
           schedule_type_name: string;
           storage_path: string;
         }[];
+      };
+      schedule_complete_notification_delivery: {
+        Args: {
+          p_delivery_id: string;
+          p_error_message?: string;
+          p_permanent?: boolean;
+          p_provider_message_id?: string;
+          p_sent: boolean;
+        };
+        Returns: undefined;
       };
       schedule_complete_processing_run: {
         Args: {
@@ -3602,6 +3709,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      schedule_finalize_notification_event: {
+        Args: { p_event_id: string };
+        Returns: string;
+      };
       schedule_publish_auto_candidate: {
         Args: { p_candidate_id: string };
         Returns: string;
@@ -3644,6 +3755,10 @@ export type Database = {
       };
       schedule_request_reprocess: {
         Args: { p_document_id: string; p_method?: string };
+        Returns: string;
+      };
+      schedule_reserve_notification_delivery: {
+        Args: { p_channel: string; p_event_id: string; p_recipient_key: string };
         Returns: string;
       };
       submit_follow_up_manifestation: {

@@ -12,6 +12,10 @@
     {
       "path": "/api/jobs/schedule-processing",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/jobs/schedule-notifications",
+      "schedule": "5,15,25,35,45,55 * * * *"
     }
   ]
 }

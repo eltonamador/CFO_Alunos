@@ -2,10 +2,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import type {
   ScheduleClass,
+  ScheduleAssignmentView,
   ScheduleDocument,
   ScheduleDocumentView,
   ScheduleFilters,
   ScheduleRepositoryData,
+  ScheduleReviewCandidateView,
+  ScheduleStudentOption,
   ScheduleProcessingRun,
   ScheduleType,
 } from "../application/types";
@@ -59,6 +62,7 @@ export async function getScheduleRepository(
   const documentIds = rawDocuments.map((document) => document.id);
   let runs: ScheduleProcessingRun[] = [];
   let reviewCounts = new Map<string, number>();
+  let reviewCandidates: ScheduleReviewCandidateView[] = [];
   if (session.role === "coordenacao" && documentIds.length) {
     const [runsResponse, candidatesResponse] = await Promise.all([
       supabase
@@ -79,6 +83,48 @@ export async function getScheduleRepository(
       counts.set(candidate.document_id, (counts.get(candidate.document_id) ?? 0) + 1);
       return counts;
     }, new Map<string, number>());
+
+    const pending = await supabase
+      .from("schedule_candidates")
+      .select("*")
+      .in("document_id", documentIds)
+      .in("match_status", ["needs_review", "not_found"])
+      .order("created_at")
+      .order("sequence");
+    if (pending.error) throw scheduleError(pending.error);
+    const classIds = [
+      ...new Set(
+        (pending.data ?? [])
+          .map(
+            (candidate) => rawDocuments.find((item) => item.id === candidate.document_id)?.class_id,
+          )
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    let students: ScheduleStudentOption[] = [];
+    if (classIds.length) {
+      const response = await supabase
+        .from("students")
+        .select("id,class_id,student_number,war_name,full_name")
+        .in("class_id", classIds)
+        .is("deleted_at", null)
+        .order("student_number");
+      if (response.error) throw scheduleError(response.error);
+      students = response.data ?? [];
+    }
+    reviewCandidates = (pending.data ?? []).flatMap((candidate) => {
+      const document = rawDocuments.find((item) => item.id === candidate.document_id);
+      if (!document || document.processing_status === "superseded") return [];
+      return [
+        {
+          ...candidate,
+          class_id: document.class_id,
+          class_name: classes.find((item) => item.id === document.class_id)?.name ?? "Turma",
+          document_name: document.original_filename,
+          students: students.filter((student) => student.class_id === document.class_id),
+        },
+      ];
+    });
   }
   const documents: ScheduleDocumentView[] = await Promise.all(
     rawDocuments.map(async (document) => {
@@ -100,7 +146,28 @@ export async function getScheduleRepository(
       };
     }),
   );
-  return { documents, types, classes };
+  let assignments: ScheduleAssignmentView[] = [];
+  if (session.role === "aluno") {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Belem" });
+    const response = await supabase
+      .from("schedule_assignments")
+      .select("*")
+      .eq("status", "published")
+      .gte("duty_date", today)
+      .order("duty_date")
+      .order("published_at");
+    if (response.error) throw scheduleError(response.error);
+    assignments = (response.data ?? []).map((assignment) => {
+      const document = rawDocuments.find((item) => item.id === assignment.document_id);
+      const type = types.find((item) => item.id === document?.schedule_type_id);
+      return {
+        ...assignment,
+        schedule_type_name: type?.name ?? "Escala",
+        document_name: document?.original_filename ?? "Documento oficial",
+      };
+    });
+  }
+  return { documents, types, classes, reviewCandidates, assignments };
 }
 
 export async function getScheduleTypes(): Promise<ScheduleType[]> {
@@ -112,4 +179,41 @@ export async function getScheduleTypes(): Promise<ScheduleType[]> {
     .order("name");
   if (error) throw scheduleError(error);
   return (data ?? []) as ScheduleType[];
+}
+
+export async function getUpcomingScheduleAssignments(limit = 6): Promise<ScheduleAssignmentView[]> {
+  const session = await getSession();
+  if (!session?.active || session.isFirstAccess || session.role !== "aluno" || !session.studentId) {
+    return [];
+  }
+  const supabase = createSupabaseServerClient();
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Belem" });
+  const assignments = await supabase
+    .from("schedule_assignments")
+    .select("*")
+    .eq("status", "published")
+    .gte("duty_date", today)
+    .order("duty_date")
+    .limit(limit);
+  if (assignments.error || !assignments.data?.length) return [];
+  const documentIds = [...new Set(assignments.data.map((item) => item.document_id))];
+  const documents = await supabase
+    .from("schedule_documents")
+    .select("id,schedule_type_id,original_filename")
+    .in("id", documentIds);
+  if (documents.error) return [];
+  const typeIds = [...new Set((documents.data ?? []).map((item) => item.schedule_type_id))];
+  const types = typeIds.length
+    ? await supabase.from("schedule_types").select("id,name").in("id", typeIds)
+    : { data: [], error: null };
+  if (types.error) return [];
+  return assignments.data.map((assignment) => {
+    const document = (documents.data ?? []).find((item) => item.id === assignment.document_id);
+    return {
+      ...assignment,
+      schedule_type_name:
+        (types.data ?? []).find((item) => item.id === document?.schedule_type_id)?.name ?? "Escala",
+      document_name: document?.original_filename ?? "Documento oficial",
+    };
+  });
 }
