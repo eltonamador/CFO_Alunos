@@ -10,6 +10,7 @@ export interface DutyRosterEntry {
 export interface DutyOverview {
   today: string;
   tomorrow: string;
+  firstGroup: DutyRosterEntry["kind"];
   entries: DutyRosterEntry[];
   unavailable: boolean;
   userId?: string;

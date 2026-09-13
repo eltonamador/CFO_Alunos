@@ -14,7 +14,7 @@ const shiftLabel: Record<string, string> = {
 
 export async function getDutyOverview(): Promise<DutyOverview> {
   const window = dutyWindow();
-  const empty: DutyOverview = { ...window, entries: [], unavailable: false };
+  const empty: DutyOverview = { ...window, firstGroup: "cadet", entries: [], unavailable: false };
   const session = await getSession();
   if (!session?.active || session.isFirstAccess) return { ...empty, unavailable: true };
 
@@ -60,6 +60,7 @@ export async function getDutyOverview(): Promise<DutyOverview> {
   const byId = new Map((students.data ?? []).map((student) => [student.id, student]));
   return {
     ...window,
+    firstGroup: session.role === "aluno" ? "cadet" : "officer",
     userId: session.userId,
     updatedAt: new Date().toISOString(),
     unavailable: false,

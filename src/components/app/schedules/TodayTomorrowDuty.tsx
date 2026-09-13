@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Siren } from "lucide-react";
-import type {
-  DutyOverview,
-  DutyRosterEntry,
-} from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import type { DutyOverview, DutyRosterEntry } from "@/modules/schedule-repository/domain/roster";
+import { sortCadetDuties } from "@/modules/schedule-repository/domain/dutyOrder";
 import { SaveOfflineRoster } from "./OfflineRosterSession";
 
 function dateLabel(value: string) {
@@ -19,11 +17,15 @@ function DayCard({
   title,
   date,
   entries,
+  firstGroup,
 }: {
   title: string;
   date: string;
   entries: DutyRosterEntry[];
+  firstGroup: DutyRosterEntry["kind"];
 }) {
+  const groups: DutyRosterEntry["kind"][] =
+    firstGroup === "officer" ? ["officer", "cadet"] : ["cadet", "officer"];
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-card-sm">
       <div className="flex items-center gap-2">
@@ -33,16 +35,17 @@ function DayCard({
       </div>
       {entries.length ? (
         <div className="mt-3 space-y-4">
-          {(["cadet", "officer"] as const).map((kind) => {
+          {groups.map((kind) => {
             const group = entries.filter((entry) => entry.kind === kind);
             if (!group.length) return null;
+            const orderedGroup = kind === "cadet" ? sortCadetDuties(group) : group;
             return (
               <div key={kind}>
                 <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   {kind === "cadet" ? "Cadetes" : "Oficiais e coordenação"}
                 </h4>
                 <ul className="mt-1 divide-y divide-border">
-                  {group.map((entry) => (
+                  {orderedGroup.map((entry) => (
                     <li
                       key={entry.id}
                       className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm"
@@ -150,8 +153,18 @@ export function TodayTomorrowDuty({
         </p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          <DayCard title="Hoje" date={overview.today} entries={today} />
-          <DayCard title="Amanhã" date={overview.tomorrow} entries={tomorrow} />
+          <DayCard
+            title="Hoje"
+            date={overview.today}
+            entries={today}
+            firstGroup={overview.firstGroup}
+          />
+          <DayCard
+            title="Amanhã"
+            date={overview.tomorrow}
+            entries={tomorrow}
+            firstGroup={overview.firstGroup}
+          />
         </div>
       )}
     </section>

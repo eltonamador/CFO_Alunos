@@ -56,6 +56,7 @@ describe("consulta compartilhada do painel", () => {
     session.mockResolvedValue({ role, userId: "viewer", studentId: role === "aluno" ? "a" : null, active: true, isFirstAccess: false });
     const result = await getDutyOverview();
     expect(result.unavailable).toBe(false);
+    expect(result.firstGroup).toBe(role === "aluno" ? "cadet" : "officer");
     expect(result.entries.map((entry) => entry.id).sort()).toEqual(["current", "own", "peer"]);
     expect(result.entries.find((entry) => entry.id === "own")).toMatchObject({
       kind: "cadet", person: "GIOVANNA — 13", mine: role === "aluno", duty: "Dia ao 1º Ano · 1º turno",
