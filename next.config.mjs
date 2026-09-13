@@ -16,7 +16,9 @@ const nextConfig = {
     typedRoutes: true,
     serverComponentsExternalPackages: ["pdfkit", "unpdf", "pdfjs-dist"],
     outputFileTracingIncludes: {
-      "/api/jobs/schedule-processing": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
+      "/api/jobs/schedule-processing": [
+        "./src/modules/schedule-repository/infrastructure/pdf.worker.min.mjs",
+      ],
     },
     serverActions: {
       bodySizeLimit: "11mb", // documentos até 10 MB + overhead multipart

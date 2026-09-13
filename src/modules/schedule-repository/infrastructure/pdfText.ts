@@ -3,6 +3,7 @@ import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { pathToFileURL } from "node:url";
 import { configureUnPDF, extractText, getDocumentProxy } from "unpdf";
 
 const execFileAsync = promisify(execFile);
@@ -11,7 +12,15 @@ let pdfConfigured = false;
 
 export async function ensurePdfRuntime() {
   if (pdfConfigured) return;
-  await configureUnPDF({ pdfjs: () => import("pdfjs-dist/legacy/build/pdf.mjs") });
+  await configureUnPDF({
+    pdfjs: async () => {
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(
+        join(process.cwd(), "src/modules/schedule-repository/infrastructure/pdf.worker.min.mjs"),
+      ).href;
+      return pdfjs;
+    },
+  });
   pdfConfigured = true;
 }
 
