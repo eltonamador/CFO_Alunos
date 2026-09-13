@@ -15,8 +15,14 @@ import {
   ScheduleRepositoryError,
 } from "@/modules/schedule-repository/infrastructure/queries";
 import { cn } from "@/lib/utils";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ScheduleFinalizeButton } from "./ScheduleFinalizeButton";
 import { ScheduleUploadForm } from "./ScheduleUploadForm";
+import { ScheduleImportForm } from "./ScheduleImportForm";
+import type {
+  ImportStudent,
+  ImportOfficer,
+} from "@/modules/schedule-repository/domain/importPreview";
 import { ScheduleProcessingStatus } from "./ScheduleProcessingStatus";
 import { ScheduleReviewQueue } from "./ScheduleReviewQueue";
 import { UpcomingScheduleAssignments } from "./UpcomingScheduleAssignments";
@@ -68,12 +74,48 @@ export async function ScheduleRepositoryPage({
     );
   }
   const canManage = role === "coordenacao";
+  let importStudents: ImportStudent[] = [],
+    importOfficers: ImportOfficer[] = [];
+  if (canManage) {
+    const client = createSupabaseServerClient();
+    const [students, officers] = await Promise.all([
+      client
+        .from("students")
+        .select("id,class_id,student_number,war_name,full_name,enrollment_id")
+        .is("deleted_at", null)
+        .eq("course_status", "matriculado")
+        .order("student_number"),
+      client
+        .from("cfo_coordination_members")
+        .select("service_alias,profile_id,registration")
+        .eq("active", true),
+    ]);
+    importStudents = (students.data ?? []).map((student) => ({
+      id: student.id,
+      classId: student.class_id,
+      studentNumber: student.student_number,
+      warName: student.war_name,
+      fullName: student.full_name,
+      registration: student.enrollment_id,
+    }));
+    importOfficers = (officers.data ?? []).flatMap((officer) =>
+      officer.service_alias
+        ? [
+            {
+              person: officer.service_alias,
+              profileId: officer.profile_id,
+              registration: officer.registration,
+            },
+          ]
+        : [],
+    );
+  }
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <SectionEyebrow>Repositório institucional</SectionEyebrow>
-          <h1 className="font-display text-2xl font-bold">Escalas em PDF</h1>
+          <h1 className="font-display text-2xl font-bold">Escalas e publicações</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Publicações oficiais preservadas por turma, tipo e período de vigência.
           </p>
@@ -88,6 +130,12 @@ export async function ScheduleRepositoryPage({
           </Link>
         )}
       </header>
+      <Link
+        href="/escalas/calendario"
+        className="inline-block text-sm font-semibold text-primary underline"
+      >
+        Abrir calendário semanal e mensal
+      </Link>
 
       {canManage && (
         <details
@@ -98,11 +146,25 @@ export async function ScheduleRepositoryPage({
             Publicar nova escala
           </summary>
           <div className="mt-4">
-            <ScheduleUploadForm
+            <ScheduleImportForm
               classes={data.classes}
               types={data.types}
               documents={data.documents}
+              students={importStudents}
+              officers={importOfficers}
             />
+            <details className="mt-6 border-t border-border pt-4">
+              <summary className="cursor-pointer text-sm text-muted-foreground">
+                Envio de PDF para processamento automático
+              </summary>
+              <div className="mt-4">
+                <ScheduleUploadForm
+                  classes={data.classes}
+                  types={data.types}
+                  documents={data.documents}
+                />
+              </div>
+            </details>
           </div>
         </details>
       )}

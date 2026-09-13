@@ -10,6 +10,7 @@ import {
   sendTransactionalEmail,
 } from "@/modules/notifications/infrastructure/send";
 import { scheduleNotificationContent } from "../application/notifications";
+import type { ScheduleDatabase } from "./extendedDatabase";
 
 interface ClaimedNotification {
   event_id: string;
@@ -83,12 +84,17 @@ async function complete(
   if (error) throw new Error(`Falha ao concluir entrega: ${error.message}`);
 }
 
-export async function dispatchNextScheduleNotification() {
+export async function dispatchNextScheduleNotification(documentId?: string) {
   const push = pushConfig();
   const email = emailConfig();
   if (!push && !email) return null;
   const client = createSupabaseAdminClient();
-  const claim = await client.rpc("schedule_claim_notification_event");
+  const claim = documentId
+    ? await (client as SupabaseClient<ScheduleDatabase>).rpc(
+        "schedule_claim_document_notification",
+        { p_document_id: documentId },
+      )
+    : await client.rpc("schedule_claim_notification_event");
   if (claim.error) throw new Error(`Falha ao obter notificação: ${claim.error.message}`);
   const event = (claim.data?.[0] ?? null) as ClaimedNotification | null;
   if (!event) return null;

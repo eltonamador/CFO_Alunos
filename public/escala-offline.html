@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#172a3a" />
+    <title>Consulta salva · CFO Alunos</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f7f6f2;
+        color: #172a3a;
+        font:
+          16px/1.5 system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      main {
+        max-width: 780px;
+        margin: auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 26px;
+        line-height: 1.2;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      p {
+        margin: 12px 0;
+      }
+      .notice {
+        background: #fff1cb;
+        border: 1px solid #d6aa3d;
+        padding: 16px;
+        border-radius: 12px;
+      }
+      .card {
+        background: white;
+        border: 1px solid #d8d7ce;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      .muted {
+        font-size: 14px;
+        color: #52616a;
+      }
+      button,
+      a,
+      select {
+        font: inherit;
+      }
+      button,
+      .button {
+        display: inline-block;
+        border: 1px solid #74838e;
+        background: white;
+        color: #172a3a;
+        border-radius: 8px;
+        padding: 12px;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      a {
+        color: #135484;
+      }
+      select {
+        padding: 10px;
+        max-width: 100%;
+        border: 1px solid #74838e;
+        border-radius: 8px;
+        background: white;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        padding: 10px 0;
+        border-top: 1px solid #ecece6;
+      }
+      li:first-child {
+        border: 0;
+      }
+      .mine {
+        color: #9f320d;
+        font-weight: bold;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="muted">CFO ALUNOS · CONSULTA SEM INTERNET</p>
+      <h1>Escala salva no aparelho</h1>
+      <div class="notice">
+        Esta cópia pode estar desatualizada. Ao recuperar a conexão, abra o sistema para verificar
+        alterações e cancelamentos.
+      </div>
+      <p id="status" role="status">Lendo a última consulta salva…</p>
+      <label id="filter-label" hidden
+        >Mostrar
+        <select id="filter">
+          <option value="todos">Todos</option>
+          <option value="minhas">Minhas escalas</option>
+          <option value="cadetes">Cadetes</option>
+          <option value="oficiais">Oficiais</option>
+        </select></label
+      >
+      <div id="roster"></div>
+      <div class="actions">
+        <a class="button" href="/escalas/calendario">Tentar atualizar no sistema</a
+        ><button id="clear" type="button">Apagar consulta salva</button>
+      </div>
+      <p class="muted">
+        A consulta é armazenada por até 7 dias e removida ao sair da conta. O primeiro acesso
+        precisa de internet.
+      </p>
+      <noscript
+        >Ative o JavaScript para visualizar a consulta salva ou abra o sistema com
+        conexão.</noscript
+      >
+    </main>
+    <script>
+      (function () {
+        var key = "cfo:roster:v1",
+          ownerKey = "cfo:roster:owner",
+          saved = null;
+        var status = document.getElementById("status"),
+          roster = document.getElementById("roster"),
+          filter = document.getElementById("filter");
+        function clear() {
+          try {
+            localStorage.removeItem(key);
+            localStorage.removeItem(ownerKey);
+          } catch (error) {}
+          saved = null;
+          roster.textContent = "";
+          document.getElementById("filter-label").hidden = true;
+          status.textContent =
+            "Nenhuma consulta salva. Entre no sistema com conexão e abra o painel ou calendário.";
+        }
+        function render() {
+          roster.textContent = "";
+          if (!saved) return;
+          var groups = {};
+          saved.entries.forEach(function (entry) {
+            if (
+              !entry ||
+              typeof entry.date !== "string" ||
+              typeof entry.person !== "string" ||
+              typeof entry.duty !== "string"
+            )
+              return;
+            if (
+              (filter.value === "minhas" && !entry.mine) ||
+              (filter.value === "cadetes" && entry.kind !== "cadet") ||
+              (filter.value === "oficiais" && entry.kind !== "officer")
+            )
+              return;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) return;
+            (groups[entry.date] = groups[entry.date] || []).push(entry);
+          });
+          var dates = Object.keys(groups).sort();
+          if (!dates.length) {
+            var empty = document.createElement("p");
+            empty.textContent = "Nenhuma atribuição salva para este filtro.";
+            roster.appendChild(empty);
+          }
+          dates.forEach(function (date) {
+            var card = document.createElement("section");
+            card.className = "card";
+            var heading = document.createElement("h2");
+            heading.textContent = new Date(date + "T12:00:00Z").toLocaleDateString("pt-BR", {
+              weekday: "long",
+              day: "2-digit",
+              month: "2-digit",
+              timeZone: "UTC",
+            });
+            card.appendChild(heading);
+            var list = document.createElement("ul");
+            groups[date].forEach(function (entry) {
+              var item = document.createElement("li"),
+                person = document.createElement("strong"),
+                duty = document.createElement("div");
+              person.textContent = entry.person + (entry.mine ? " · Você" : "");
+              if (entry.mine) person.className = "mine";
+              duty.textContent = entry.duty;
+              duty.className = "muted";
+              item.appendChild(person);
+              item.appendChild(duty);
+              list.appendChild(item);
+            });
+            card.appendChild(list);
+            roster.appendChild(card);
+          });
+        }
+        try {
+          saved = JSON.parse(localStorage.getItem(key) || "null");
+          if (
+            !saved ||
+            saved.version !== 1 ||
+            saved.userId !== localStorage.getItem(ownerKey) ||
+            !Array.isArray(saved.entries) ||
+            !isFinite(Date.parse(saved.savedAt)) ||
+            Date.now() - Date.parse(saved.savedAt) > 7 * 86400000 ||
+            Date.parse(saved.savedAt) > Date.now() + 60000
+          )
+            clear();
+          else {
+            status.textContent =
+              "Última atualização: " +
+              new Date(saved.savedAt).toLocaleString("pt-BR", { timeZone: "America/Belem" }) +
+              " (Macapá). Período: " +
+              saved.start.split("-").reverse().join("/") +
+              " a " +
+              saved.end.split("-").reverse().join("/") +
+              ".";
+            document.getElementById("filter-label").hidden = false;
+            render();
+          }
+        } catch (error) {
+          clear();
+        }
+        filter.addEventListener("change", render);
+        document.getElementById("clear").addEventListener("click", clear);
+        window.addEventListener("storage", function (event) {
+          if (event.key === key || event.key === ownerKey) window.location.reload();
+        });
+      })();
+    </script>
+  </body>
+</html>

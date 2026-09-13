@@ -16,7 +16,7 @@ import {
   Info,
   type LucideIcon,
 } from "lucide-react";
-import { logoutAction } from "@/modules/identity/presentation/actions/authActions";
+import { logoutWithCleanup as logoutAction } from "@/modules/schedule-repository/presentation/logoutWithCleanup";
 import type { SessionProfile } from "@/modules/identity/presentation/session";
 import { Button } from "@/components/ui/Button";
 import { NavLink } from "@/components/app/NavLink";

@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { getSession } from "@/modules/identity/presentation/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BirthdayBanner } from "@/components/app/BirthdayBanner";
+import { OfflineRosterSession } from "@/components/app/schedules/OfflineRosterSession";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
@@ -12,7 +13,9 @@ async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
       supabase.from("announcements").select("id").eq("status", "publicado"),
       supabase.from("announcement_reads").select("announcement_id").eq("student_id", studentId),
     ]);
-    const readSet = new Set((readIds ?? []).map((r: { announcement_id: string }) => r.announcement_id));
+    const readSet = new Set(
+      (readIds ?? []).map((r: { announcement_id: string }) => r.announcement_id),
+    );
     return (allIds ?? []).filter((a: { id: string }) => !readSet.has(a.id)).length;
   } catch {
     return 0;
@@ -23,15 +26,10 @@ async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
  * Badge do menu: para o cadete, FO− aguardando manifestação; para a
  * Coordenação, registros que dependem de decisão.
  */
-async function getPendingFollowUpsCount(
-  role: string,
-  studentId: string | null,
-): Promise<number> {
+async function getPendingFollowUpsCount(role: string, studentId: string | null): Promise<number> {
   try {
     const supabase = createSupabaseServerClient();
-    let query = supabase
-      .from("follow_up_records")
-      .select("id", { count: "exact", head: true });
+    let query = supabase.from("follow_up_records").select("id", { count: "exact", head: true });
 
     if (role === "aluno") {
       if (!studentId) return 0;
@@ -71,6 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       pendingFollowUps={pendingFollowUps}
     >
       <BirthdayBanner alerts={birthdayAlerts} />
+      <OfflineRosterSession userId={session.userId} />
       {children}
     </AppShell>
   );

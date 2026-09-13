@@ -1,15 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { dutyWindow } from "../domain/dutyWindow";
-
-export interface DutyRosterEntry {
-  id: string;
-  kind: "cadet" | "officer";
-  date: string;
-  person: string;
-  duty: string;
-  mine: boolean;
-}
+import type { DutyOverview } from "../domain/roster";
+export type { DutyOverview, DutyRosterEntry } from "../domain/roster";
 
 const shiftLabel: Record<string, string> = {
   manha: "Manhã",
@@ -18,13 +11,6 @@ const shiftLabel: Record<string, string> = {
   diurno: "Diurno",
   noturno: "Noturno",
 };
-
-export interface DutyOverview {
-  today: string;
-  tomorrow: string;
-  entries: DutyRosterEntry[];
-  unavailable: boolean;
-}
 
 export async function getDutyOverview(): Promise<DutyOverview> {
   const window = dutyWindow();
@@ -44,7 +30,9 @@ export async function getDutyOverview(): Promise<DutyOverview> {
       .order("published_at"),
     supabase
       .from("schedule_officer_assignments")
-      .select("id,profile_id,display_name,duty_date,duty_function,shift,starts_at,ends_at,schedule_documents!inner(publication_status,processing_status)")
+      .select(
+        "id,profile_id,display_name,duty_date,duty_function,shift,starts_at,ends_at,schedule_documents!inner(publication_status,processing_status)",
+      )
       .eq("schedule_documents.publication_status", "published")
       .neq("schedule_documents.processing_status", "superseded")
       .gte("duty_date", window.today)
@@ -72,27 +60,35 @@ export async function getDutyOverview(): Promise<DutyOverview> {
   const byId = new Map((students.data ?? []).map((student) => [student.id, student]));
   return {
     ...window,
+    userId: session.userId,
+    updatedAt: new Date().toISOString(),
     unavailable: false,
-    entries: [...(assignments.data ?? []).flatMap((entry) => {
-      const student = byId.get(entry.student_id);
-      if (!student || !entry.duty_date) return [];
-      return [{
+    entries: [
+      ...(assignments.data ?? []).flatMap((entry) => {
+        const student = byId.get(entry.student_id);
+        if (!student || !entry.duty_date) return [];
+        return [
+          {
+            id: entry.id,
+            kind: "cadet" as const,
+            date: entry.duty_date,
+            person:
+              student.student_number == null
+                ? (student.war_name ?? "Cadete")
+                : `${student.war_name ?? "Cadete"} — ${String(student.student_number).padStart(2, "0")}`,
+            duty: entry.duty_function?.trim() || "Serviço de escala",
+            mine: session.studentId === entry.student_id,
+          },
+        ];
+      }),
+      ...(officers.data ?? []).map((entry) => ({
         id: entry.id,
-        kind: "cadet" as const,
+        kind: "officer" as const,
         date: entry.duty_date,
-        person: student.student_number == null
-          ? student.war_name ?? "Cadete"
-          : `${student.war_name ?? "Cadete"} — ${String(student.student_number).padStart(2, "0")}`,
-        duty: entry.duty_function?.trim() || "Serviço de escala",
-        mine: session.studentId === entry.student_id,
-      }];
-    }), ...(officers.data ?? []).map((entry) => ({
-      id: entry.id,
-      kind: "officer" as const,
-      date: entry.duty_date,
-      person: entry.display_name,
-      duty: `${entry.duty_function} · ${shiftLabel[entry.shift] ?? entry.shift} ${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`,
-      mine: entry.profile_id === session.userId,
-    }))].sort((a, b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person)),
+        person: entry.display_name,
+        duty: `${entry.duty_function} · ${shiftLabel[entry.shift] ?? entry.shift} ${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`,
+        mine: entry.profile_id === session.userId,
+      })),
+    ].sort((a, b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person)),
   };
 }

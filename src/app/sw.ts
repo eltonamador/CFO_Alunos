@@ -84,6 +84,17 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
+      // Dados autenticados ficam somente na cópia operacional explícita. HTML
+      // antigo e respostas RSC de outra sessão nunca são usados como fallback.
+      matcher: ({ url, request }) =>
+        url.origin === self.location.origin &&
+        (request.mode === "navigate" ||
+          request.destination === "document" ||
+          request.headers.get("RSC") === "1" ||
+          url.pathname.startsWith("/api/")),
+      handler: new NetworkOnly({ networkTimeoutSeconds: 8 }),
+    },
+    {
       matcher: ({ url }) =>
         url.origin === self.location.origin &&
         /\/(?:coordenacao|secretaria|instrutor|aluno)\/academico(?:\/|$)/.test(url.pathname),
@@ -94,11 +105,22 @@ const serwist = new Serwist({
   fallbacks: {
     entries: [
       {
-        url: "/offline",
+        url: "/escala-offline.html",
         matcher: ({ request }) => request.destination === "document",
       },
     ],
   },
+});
+
+// Remove páginas de sessões anteriores criadas pela configuração antiga.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    Promise.all(
+      ["pages", "pages-rsc", "pages-rsc-prefetch", "start-url", "others", "apis", "next-data"].map(
+        (name) => caches.delete(name),
+      ),
+    ),
+  );
 });
 
 serwist.addEventListeners();

@@ -25,6 +25,7 @@ export async function sendPushNotification(
   target: PushTarget,
   content: NotificationContent,
   config: WebPushConfig,
+  options: { ttlSeconds?: number } = {},
 ): Promise<NotificationSendResult> {
   try {
     await webPush.sendNotification(
@@ -44,8 +45,9 @@ export async function sendPushNotification(
           publicKey: config.publicKey,
           privateKey: config.privateKey,
         },
-        TTL: 60 * 60 * 24,
+        TTL: options.ttlSeconds ?? 60 * 60 * 24,
         urgency: "normal",
+        timeout: 10_000,
       },
     );
     return { ok: true };
