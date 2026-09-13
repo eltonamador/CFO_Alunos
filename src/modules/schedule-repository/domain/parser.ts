@@ -1,4 +1,4 @@
-export const SCHEDULE_PARSER_REVISION = "schedule-parser/1.0.0";
+export const SCHEDULE_PARSER_REVISION = "schedule-parser/1.1.0";
 
 export interface ScheduleCadetIdentity {
   id: string;
@@ -96,7 +96,11 @@ export function parseScheduleText(
 
     const uniqueIds = [...new Set(matched.map((cadet) => cadet.id))];
     const exact = uniqueIds.length === 1;
-    const complete = exact && Boolean(currentDate) && Boolean(options.defaultDutyFunction.trim());
+    // Um nome de guerra também pode pertencer a um oficial citado no documento.
+    // Só publique automaticamente quando a própria linha o identificar como cadete.
+    const explicitCadet = /\b(CADETE|CAD)\b/.test(normalizedLine);
+    const complete =
+      exact && explicitCadet && Boolean(currentDate) && Boolean(options.defaultDutyFunction.trim());
     const cadet = exact ? matched[0] : null;
     candidates.push({
       sequence: candidates.length + 1,
@@ -108,6 +112,7 @@ export function parseScheduleText(
       confidence: complete ? 0.99 : exact ? 0.85 : 0.6,
       match_reasons: [
         exact ? "nome_exato_unico" : "nome_ambiguo",
+        explicitCadet ? "cadete_explicito" : "identidade_cadete_nao_confirmada",
         currentDate ? "data_valida" : "data_ausente",
         options.defaultDutyFunction.trim() ? "funcao_tipo_documento" : "funcao_ausente",
       ],

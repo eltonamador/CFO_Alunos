@@ -6,15 +6,18 @@ import Link from "next/link";
 import { BirthdayCard } from "@/components/app/BirthdayCard";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
+import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
+import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 
 export const metadata = { title: "Início — Secretaria" };
 
 export default async function SecretariaHome() {
   const session = await requireRole("secretaria");
   const supabase = createSupabaseServerClient();
-  const [counts, birthdayAlerts] = await Promise.all([
+  const [counts, birthdayAlerts, dutyOverview] = await Promise.all([
     countDocumentsByStatus(supabase),
     getAdministrativeBirthdayAlerts(),
+    getDutyOverview(),
   ]);
 
   const pendingCount = counts.enviado + counts.em_analise;
@@ -53,6 +56,8 @@ export default async function SecretariaHome() {
           Bem-vindo ao Painel da Secretaria Acadêmica do **CFO 2026.1**.
         </p>
       </header>
+
+      <TodayTomorrowDuty overview={dutyOverview} />
 
       {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-3">

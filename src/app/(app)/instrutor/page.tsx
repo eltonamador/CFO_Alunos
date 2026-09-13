@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchInstructorCards, signedPhotoUrl } from "@/lib/supabase/queries/students";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { StudentListCard } from "@/components/app/StudentListCard";
+import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
+import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 
 export const metadata = { title: "Instrutor" };
 
@@ -14,7 +16,10 @@ export default async function InstrutorHome({ searchParams }: PageProps) {
   await requireRole("instrutor");
 
   const supabase = createSupabaseServerClient();
-  const results = await searchInstructorCards(supabase, searchParams.q ?? "");
+  const [results, dutyOverview] = await Promise.all([
+    searchInstructorCards(supabase, searchParams.q ?? ""),
+    getDutyOverview(),
+  ]);
 
   const cardsWithPhotos = await Promise.all(
     results.map(async (r) => ({
@@ -25,6 +30,7 @@ export default async function InstrutorHome({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
+      <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/instrutor/escalas" />
       <header>
         <h1 className="text-2xl font-bold">Buscar aluno</h1>
         <p className="text-sm text-muted-foreground">Por número ou nome de guerra</p>

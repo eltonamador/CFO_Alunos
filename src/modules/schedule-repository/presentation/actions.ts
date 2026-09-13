@@ -68,16 +68,23 @@ export async function toggleScheduleTypeAction(formData: FormData): Promise<void
   revalidatePath("/coordenacao/escalas/tipos");
 }
 
-export async function reprocessScheduleAction(formData: FormData): Promise<void> {
-  if (!(await activeCoordination())) return;
+export async function reprocessScheduleAction(
+  _previous: ScheduleActionResult | null,
+  formData: FormData,
+): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode solicitar o processamento." };
+  }
   const parsed = z.string().uuid().safeParse(formData.get("document_id"));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, message: "Documento inválido." };
   const supabase = createSupabaseServerClient();
-  await supabase.rpc("schedule_request_reprocess", {
+  const { error } = await supabase.rpc("schedule_request_reprocess", {
     p_document_id: parsed.data,
     p_method: "auto",
   });
+  if (error) return { ok: false, message: "Não foi possível adicionar o PDF à fila." };
   revalidatePath("/coordenacao/escalas");
+  return { ok: true, message: "Solicitação adicionada à fila de processamento." };
 }
 
 export async function confirmScheduleCandidateAction(

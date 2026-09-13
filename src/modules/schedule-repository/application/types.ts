@@ -5,6 +5,7 @@ export type ScheduleDocument = Tables<"schedule_documents">;
 export type ScheduleProcessingRun = Tables<"schedule_processing_runs">;
 export type ScheduleCandidate = Tables<"schedule_candidates">;
 export type ScheduleAssignment = Tables<"schedule_assignments">;
+export type ScheduleOfficerAssignment = Tables<"schedule_officer_assignments">;
 
 export interface ScheduleClass {
   id: string;
@@ -17,6 +18,8 @@ export interface ScheduleDocumentView extends ScheduleDocument {
   download_url: string | null;
   latest_run: ScheduleProcessingRun | null;
   review_count: number;
+  candidates: ScheduleCandidate[];
+  officer_assignments: ScheduleOfficerAssignment[];
 }
 
 export interface ScheduleRepositoryData {

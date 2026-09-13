@@ -378,6 +378,44 @@ export type Database = {
           },
         ];
       };
+      academic_official_designations: {
+        Row: {
+          active: boolean;
+          designation_kind: string;
+          designation_ref: string;
+          discipline_id: string;
+          display_name: string;
+          id: string;
+          source_code: string;
+        };
+        Insert: {
+          active?: boolean;
+          designation_kind: string;
+          designation_ref: string;
+          discipline_id: string;
+          display_name: string;
+          id?: string;
+          source_code: string;
+        };
+        Update: {
+          active?: boolean;
+          designation_kind?: string;
+          designation_ref?: string;
+          discipline_id?: string;
+          display_name?: string;
+          id?: string;
+          source_code?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_official_designations_discipline_id_fkey";
+            columns: ["discipline_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_disciplines";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       academic_policies: {
         Row: {
           approved_at: string;
@@ -683,6 +721,62 @@ export type Database = {
             columns: ["student_id"];
             isOneToOne: false;
             referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      cfo_coordination_members: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          designation_ref: string;
+          display_order: number;
+          effective_from: string;
+          full_name: string;
+          function_name: string;
+          id: string;
+          military_rank: string;
+          profile_id: string | null;
+          registration: string;
+          service_alias: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          designation_ref: string;
+          display_order: number;
+          effective_from: string;
+          full_name: string;
+          function_name: string;
+          id?: string;
+          military_rank: string;
+          profile_id?: string | null;
+          registration: string;
+          service_alias?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          designation_ref?: string;
+          display_order?: number;
+          effective_from?: string;
+          full_name?: string;
+          function_name?: string;
+          id?: string;
+          military_rank?: string;
+          profile_id?: string | null;
+          registration?: string;
+          service_alias?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cfo_coordination_members_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -2717,6 +2811,76 @@ export type Database = {
           },
         ];
       };
+      schedule_officer_assignments: {
+        Row: {
+          created_at: string;
+          display_name: string;
+          document_id: string;
+          duty_date: string;
+          duty_function: string;
+          ends_at: string;
+          id: string;
+          profile_id: string | null;
+          run_id: string;
+          sequence: number;
+          shift: string;
+          source_line: string;
+          starts_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name: string;
+          document_id: string;
+          duty_date: string;
+          duty_function: string;
+          ends_at: string;
+          id?: string;
+          profile_id?: string | null;
+          run_id: string;
+          sequence: number;
+          shift: string;
+          source_line: string;
+          starts_at: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string;
+          document_id?: string;
+          duty_date?: string;
+          duty_function?: string;
+          ends_at?: string;
+          id?: string;
+          profile_id?: string | null;
+          run_id?: string;
+          sequence?: number;
+          shift?: string;
+          source_line?: string;
+          starts_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedule_officer_assignments_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "schedule_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_officer_assignments_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_officer_assignments_run_id_fkey";
+            columns: ["run_id"];
+            isOneToOne: false;
+            referencedRelation: "schedule_processing_runs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       schedule_processing_runs: {
         Row: {
           attempt: number;
@@ -3717,6 +3881,10 @@ export type Database = {
         Args: { p_event_id: string };
         Returns: string;
       };
+      schedule_is_current_officer_run: {
+        Args: { p_document_id: string; p_run_id: string };
+        Returns: boolean;
+      };
       schedule_publish_auto_candidate: {
         Args: { p_candidate_id: string };
         Returns: string;
@@ -3764,6 +3932,10 @@ export type Database = {
       schedule_reserve_notification_delivery: {
         Args: { p_channel: string; p_event_id: string; p_recipient_key: string };
         Returns: string;
+      };
+      schedule_same_active_class: {
+        Args: { p_student_id: string };
+        Returns: boolean;
       };
       submit_follow_up_manifestation: {
         Args: { p_body: string; p_record_id: string };

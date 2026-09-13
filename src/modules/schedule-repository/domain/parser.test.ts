@@ -44,4 +44,15 @@ describe("parser conservador de escalas", () => {
     expect(result.candidates).toHaveLength(0);
     expect(result.metrics.ignoredLineCount).toBe(2);
   });
+
+  it("não publica um oficial com o mesmo nome de guerra de um cadete", () => {
+    const result = parseScheduleText("10/09/2026 CAP SILVA", cadets, {
+      referenceYear: 2026,
+      defaultDutyFunction: "Oficial de Dia",
+    });
+    expect(result.candidates[0]).toMatchObject({
+      match_status: "needs_review",
+      matched_student_id: null,
+    });
+  });
 });

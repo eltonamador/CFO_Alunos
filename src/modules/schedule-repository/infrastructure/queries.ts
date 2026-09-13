@@ -11,6 +11,8 @@ import type {
   ScheduleReviewCandidateView,
   ScheduleStudentOption,
   ScheduleProcessingRun,
+  ScheduleCandidate,
+  ScheduleOfficerAssignment,
   ScheduleType,
 } from "../application/types";
 
@@ -62,6 +64,8 @@ export async function getScheduleRepository(
   const rawDocuments = (documentsResponse.data ?? []) as ScheduleDocument[];
   const documentIds = rawDocuments.map((document) => document.id);
   let runs: ScheduleProcessingRun[] = [];
+  let currentCandidates: ScheduleCandidate[] = [];
+  let officerAssignments: ScheduleOfficerAssignment[] = [];
   let reviewCounts = new Map<string, number>();
   let reviewCandidates: ScheduleReviewCandidateView[] = [];
   let managedAssignments: ScheduleManagedAssignmentView[] = [];
@@ -81,6 +85,33 @@ export async function getScheduleRepository(
     const processingError = runsResponse.error ?? candidatesResponse.error;
     if (processingError) throw scheduleError(processingError);
     runs = (runsResponse.data ?? []) as ScheduleProcessingRun[];
+    const latestRunIds = rawDocuments
+      .map((document) => runs.find((run) => run.document_id === document.id)?.id)
+      .filter((id): id is string => Boolean(id));
+    if (latestRunIds.length) {
+      const currentResponse = await supabase
+        .from("schedule_candidates")
+        .select("*")
+        .in("run_id", latestRunIds)
+        .order("sequence");
+      if (currentResponse.error) throw scheduleError(currentResponse.error);
+      currentCandidates = (currentResponse.data ?? []) as ScheduleCandidate[];
+    }
+    const latestOfficerRunIds = rawDocuments
+      .map((document) => runs.find((run) =>
+        run.document_id === document.id && ["succeeded", "partial"].includes(run.status),
+      )?.id)
+      .filter((id): id is string => Boolean(id));
+    if (latestOfficerRunIds.length) {
+      const officersResponse = await supabase
+        .from("schedule_officer_assignments")
+        .select("*")
+        .in("run_id", latestOfficerRunIds)
+        .order("duty_date")
+        .order("starts_at");
+      if (officersResponse.error) throw scheduleError(officersResponse.error);
+      officerAssignments = (officersResponse.data ?? []) as ScheduleOfficerAssignment[];
+    }
     reviewCounts = (candidatesResponse.data ?? []).reduce((counts, candidate) => {
       counts.set(candidate.document_id, (counts.get(candidate.document_id) ?? 0) + 1);
       return counts;
@@ -102,6 +133,7 @@ export async function getScheduleRepository(
         .select("id,class_id,student_number,war_name,full_name")
         .in("class_id", classIds)
         .is("deleted_at", null)
+        .eq("course_status", "matriculado")
         .order("student_number");
       if (response.error) throw scheduleError(response.error);
       students = response.data ?? [];
@@ -177,6 +209,8 @@ export async function getScheduleRepository(
         download_url: downloadUrl,
         latest_run: runs.find((run) => run.document_id === document.id) ?? null,
         review_count: reviewCounts.get(document.id) ?? 0,
+        candidates: currentCandidates.filter((candidate) => candidate.document_id === document.id),
+        officer_assignments: officerAssignments.filter((entry) => entry.document_id === document.id),
       };
     }),
   );

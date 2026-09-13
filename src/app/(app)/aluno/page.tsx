@@ -3,7 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 import { UpcomingScheduleAssignments } from "@/components/app/schedules/UpcomingScheduleAssignments";
+import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
 import { getUpcomingScheduleAssignments } from "@/modules/schedule-repository/infrastructure/queries";
+import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -30,7 +32,10 @@ const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
 
 export default async function AlunoHome() {
   const session = await requireRole("aluno");
-  const scheduleAssignments = await getUpcomingScheduleAssignments();
+  const [scheduleAssignments, dutyOverview] = await Promise.all([
+    getUpcomingScheduleAssignments(),
+    getDutyOverview(),
+  ]);
 
   // Usa war_name e student_number já carregados na sessão
   const warName = session.warName;
@@ -214,6 +219,7 @@ export default async function AlunoHome() {
         )}
       </header>
 
+      <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/aluno/escalas" />
       <PendingFollowUpAlert studentId={session.studentId} />
       <UpcomingScheduleAssignments assignments={scheduleAssignments} />
 

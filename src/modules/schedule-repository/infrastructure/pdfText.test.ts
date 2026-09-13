@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { describe, expect, it } from "vitest";
 import { extractSchedulePdfText } from "./pdfText";
+import { parseScheduleText } from "../domain/parser";
 
 async function syntheticPdf(text: string) {
   return new Promise<Uint8Array>((resolve, reject) => {
@@ -30,6 +31,34 @@ describe("extração de PDF de escala", () => {
     await expect(extractSchedulePdfText(buffer, "native_text", "disabled")).rejects.toMatchObject({
       code: "OCR_REQUIRED",
     });
+  });
+
+  it("mantém cada registro em sua própria linha para associar pessoas e datas", async () => {
+    const buffer = await syntheticPdf(
+      "ESCALA DE SERVICO CFO\n10/09/2026 CADETE SILVA\n11/09/2026 CADETE SOUZA",
+    );
+    const extracted = await extractSchedulePdfText(buffer, "auto", "disabled");
+    expect(extracted.text).toMatch(/SILVA\s*\n\s*11\/09\/2026/);
+    const parsed = parseScheduleText(
+      extracted.text,
+      [
+        { id: "a", studentNumber: 1, fullName: "João da Silva", warName: "SILVA" },
+        { id: "b", studentNumber: 2, fullName: "Maria de Souza", warName: "SOUZA" },
+      ],
+      { referenceYear: 2026, defaultDutyFunction: "Aluno de Dia" },
+    );
+    expect(
+      parsed.candidates.map(({ duty_date, matched_student_id }) => [duty_date, matched_student_id]),
+    ).toEqual([
+      ["2026-09-10", "a"],
+      ["2026-09-11", "b"],
+    ]);
+  });
+
+  it("distingue arquivo inválido de indisponibilidade do leitor", async () => {
+    await expect(
+      extractSchedulePdfText(new TextEncoder().encode("não é PDF"), "auto", "disabled"),
+    ).rejects.toMatchObject({ code: "PDF_INVALID" });
   });
 
   it.runIf(process.env.TEST_LOCAL_OCR === "true")(

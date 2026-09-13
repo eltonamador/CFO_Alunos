@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 const MIN_NATIVE_TEXT_LENGTH = 40;
 let pdfConfigured = false;
 
-async function ensurePdfRuntime() {
+export async function ensurePdfRuntime() {
   if (pdfConfigured) return;
   await configureUnPDF({ pdfjs: () => import("pdfjs-dist/legacy/build/pdf.mjs") });
   pdfConfigured = true;
@@ -17,7 +17,12 @@ async function ensurePdfRuntime() {
 
 export class ScheduleExtractionError extends Error {
   constructor(
-    public readonly code: "OCR_REQUIRED" | "PDF_INVALID" | "OCR_FAILED",
+    public readonly code:
+      | "OCR_REQUIRED"
+      | "PDF_INVALID"
+      | "PDF_READ_FAILED"
+      | "PDF_WORKER_UNAVAILABLE"
+      | "OCR_FAILED",
     message: string,
   ) {
     super(message);
@@ -28,15 +33,23 @@ export class ScheduleExtractionError extends Error {
 async function extractNativeText(buffer: Uint8Array) {
   try {
     await ensurePdfRuntime();
-    const document = await getDocumentProxy(buffer);
-    const result = await extractText(document, { mergePages: true });
-    await document.destroy();
-    return { text: result.text, pages: result.totalPages };
+    // PDF.js pode transferir o ArrayBuffer para o worker; preserve o original para o OCR.
+    const document = await getDocumentProxy(new Uint8Array(buffer));
+    try {
+      const result = await extractText(document);
+      return { text: result.text.join("\n"), pages: result.totalPages };
+    } finally {
+      await document.destroy();
+    }
   } catch (error) {
-    throw new ScheduleExtractionError(
-      "PDF_INVALID",
-      error instanceof Error ? error.message : "Não foi possível ler o PDF.",
-    );
+    const message = error instanceof Error ? error.message : "Não foi possível ler o PDF.";
+    const code = /worker|pdf\.worker/i.test(message)
+      ? "PDF_WORKER_UNAVAILABLE"
+      : error instanceof Error &&
+          /InvalidPDFException|MissingPDFException|PasswordException/.test(error.name)
+        ? "PDF_INVALID"
+        : "PDF_READ_FAILED";
+    throw new ScheduleExtractionError(code, message);
   }
 }
 

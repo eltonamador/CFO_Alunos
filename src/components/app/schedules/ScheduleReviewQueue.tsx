@@ -39,6 +39,13 @@ function CandidateForm({ candidate }: { candidate: ScheduleReviewCandidateView }
       <blockquote className="rounded-md border-l-4 border-primary/40 bg-muted/50 p-3 font-mono text-xs">
         {candidate.original_line}
       </blockquote>
+      {Array.isArray(candidate.match_reasons) &&
+        candidate.match_reasons.includes("identidade_cadete_nao_confirmada") && (
+          <p className="text-xs text-muted-foreground">
+            A linha contém um nome semelhante ao de um cadete, mas não o identifica como tal.
+            Confira no PDF antes de associá-la a um aluno.
+          </p>
+        )}
       <form action={action} className="space-y-3">
         <input type="hidden" name="candidate_id" value={candidate.id} />
         <label className="block space-y-1 text-sm font-medium">

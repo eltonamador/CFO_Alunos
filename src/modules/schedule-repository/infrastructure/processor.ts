@@ -4,6 +4,7 @@ import type { Database, Json } from "@/lib/supabase/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { parseScheduleText, SCHEDULE_PARSER_REVISION } from "../domain/parser";
 import { extractSchedulePdfText, ScheduleExtractionError } from "./pdfText";
+import { extractOfficerSchedulePdf } from "./officerPdf";
 
 interface ClaimedRun {
   run_id: string;
@@ -48,8 +49,9 @@ export async function processNextSchedule() {
     if (download.error || !download.data) {
       throw new Error(`Falha ao baixar PDF: ${download.error?.message ?? "arquivo ausente"}`);
     }
+    const pdfBytes = new Uint8Array(await download.data.arrayBuffer());
     const extracted = await extractSchedulePdfText(
-      new Uint8Array(await download.data.arrayBuffer()),
+      pdfBytes,
       run.method,
       env.SCHEDULE_OCR_PROVIDER,
       env.SCHEDULE_OCR_LANGUAGE,
@@ -58,7 +60,8 @@ export async function processNextSchedule() {
       .from("students")
       .select("id,student_number,full_name,war_name")
       .eq("class_id", run.class_id)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .eq("course_status", "matriculado");
     if (students.error) throw new Error(`Falha ao carregar cadetes: ${students.error.message}`);
 
     const parsed = parseScheduleText(
@@ -76,21 +79,54 @@ export async function processNextSchedule() {
         defaultDutyFunction: run.schedule_type_name,
       },
     );
+    let officerEntries: Awaited<ReturnType<typeof extractOfficerSchedulePdf>> = [];
+    if (run.schedule_type_name.toLowerCase().includes("oficial de dia")) {
+      const identities = await client
+        .from("cfo_coordination_members")
+        .select("service_alias,profile_id")
+        .eq("active", true)
+        .not("service_alias", "is", null);
+      if (identities.error) throw new Error(`Falha ao carregar oficiais: ${identities.error.message}`);
+      officerEntries = await extractOfficerSchedulePdf(
+        pdfBytes,
+        (identities.data ?? []).flatMap((identity) =>
+          identity.service_alias
+            ? [{ serviceAlias: identity.service_alias, profileId: identity.profile_id }]
+            : [],
+        ),
+      );
+      if (officerEntries.length) {
+        const inserted = await client.from("schedule_officer_assignments").insert(
+          officerEntries.map((entry) => ({
+            ...entry,
+            run_id: run.run_id,
+            document_id: run.document_id,
+          })),
+        );
+        if (inserted.error) throw new Error(`Falha ao registrar escala ODA: ${inserted.error.message}`);
+      }
+    }
+    const resultStatus = officerEntries.length && parsed.metrics.reviewCount === 0
+      ? "succeeded"
+      : parsed.status;
     const metrics = {
       ...parsed.metrics,
+      officerCount: officerEntries.length,
       pages: extracted.pages,
       extractedCharacters: extracted.text.length,
       extractionMethod: extracted.extractionMethod,
+      extractedText: extracted.text.slice(0, 100_000),
+      extractedTextTruncated: extracted.text.length > 100_000,
     };
     const { error: completionError } = await client.rpc("schedule_complete_processing_run", {
       p_run_id: run.run_id,
-      p_status: parsed.status,
+      p_status: resultStatus,
       p_metrics: metrics,
       p_candidates: parsed.candidates as unknown as Json,
     });
     if (completionError)
       throw new Error(`Falha ao concluir processamento: ${completionError.message}`);
-    return { status: parsed.status, runId: run.run_id, metrics };
+    return { status: resultStatus, runId: run.run_id, metrics };
   } catch (error) {
     return finishFailure(client, run.run_id, error);
   }

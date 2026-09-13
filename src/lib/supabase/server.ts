@@ -44,6 +44,11 @@ export function createSupabaseAdminClient() {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {
+      // Jobs fazem chamadas sequenciais ao mesmo RPC. O cache de fetch do Next
+      // não pode devolver uma execução já consumida da fila.
+      global: {
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
       cookies: {
         getAll: () => [],
         setAll: (_: { name: string; value: string; options: CookieOptions }[]) => {},

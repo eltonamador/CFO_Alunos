@@ -6,6 +6,8 @@ import Link from "next/link";
 import { BirthdayCard } from "@/components/app/BirthdayCard";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
+import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
+import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 
 export const metadata = { title: "Início — Coordenação" };
 export const dynamic = "force-dynamic";
@@ -43,6 +45,7 @@ export default async function CoordenacaoHome() {
   const session = await requireRole("coordenacao");
   const supabase = createSupabaseServerClient();
   const birthdayAlertsPromise = getAdministrativeBirthdayAlerts();
+  const dutyOverviewPromise = getDutyOverview();
 
   // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
   const { data: rawStudentsData, error } = await supabase
@@ -58,7 +61,8 @@ export default async function CoordenacaoHome() {
       student_logistics(student_id),
       vehicles(student_id, has_cnh)
     `)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado");
 
   if (error) console.error("Error fetching students:", error);
 
@@ -121,7 +125,8 @@ export default async function CoordenacaoHome() {
 
   const { count: docsValidados } = await supabase
     .from("documents")
-    .select("*", { count: "exact", head: true })
+    .select("student:students!inner(course_status)", { count: "exact", head: true })
+    .eq("student.course_status", "matriculado")
     .eq("status", "validado");
 
   const studentDocsMap = new Map<string, Set<string>>();
@@ -228,18 +233,37 @@ export default async function CoordenacaoHome() {
 
   // 4. Pendências Consolidadas
   const [pendingChangesCount, pendingDocsCount, pendingEquipCount, currentCangas] = await Promise.all([
-    supabase.from("pending_changes").select("*", { count: "exact", head: true }).eq("status", "pendente"),
-    supabase.from("documents").select("*", { count: "exact", head: true }).in("status", ["enviado", "em_analise"]),
-    supabase.from("student_equipment_status").select("*", { count: "exact", head: true }).eq("status", "comprado").eq("validation_status", "nao_validado"),
+    supabase
+      .from("pending_changes")
+      .select("student:students!inner(course_status)", { count: "exact", head: true })
+      .eq("student.course_status", "matriculado")
+      .eq("status", "pendente"),
+    supabase
+      .from("documents")
+      .select("student:students!inner(course_status)", { count: "exact", head: true })
+      .eq("student.course_status", "matriculado")
+      .in("status", ["enviado", "em_analise"]),
+    supabase
+      .from("student_equipment_status")
+      .select("student:students!inner(course_status)", { count: "exact", head: true })
+      .eq("student.course_status", "matriculado")
+      .eq("status", "comprado")
+      .eq("validation_status", "nao_validado"),
     supabase.from("canga_assignments").select("student_id").eq("is_current", true),
   ]);
 
   const openPendencias = (pendingChangesCount.count ?? 0) + (pendingDocsCount.count ?? 0) + (pendingEquipCount.count ?? 0);
 
   // Alunos sem canga
-  const studentsWithCangaIds = new Set((currentCangas.data ?? []).map((c: any) => c.student_id));
+  const activeStudentIds = new Set(allStudentsData.map((student) => student.id));
+  const studentsWithCangaIds = new Set(
+    (currentCangas.data ?? [])
+      .map((c: any) => c.student_id)
+      .filter((studentId: string) => activeStudentIds.has(studentId)),
+  );
   const studentsWithoutCangaCount = totalStudents - studentsWithCangaIds.size;
   const birthdayAlerts = await birthdayAlertsPromise;
+  const dutyOverview = await dutyOverviewPromise;
 
   // Criação dos KPIs para exibição
   const kpis = [
@@ -259,9 +283,11 @@ export default async function CoordenacaoHome() {
           Olá, {session.fullName}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Bem-vindo ao Painel de Controle Operacional do **CFO 2026.1**.
+          Bem-vindo ao Painel de Controle Operacional do <strong>CFO 2026.1</strong>.
         </p>
       </header>
+
+      <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/coordenacao/escalas" />
 
       {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
