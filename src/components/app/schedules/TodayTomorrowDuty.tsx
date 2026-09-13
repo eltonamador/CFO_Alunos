@@ -20,21 +20,34 @@ function DayCard({ title, date, entries }: { title: string; date: string; entrie
         <span className="ml-auto text-xs text-muted-foreground">{dateLabel(date)}</span>
       </div>
       {entries.length ? (
-        <ul className="mt-3 divide-y divide-border">
-          {entries.map((entry) => (
-            <li key={entry.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm">
-              <span className="font-semibold">{entry.person}</span>
-              {entry.mine && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-                  Você
-                </span>
-              )}
-              <span className="w-full text-xs text-muted-foreground sm:ml-auto sm:w-auto">
-                {entry.duty}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-3 space-y-4">
+          {(["cadet", "officer"] as const).map((kind) => {
+            const group = entries.filter((entry) => entry.kind === kind);
+            if (!group.length) return null;
+            return (
+              <div key={kind}>
+                <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {kind === "cadet" ? "Cadetes" : "Oficiais e coordenação"}
+                </h4>
+                <ul className="mt-1 divide-y divide-border">
+                  {group.map((entry) => (
+                    <li key={entry.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm">
+                      <span className="font-semibold">{entry.person}</span>
+                      {entry.mine && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                          Você
+                        </span>
+                      )}
+                      <span className="w-full text-xs text-muted-foreground sm:ml-auto sm:w-auto">
+                        {entry.duty}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">
           Nenhuma atribuição publicada para este dia.

@@ -215,11 +215,12 @@ export async function getScheduleRepository(
     }),
   );
   let assignments: ScheduleAssignmentView[] = [];
-  if (session.role === "aluno") {
+  if (session.role === "aluno" && session.studentId) {
     const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Belem" });
     const response = await supabase
       .from("schedule_assignments")
       .select("*")
+      .eq("student_id", session.studentId)
       .eq("status", "published")
       .gte("duty_date", today)
       .order("duty_date")
@@ -259,6 +260,7 @@ export async function getUpcomingScheduleAssignments(limit = 6): Promise<Schedul
   const assignments = await supabase
     .from("schedule_assignments")
     .select("*")
+    .eq("student_id", session.studentId)
     .eq("status", "published")
     .gte("duty_date", today)
     .order("duty_date")

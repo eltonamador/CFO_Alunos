@@ -55,4 +55,24 @@ describe("parser conservador de escalas", () => {
       matched_student_id: null,
     });
   });
+
+  it("preserva a função e os turnos explícitos de cada designação", () => {
+    const result = parseScheduleText([
+      "13/09/2026 | Cadete SILVA | Função: Dia ao 1º Ano | Turno: 1º turno",
+      "13/09/2026 | Cadete SILVA | Função: Dia ao 1º Ano | Turno: 2º turno",
+      "13/09/2026 | Cadete SOUZA | Função: Apoio 1 | Turno: 2º turno",
+    ].join("\n"), cadets, { referenceYear: 2026, defaultDutyFunction: "Aluno de Dia" });
+    expect(result.status).toBe("succeeded");
+    expect(result.candidates.map((candidate) => candidate.duty_function)).toEqual([
+      "Dia ao 1º Ano · 1º turno", "Dia ao 1º Ano · 2º turno", "Apoio 1 · 2º turno",
+    ]);
+    expect(result.candidates.map((candidate) => candidate.matched_student_id)).toEqual(["a", "a", "b"]);
+  });
+
+  it("mantém revisão para nomes ambíguos mesmo com função e turno", () => {
+    const result = parseScheduleText("13/09/2026 | Cadete SILVA | Função: Apoio 2 | Turno: Único", [
+      ...cadets, { id: "c", studentNumber: 3, fullName: "Pedro Silva", warName: "SILVA" },
+    ], { referenceYear: 2026, defaultDutyFunction: "Aluno de Dia" });
+    expect(result.candidates[0]).toMatchObject({ match_status: "needs_review", matched_student_id: null });
+  });
 });

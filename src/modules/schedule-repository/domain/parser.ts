@@ -1,4 +1,4 @@
-export const SCHEDULE_PARSER_REVISION = "schedule-parser/1.1.0";
+export const SCHEDULE_PARSER_REVISION = "schedule-parser/1.2.0";
 
 export interface ScheduleCadetIdentity {
   id: string;
@@ -74,6 +74,12 @@ function lineContainsAlias(line: string, alias: string) {
   return ` ${line} `.includes(` ${alias} `);
 }
 
+function labeledField(line: string, label: string) {
+  return line.split("|").map((part) => part.trim()).find((part) =>
+    normalizeScheduleText(part.split(":")[0] ?? "") === label && part.includes(":"),
+  )?.split(":").slice(1).join(":").trim();
+}
+
 export function parseScheduleText(
   text: string,
   cadets: ScheduleCadetIdentity[],
@@ -89,6 +95,10 @@ export function parseScheduleText(
   for (const originalLine of lines) {
     currentDate = parseDate(originalLine, options.referenceYear) ?? currentDate;
     const normalizedLine = normalizeScheduleText(originalLine);
+    const rowFunction = labeledField(originalLine, "FUNCAO");
+    const rowShift = labeledField(originalLine, "TURNO");
+    const dutyFunction = [rowFunction || options.defaultDutyFunction.trim(), rowShift]
+      .filter(Boolean).join(" · ").slice(0, 200);
     const matched = cadets.filter((cadet) =>
       aliases(cadet).some((alias) => lineContainsAlias(normalizedLine, alias)),
     );
@@ -100,13 +110,13 @@ export function parseScheduleText(
     // Só publique automaticamente quando a própria linha o identificar como cadete.
     const explicitCadet = /\b(CADETE|CAD)\b/.test(normalizedLine);
     const complete =
-      exact && explicitCadet && Boolean(currentDate) && Boolean(options.defaultDutyFunction.trim());
+      exact && explicitCadet && Boolean(currentDate) && Boolean(rowFunction || options.defaultDutyFunction.trim());
     const cadet = exact ? matched[0] : null;
     candidates.push({
       sequence: candidates.length + 1,
       raw_name: cadet?.warName || cadet?.fullName || originalLine,
       duty_date: currentDate,
-      duty_function: options.defaultDutyFunction.trim() || null,
+      duty_function: dutyFunction || null,
       original_line: originalLine,
       match_status: complete ? "auto_confirmed" : "needs_review",
       confidence: complete ? 0.99 : exact ? 0.85 : 0.6,
@@ -114,7 +124,8 @@ export function parseScheduleText(
         exact ? "nome_exato_unico" : "nome_ambiguo",
         explicitCadet ? "cadete_explicito" : "identidade_cadete_nao_confirmada",
         currentDate ? "data_valida" : "data_ausente",
-        options.defaultDutyFunction.trim() ? "funcao_tipo_documento" : "funcao_ausente",
+        rowFunction ? "funcao_explicita_linha" : options.defaultDutyFunction.trim() ? "funcao_tipo_documento" : "funcao_ausente",
+        ...(rowShift ? ["turno_explicito_linha"] : []),
       ],
       candidate_student_ids: uniqueIds,
       matched_student_id: complete ? (uniqueIds[0] ?? null) : null,

@@ -4,6 +4,7 @@ import { dutyWindow } from "../domain/dutyWindow";
 
 export interface DutyRosterEntry {
   id: string;
+  kind: "cadet" | "officer";
   date: string;
   person: string;
   duty: string;
@@ -75,15 +76,17 @@ export async function getDutyOverview(): Promise<DutyOverview> {
       if (!student || !entry.duty_date) return [];
       return [{
         id: entry.id,
+        kind: "cadet" as const,
         date: entry.duty_date,
         person: student.student_number == null
           ? student.war_name ?? "Cadete"
-          : `${String(student.student_number).padStart(2, "0")} · ${student.war_name ?? "Cadete"}`,
+          : `${student.war_name ?? "Cadete"} — ${String(student.student_number).padStart(2, "0")}`,
         duty: entry.duty_function?.trim() || "Serviço de escala",
         mine: session.studentId === entry.student_id,
       }];
     }), ...(officers.data ?? []).map((entry) => ({
       id: entry.id,
+      kind: "officer" as const,
       date: entry.duty_date,
       person: entry.display_name,
       duty: `${entry.duty_function} · ${shiftLabel[entry.shift] ?? entry.shift} ${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`,
