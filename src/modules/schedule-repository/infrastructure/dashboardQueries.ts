@@ -44,7 +44,9 @@ export async function getDutyOverview(): Promise<DutyOverview> {
       .order("published_at"),
     supabase
       .from("schedule_officer_assignments")
-      .select("id,profile_id,display_name,duty_date,duty_function,shift,starts_at,ends_at")
+      .select("id,profile_id,display_name,duty_date,duty_function,shift,starts_at,ends_at,schedule_documents!inner(publication_status,processing_status)")
+      .eq("schedule_documents.publication_status", "published")
+      .neq("schedule_documents.processing_status", "superseded")
       .gte("duty_date", window.today)
       .lte("duty_date", window.tomorrow)
       .order("duty_date")
