@@ -46,7 +46,11 @@ function clean(value: string) {
 }
 
 function cleanAuxiliary(value: string) {
-  return clean(value.replace(/\b(?:INTERVALO|ALMO[ÇC]O|FORMATURA)\b/gi, " "));
+  return clean(value.replace(/\b(?:INTERVALO|ALMO[ÇC]O|FORMATURA|DESCANSO)\b/gi, " "));
+}
+
+function cleanLocation(value: string) {
+  return clean(value.replace(/\bem\s+\d{2}\/\d{2}\/\d{2,4}\b/gi, " "));
 }
 
 function minutes(value: string) {
@@ -120,7 +124,7 @@ function rowsFromTokens(tokens: QtsSourceToken[]) {
       const workload = columnText(area, 0.49, 0.54) || null;
       const instructor = cleanAuxiliary(columnText(area, 0.54, 0.68)) || null;
       const uniform = columnText(area, 0.68, 0.8) || null;
-      const location = columnText(area, 0.8, 0.99) || null;
+      const location = cleanLocation(columnText(area, 0.8, 0.99)) || null;
       rows.push({
         page,
         y: band.y,
