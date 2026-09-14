@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Filter, ShieldAlert } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createAcademicClient } from "@/modules/academic-management/infrastructure/database";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { ReportDownloadCard } from "./ReportDownloadCard";
+import { AcademicInstructionReportCard } from "@/components/app/academic/AcademicInstructionReportCard";
 
 export const metadata = {
   title: "Relatórios — CFO 2026.1",
@@ -71,14 +73,38 @@ const REPORTS: Report[] = [
 export default async function RelatoriosPage() {
   const session = await requireRole(["coordenacao", "secretaria"]);
   const supabase = createSupabaseServerClient();
+  const academic = createAcademicClient();
 
   const available = REPORTS.filter((r) => r.roles.includes(session.role));
-  const [students, requirements, health, emergency] = await Promise.all([
-    supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null),
+  const [students, requirements, health, emergency, courses, classes, years, disciplines, instructors] = await Promise.all([
+    supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("course_status", "matriculado"),
     supabase.from("equipment_requirements").select("*", { count: "exact", head: true }).eq("active", true),
-    supabase.from("health_restrictions").select("*", { count: "exact", head: true }),
-    supabase.from("emergency_contacts").select("*", { count: "exact", head: true }),
+    supabase
+      .from("health_restrictions")
+      .select("student:students!inner(course_status)", { count: "exact", head: true })
+      .eq("student.course_status", "matriculado"),
+    supabase
+      .from("emergency_contacts")
+      .select("student:students!inner(course_status)", { count: "exact", head: true })
+      .eq("student.course_status", "matriculado"),
+    supabase.from("courses").select("id,name,year").order("year", { ascending: false }),
+    supabase.from("classes").select("id,name").order("name"),
+    academic.from("academic_years").select("id,year,course_id").order("year", { ascending: false }),
+    academic.from("academic_disciplines").select("id,name,code,phase").eq("active", true).order("name"),
+    supabase.from("profiles").select("id,full_name,role").eq("active", true).in("role", ["instrutor", "coordenacao"]).order("full_name"),
   ]);
+
+  const reportOptions = {
+    courses: (courses.data ?? []).map((item) => ({ id: item.id, label: `${item.name} · ${item.year}` })),
+    academicYears: (years.data ?? []).map((item) => ({ id: item.id, label: `Ano letivo ${item.year}` })),
+    classes: (classes.data ?? []).map((item) => ({ id: item.id, label: item.name })),
+    disciplines: (disciplines.data ?? []).map((item) => ({ id: item.id, label: `${item.code} · ${item.name}` })),
+    instructors: (instructors.data ?? []).map((item) => ({ id: item.id, label: item.full_name })),
+  };
 
   const stats: Record<string, string> = {
     "ficha-completa": String(students.count ?? 0).padStart(2, "0"),
@@ -129,6 +155,7 @@ export default async function RelatoriosPage() {
       </Link>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <AcademicInstructionReportCard options={reportOptions} />
         {available.map((report) => (
           <ReportDownloadCard
             key={report.slug}

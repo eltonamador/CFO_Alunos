@@ -28,13 +28,42 @@ export type QtsDatabase = Omit<Database, "public"> & {
   public: Omit<Database["public"], "Functions"> & {
     Functions: Database["public"]["Functions"] & {
       qts_calendar: { Args: { p_start: string; p_end: string }; Returns: QtsCalendarRow[] };
+      qts_add_activity_adjustment: {
+        Args: {
+          p_activity_date: string;
+          p_starts_at: string;
+          p_expected_activity: string;
+          p_replacement_activity: string;
+          p_replacement_instructor?: string | null;
+          p_replacement_workload?: string | null;
+          p_reason?: string;
+        };
+        Returns: string;
+      };
+      academic_link_qts_document: {
+        Args: { p_document_id: string; p_academic_year_id: string; p_reason: string };
+        Returns: number;
+      };
       qts_published_documents: {
         Args: { p_start: string; p_end: string };
         Returns: QtsDocumentRow[];
       };
       qts_publish_reviewed_document: {
-        Args: { p_document_id: string; p_activities: Json };
+        Args: { p_document_id: string; p_activities: Json; p_academic_year_id: string };
         Returns: string;
+      };
+      schedule_register_document: {
+        Args: {
+          p_class_id: string;
+          p_schedule_type_id: string;
+          p_original_filename: string;
+          p_size_bytes: number;
+          p_checksum_sha256: string;
+          p_period_start?: string | null;
+          p_period_end?: string | null;
+          p_supersedes_document_id?: string | null;
+        };
+        Returns: { id: string; storage_path: string };
       };
     };
   };

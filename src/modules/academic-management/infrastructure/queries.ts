@@ -57,7 +57,14 @@ async function loadData(offeringId?: string) {
     enrollments,
     assessments,
     grades,
+    academicYears,
+    calendarEvents,
+    sessions,
+    sessionInstructors,
+    sessionAttendances,
+    aliases,
     classesResponse,
+    coursesResponse,
     staffResponse,
     studentsResponse,
   ] = await Promise.all([
@@ -76,7 +83,14 @@ async function loadData(offeringId?: string) {
     rows(client, "academic_enrollments", offeringId),
     rows(client, "academic_assessments", offeringId),
     rows(client, "academic_grades", offeringId),
+    rows(client, "academic_years"),
+    rows(client, "academic_calendar_events"),
+    rows(client, "academic_instruction_sessions", offeringId),
+    rows(client, "academic_session_instructors"),
+    rows(client, "academic_session_attendances"),
+    rows(client, "academic_discipline_aliases"),
     client.from("classes").select("id,name,course_id").order("name"),
+    client.from("courses").select("id,code,name,year").order("year", { ascending: false }),
     session.role === "coordenacao"
       ? client
           .from("profiles")
@@ -90,10 +104,11 @@ async function loadData(offeringId?: string) {
           .from("students")
           .select("id,class_id,war_name,student_number,pelotao")
           .is("deleted_at", null)
+          .eq("course_status", "matriculado")
           .order("student_number")
       : Promise.resolve({ data: [], error: null }),
   ]);
-  for (const response of [classesResponse, staffResponse, studentsResponse])
+  for (const response of [classesResponse, coursesResponse, staffResponse, studentsResponse])
     if (response.error) throw academicError(response.error);
   const policies: AcademicPolicy[] = rawPolicies.map((policy) => {
     if (!validatePolicyParameters(policy.parameters))
@@ -103,6 +118,17 @@ async function loadData(offeringId?: string) {
     return { ...policy, parameters: policy.parameters };
   });
   const classes = classesResponse.data ?? [];
+  const courses = coursesResponse.data ?? [];
+  const sessionById = new Map(sessions.map((item) => [item.id, item]));
+  const sessionAbsences = new Map<string, { justified: number; unjustified: number }>();
+  for (const attendance of sessionAttendances) {
+    const session = sessionById.get(attendance.session_id);
+    if (!session || session.status !== "validated" || session.taught_hours === null) continue;
+    const current = sessionAbsences.get(attendance.enrollment_id) ?? { justified: 0, unjustified: 0 };
+    if (attendance.status === "justified_absence") current.justified += session.taught_hours;
+    if (attendance.status === "unjustified_absence") current.unjustified += session.taught_hours;
+    sessionAbsences.set(attendance.enrollment_id, current);
+  }
   const offeringViews: OfferingView[] = offerings.map((offering) => {
     const discipline = disciplines.find((item) => item.id === offering.discipline_id);
     if (!discipline)
@@ -130,8 +156,18 @@ async function loadData(offeringId?: string) {
         )?.score ?? null
       );
     };
+    const journal = sessionAbsences.get(enrollment.id) ?? { justified: 0, unjustified: 0 };
+    // Null no legado significa "ainda não conferido"; não transformamos isso em zero.
+    const justifiedAbsences =
+      enrollment.justified_absences === null ? null : enrollment.justified_absences + journal.justified;
+    const unjustifiedAbsences =
+      enrollment.unjustified_absences === null ? null : enrollment.unjustified_absences + journal.unjustified;
     return {
       ...enrollment,
+      legacy_justified_absences: enrollment.justified_absences,
+      legacy_unjustified_absences: enrollment.unjustified_absences,
+      journal_justified_absences: journal.justified,
+      journal_unjustified_absences: journal.unjustified,
       result: calculateAcademicResult({
         kind: offering.discipline.kind,
         workloadHours: offering.workload_hours,
@@ -141,8 +177,8 @@ async function loadData(offeringId?: string) {
           scoreFor("VC", index + 1),
         ),
         vfScore: scoreFor("VF", 1),
-        justifiedAbsences: enrollment.justified_absences,
-        unjustifiedAbsences: enrollment.unjustified_absences,
+        justifiedAbsences,
+        unjustifiedAbsences,
       }),
     };
   });
@@ -155,7 +191,14 @@ async function loadData(offeringId?: string) {
     enrollments: enrollmentViews,
     assessments,
     grades,
+    academicYears,
+    calendarEvents,
+    sessions,
+    sessionInstructors,
+    sessionAttendances,
+    aliases,
     classes,
+    courses,
     staff: staffResponse.data ?? [],
     students: studentsResponse.data ?? [],
   };
@@ -173,6 +216,11 @@ export async function getAcademicDashboard(): Promise<AcademicDashboard> {
     disciplines: data.disciplines,
     offerings: data.offerings,
     classes: data.classes,
+    courses: data.courses,
+    academicYears: data.academicYears,
+    calendarEvents: data.calendarEvents,
+    sessions: data.sessions,
+    sessionAttendances: data.sessionAttendances,
     staff: data.staff,
     students: data.students,
     enrollments: data.enrollments,
@@ -210,5 +258,15 @@ export async function getAcademicDetail(id: string): Promise<AcademicDetail | nu
         student.class_id === offering.class_id &&
         !data.enrollments.some((item) => item.student_id === student.id),
     ),
+    sessions: data.sessions.sort(
+      (a, b) => b.scheduled_on.localeCompare(a.scheduled_on) || b.id.localeCompare(a.id),
+    ),
+    sessionInstructors: data.sessionInstructors.filter((item) =>
+      data.sessions.some((session) => session.id === item.session_id),
+    ),
+    sessionAttendances: data.sessionAttendances.filter((item) =>
+      data.enrollments.some((enrollment) => enrollment.id === item.enrollment_id),
+    ),
+    aliases: data.aliases.filter((item) => item.discipline_id === offering.discipline_id),
   };
 }

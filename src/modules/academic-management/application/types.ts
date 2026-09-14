@@ -25,6 +25,7 @@ export interface Offering {
   class_id: string;
   discipline_id: string;
   academic_year: number;
+  academic_year_id?: string | null;
   workload_hours: number;
   vc_count: number;
   policy_id: string | null;
@@ -88,6 +89,102 @@ export interface AcademicClass {
   name: string;
   course_id: string;
 }
+export interface AcademicCourse {
+  id: string;
+  code: string;
+  name: string;
+  year: number;
+}
+export type AcademicYearStatus = "draft" | "open" | "closed";
+export interface AcademicYear {
+  id: string;
+  course_id: string;
+  year: number;
+  starts_on: string;
+  ends_on: string;
+  status: AcademicYearStatus;
+  source_ref: string;
+  revision: number;
+  change_reason: string | null;
+  created_at: string;
+}
+export type CalendarEventType =
+  | "holiday"
+  | "recess"
+  | "suspension"
+  | "institutional"
+  | "class_exception";
+export interface AcademicCalendarEvent {
+  id: string;
+  academic_year_id: string;
+  class_id: string | null;
+  event_date: string;
+  event_type: CalendarEventType;
+  title: string;
+  blocks_instruction: boolean;
+  source_ref: string;
+  revision: number;
+  change_reason: string | null;
+}
+export type SessionStatus =
+  | "planned"
+  | "proposed"
+  | "validated"
+  | "cancelled"
+  | "rescheduled"
+  | "superseded";
+export type SessionClassification = "instruction" | "non_instruction" | "unmapped";
+export interface InstructionSession {
+  id: string;
+  academic_year_id: string;
+  class_id: string;
+  offering_id: string | null;
+  qts_activity_id: string | null;
+  rescheduled_from_id: string | null;
+  scheduled_on: string;
+  planned_starts_at: string | null;
+  planned_ends_at: string | null;
+  actual_starts_at: string | null;
+  actual_ends_at: string | null;
+  title: string;
+  content: string | null;
+  location: string | null;
+  planned_instructor: string | null;
+  classification: SessionClassification;
+  status: SessionStatus;
+  proposed_outcome: "validated" | "cancelled" | "rescheduled";
+  planned_hours: number;
+  taught_hours: number | null;
+  revision: number;
+  change_reason: string | null;
+  proposed_at: string | null;
+  proposed_by: string | null;
+  validated_at: string | null;
+  validated_by: string | null;
+}
+export interface SessionInstructor {
+  id: string;
+  session_id: string;
+  assignment_id: string | null;
+  profile_id: string | null;
+  display_name: string;
+}
+export type AttendanceStatus = "present" | "justified_absence" | "unjustified_absence";
+export interface SessionAttendance {
+  id: string;
+  session_id: string;
+  enrollment_id: string;
+  status: AttendanceStatus;
+  revision: number;
+  change_reason: string | null;
+}
+export interface DisciplineAlias {
+  id: string;
+  discipline_id: string;
+  alias: string;
+  normalized_alias: string;
+  active: boolean;
+}
 export interface AcademicStaff {
   id: string;
   full_name: string;
@@ -105,12 +202,21 @@ export interface OfferingView extends Offering {
   class_name: string;
 }
 export interface EnrollmentView extends Enrollment {
+  legacy_justified_absences?: number | null;
+  legacy_unjustified_absences?: number | null;
+  journal_justified_absences?: number;
+  journal_unjustified_absences?: number;
   result: AcademicResult;
 }
 export interface AcademicDashboard {
   disciplines: Discipline[];
   offerings: OfferingView[];
   classes: AcademicClass[];
+  courses: AcademicCourse[];
+  academicYears: AcademicYear[];
+  calendarEvents: AcademicCalendarEvent[];
+  sessions: InstructionSession[];
+  sessionAttendances: SessionAttendance[];
   staff: AcademicStaff[];
   students: AcademicStudent[];
   /** Todas as matrículas legíveis pela sessão, incluindo outros anos. */
@@ -136,4 +242,8 @@ export interface AcademicDetail {
   audit: AcademicAuditEvent[];
   staff: AcademicStaff[];
   availableStudents: AcademicStudent[];
+  sessions: InstructionSession[];
+  sessionInstructors: SessionInstructor[];
+  sessionAttendances: SessionAttendance[];
+  aliases: DisciplineAlias[];
 }

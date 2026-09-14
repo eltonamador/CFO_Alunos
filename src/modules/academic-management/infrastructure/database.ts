@@ -3,7 +3,13 @@ import type { Database, Json } from "@/lib/supabase/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   AcademicAuditEvent,
+  AcademicCalendarEvent,
   AcademicPolicy,
+  AcademicYear,
+  DisciplineAlias,
+  InstructionSession,
+  SessionAttendance,
+  SessionInstructor,
   Assessment,
   Assignment,
   Discipline,
@@ -31,6 +37,12 @@ export type AcademicTables = {
   academic_assessments: Table<Assessment>;
   academic_grades: Table<Grade>;
   academic_audit_events: Table<AcademicAuditEvent>;
+  academic_years: Table<AcademicYear>;
+  academic_calendar_events: Table<AcademicCalendarEvent>;
+  academic_discipline_aliases: Table<DisciplineAlias>;
+  academic_instruction_sessions: Table<InstructionSession>;
+  academic_session_instructors: Table<SessionInstructor>;
+  academic_session_attendances: Table<SessionAttendance>;
 };
 type AcademicFunctions = {
   academic_save_grade: {
@@ -68,6 +80,24 @@ type AcademicFunctions = {
     };
     Returns: string;
   };
+  academic_create_year: {
+    Args: { p_course_id: string; p_year: number; p_starts_on: string; p_ends_on: string; p_source_ref: string; p_status?: string };
+    Returns: string;
+  };
+  academic_open_year: { Args: { p_academic_year_id: string; p_reason: string }; Returns: string };
+  academic_save_calendar_event: {
+    Args: { p_event_id: string | null; p_academic_year_id: string; p_class_id: string | null; p_event_date: string; p_event_type: string; p_title: string; p_blocks_instruction: boolean; p_source_ref: string; p_reason: string };
+    Returns: string;
+  };
+  academic_set_offering_year: { Args: { p_offering_id: string; p_academic_year_id: string; p_reason: string }; Returns: string };
+  academic_save_discipline_alias: { Args: { p_discipline_id: string; p_alias: string }; Returns: string };
+  academic_link_qts_document: { Args: { p_document_id: string; p_academic_year_id: string; p_reason: string }; Returns: number };
+  academic_map_qts_session: { Args: { p_session_id: string; p_offering_id: string | null; p_classification: string; p_reason: string; p_expected_revision: number }; Returns: string };
+  academic_create_manual_session: { Args: { p_offering_id: string; p_scheduled_on: string; p_starts_at: string; p_ends_at: string; p_title: string; p_location?: string | null; p_rescheduled_from_id?: string | null }; Returns: string };
+  academic_propose_session: { Args: { p_session_id: string; p_actual_starts_at: string | null; p_actual_ends_at: string | null; p_content: string; p_location: string; p_outcome: string; p_assignment_ids: Json }; Returns: string };
+  academic_validate_session: { Args: { p_session_id: string; p_expected_revision: number; p_outcome: string; p_attendance: Json; p_reason: string }; Returns: string };
+  academic_close_year: { Args: { p_academic_year_id: string; p_reason: string }; Returns: string };
+  academic_reopen_year: { Args: { p_academic_year_id: string; p_reason: string }; Returns: string };
 };
 
 type AcademicDatabase = {

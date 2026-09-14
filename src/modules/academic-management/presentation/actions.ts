@@ -19,13 +19,13 @@ export async function academicAction(
   if (!parsed.success)
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const command = parsed.data;
-  const instructorOperation = ["save_grade", "create_assessment"].includes(command.operation);
+  const instructorOperation = ["save_grade", "create_assessment", "propose_session"].includes(command.operation);
   if (session.role !== "coordenacao" && !(session.role === "instrutor" && instructorOperation)) {
     return { ok: false, message: "Seu perfil não tem permissão para esta operação." };
   }
   const client = createAcademicClient();
   try {
-    if (session.role === "instrutor" && "offering_id" in command) {
+    if (session.role === "instrutor" && "offering_id" in command && typeof command.offering_id === "string") {
       const { data, error } = await client
         .from("academic_assignments")
         .select("id")
@@ -45,7 +45,7 @@ export async function academicAction(
         break;
       }
       case "create_offering": {
-        const { error } = await client.rpc("academic_create_offering_ri", {
+        const created = await client.rpc("academic_create_offering_ri", {
           p_class_id: command.class_id,
           p_discipline_id: command.discipline_id,
           p_academic_year: command.academic_year,
@@ -53,7 +53,15 @@ export async function academicAction(
           p_vc_count: command.vc_count,
           p_decision_ref: command.decision_ref,
         });
-        if (error) throw academicError(error);
+        if (created.error || !created.data) throw academicError(created.error);
+        if (command.academic_year_id) {
+          const linked = await client.rpc("academic_set_offering_year", {
+            p_offering_id: created.data,
+            p_academic_year_id: command.academic_year_id,
+            p_reason: "Oferta vinculada ao calendário ao ser criada",
+          });
+          if (linked.error) throw academicError(linked.error);
+        }
         break;
       }
       case "configure_policy": {
@@ -150,10 +158,129 @@ export async function academicAction(
         if (saved.error) throw academicError(saved.error);
         break;
       }
+      case "create_academic_year": {
+        const { error } = await client.rpc("academic_create_year", {
+          p_course_id: command.course_id,
+          p_year: command.year,
+          p_starts_on: command.starts_on,
+          p_ends_on: command.ends_on,
+          p_source_ref: command.source_ref,
+          p_status: command.status,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "open_academic_year": {
+        const { error } = await client.rpc("academic_open_year", {
+          p_academic_year_id: command.academic_year_id,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "save_calendar_event": {
+        const { error } = await client.rpc("academic_save_calendar_event", {
+          p_event_id: command.event_id,
+          p_academic_year_id: command.academic_year_id,
+          p_class_id: command.class_id,
+          p_event_date: command.event_date,
+          p_event_type: command.event_type,
+          p_title: command.title,
+          p_blocks_instruction: command.blocks_instruction,
+          p_source_ref: command.source_ref,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "link_offering_year": {
+        const { error } = await client.rpc("academic_set_offering_year", {
+          p_offering_id: command.offering_id,
+          p_academic_year_id: command.academic_year_id,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "save_discipline_alias": {
+        const { error } = await client.rpc("academic_save_discipline_alias", {
+          p_discipline_id: command.discipline_id,
+          p_alias: command.alias,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "map_qts_session": {
+        const { error } = await client.rpc("academic_map_qts_session", {
+          p_session_id: command.session_id,
+          p_offering_id: command.offering_id,
+          p_classification: command.classification,
+          p_reason: command.reason,
+          p_expected_revision: command.expected_revision,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "create_manual_session": {
+        const { error } = await client.rpc("academic_create_manual_session", {
+          p_offering_id: command.offering_id,
+          p_scheduled_on: command.scheduled_on,
+          p_starts_at: command.starts_at,
+          p_ends_at: command.ends_at,
+          p_title: command.title,
+          p_location: command.location || null,
+          p_rescheduled_from_id: command.rescheduled_from_id,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "propose_session": {
+        const { error } = await client.rpc("academic_propose_session", {
+          p_session_id: command.session_id,
+          p_actual_starts_at: command.actual_starts_at,
+          p_actual_ends_at: command.actual_ends_at,
+          p_content: command.content,
+          p_location: command.location,
+          p_outcome: command.outcome,
+          p_assignment_ids: command.assignment_ids as Json,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "validate_session": {
+        const { error } = await client.rpc("academic_validate_session", {
+          p_session_id: command.session_id,
+          p_expected_revision: command.expected_revision,
+          p_outcome: command.outcome,
+          p_attendance: command.attendance as Json,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "close_academic_year": {
+        const { error } = await client.rpc("academic_close_year", {
+          p_academic_year_id: command.academic_year_id,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "reopen_academic_year": {
+        const { error } = await client.rpc("academic_reopen_year", {
+          p_academic_year_id: command.academic_year_id,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
     }
     for (const role of ["coordenacao", "secretaria", "instrutor", "aluno"]) {
       revalidatePath(`/${role}/academico`);
       if ("offering_id" in command) revalidatePath(`/${role}/academico/${command.offering_id}`);
+      revalidatePath(`/${role}/academico/diario`);
+      revalidatePath(`/${role}/academico/calendario`);
+      revalidatePath(`/${role}/academico/relatorios`);
     }
     return { ok: true, message: "Registro salvo. O histórico foi atualizado." };
   } catch (error) {

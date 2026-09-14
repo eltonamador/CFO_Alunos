@@ -3,6 +3,7 @@ import Image from "next/image";
 import {
   Home,
   Users,
+  UsersRound,
   AlertTriangle,
   FileText,
   Search,
@@ -37,6 +38,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   coordenacao: [
     { href: "/coordenacao", label: "Início", icon: Home, exact: true },
     { href: "/coordenacao/alunos", label: "Alunos", icon: Users },
+    { href: "/coordenacao/equipe", label: "Equipe", icon: UsersRound },
     {
       href: "/coordenacao/academico",
       label: "Gestão Acadêmica",
@@ -70,7 +72,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     { href: "/instrutor", label: "Buscar", icon: Search, exact: true },
     {
       href: "/instrutor/academico",
-      label: "Disciplinas e notas",
+      label: "Disciplinas e diário",
       shortLabel: "Acadêmico",
       icon: GraduationCap,
     },
@@ -80,7 +82,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   ],
   aluno: [
     { href: "/aluno", label: "Início", icon: Home, exact: true },
-    { href: "/aluno/academico", label: "Minhas notas", shortLabel: "Notas", icon: GraduationCap },
+    { href: "/aluno/academico", label: "Minhas disciplinas", shortLabel: "Acadêmico", icon: GraduationCap },
     { href: "/aluno/escalas", label: "Escalas PDF", shortLabel: "Escalas", icon: Folder },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },

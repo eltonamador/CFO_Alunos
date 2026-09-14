@@ -10,6 +10,7 @@ import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty"
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
 import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
+import { AcademicInstructionDashboardAlert } from "@/components/app/academic/AcademicInstructionDashboardAlert";
 
 export const metadata = { title: "Início — Coordenação" };
 export const dynamic = "force-dynamic";
@@ -292,6 +293,7 @@ export default async function CoordenacaoHome() {
 
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/coordenacao/escalas" />
       <QtsDashboardCard overview={qtsOverview} />
+      <AcademicInstructionDashboardAlert role="coordenacao" />
 
       {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

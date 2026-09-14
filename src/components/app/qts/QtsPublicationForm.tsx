@@ -57,12 +57,30 @@ function normalizeRows(rows: QtsDraftActivity[]) {
 
 export function QtsPublicationForm({
   classes,
+  academicYears,
+  documents,
   qtsTypeId,
 }: {
-  classes: { id: string; name: string }[];
+  classes: { id: string; name: string; course_id: string }[];
+  academicYears: { id: string; course_id: string; year: number; starts_on: string; ends_on: string; status: string }[];
+  documents: { id: string; class_id: string; original_filename: string; period_start: string | null; period_end: string | null }[];
   qtsTypeId: string;
 }) {
   const [classId, setClassId] = useState(classes.length === 1 ? classes[0]!.id : "");
+  const [academicYearId, setAcademicYearId] = useState("");
+  const [supersedesDocumentId, setSupersedesDocumentId] = useState("");
+  const [historicalDocumentId, setHistoricalDocumentId] = useState("");
+  const [historicalYearId, setHistoricalYearId] = useState("");
+  const selectedClass = classes.find((item) => item.id === classId);
+  const availableAcademicYears = academicYears.filter(
+    (item) => item.course_id === selectedClass?.course_id && item.status === "open",
+  );
+  const replaceableDocuments = documents.filter((item) => item.class_id === classId);
+  const historicalDocument = documents.find((item) => item.id === historicalDocumentId);
+  const historicalClass = classes.find((item) => item.id === historicalDocument?.class_id);
+  const historicalYears = academicYears.filter(
+    (item) => item.course_id === historicalClass?.course_id && item.status === "open",
+  );
   const [source, setSource] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [rows, setRows] = useState<QtsDraftActivity[]>([]);
@@ -112,8 +130,8 @@ export function QtsPublicationForm({
   }
 
   function publish() {
-    if (!preview || !classId) {
-      setError("Selecione a turma e leia o PDF antes de publicar.");
+    if (!preview || !classId || !academicYearId) {
+      setError("Selecione a turma, o ano letivo e leia o PDF antes de publicar.");
       return;
     }
     const values = normalizeRows(rows);
@@ -121,8 +139,16 @@ export function QtsPublicationForm({
       setError("Confirme que conferiu a tabela extraída antes de publicar.");
       return;
     }
-    if (!values.length || values.some((row) => !row.date || !row.activity || !row.startsAt || !row.endsAt)) {
-      setError("Revise data, horário e atividade em todas as linhas.");
+    if (
+      !values.length ||
+      values.some(
+        (row) =>
+          !row.date ||
+          !row.activity ||
+          Boolean(row.startsAt) !== Boolean(row.endsAt),
+      )
+    ) {
+      setError("Revise data, atividade e horários. Uma atividade pode ficar sem horário, mas início e término devem ser informados juntos.");
       return;
     }
     if (period.end < period.start || values.some((row) => row.date < period.start || row.date > period.end)) {
@@ -143,6 +169,7 @@ export function QtsPublicationForm({
             p_checksum_sha256: await checksum(preview.file),
             p_period_start: period.start,
             p_period_end: period.end,
+            p_supersedes_document_id: supersedesDocumentId || undefined,
           });
           if (reserved.error || !reserved.data)
             throw new Error(reserved.error?.message ?? "Não foi possível reservar o QTS.");
@@ -162,6 +189,7 @@ export function QtsPublicationForm({
           const published = await client.rpc("qts_publish_reviewed_document", {
             p_document_id: document.id,
             p_activities: values as unknown as Json,
+            p_academic_year_id: academicYearId,
           });
           if (published.error) throw new Error(published.error.message);
           setDone(`QTS${preview.qtsNumber ? ` nº ${preview.qtsNumber}` : ""} publicado com ${values.length} atividades.`);
@@ -173,6 +201,31 @@ export function QtsPublicationForm({
           setError(cause instanceof Error ? cause.message : "Não foi possível publicar o QTS.");
         } finally {
           setProgress("");
+        }
+      })();
+    });
+  }
+
+  function linkPublishedQts() {
+    if (!historicalDocumentId || !historicalYearId) {
+      setError("Selecione o QTS publicado e o ano letivo correspondente.");
+      return;
+    }
+    startTransition(() => {
+      void (async () => {
+        setError(null);
+        setDone(null);
+        try {
+          const client = createSupabaseBrowserClient() as SupabaseClient<QtsDatabase>;
+          const linked = await client.rpc("academic_link_qts_document", {
+            p_document_id: historicalDocumentId,
+            p_academic_year_id: historicalYearId,
+            p_reason: "Vínculo de QTS publicado anteriormente ao diário acadêmico",
+          });
+          if (linked.error) throw new Error(linked.error.message);
+          setDone(`QTS vinculado ao ano letivo; ${linked.data ?? 0} aula(s) planejada(s) foram verificadas.`);
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : "Não foi possível vincular o QTS.");
         }
       })();
     });
@@ -190,9 +243,39 @@ export function QtsPublicationForm({
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-medium">
           Turma
-          <Select value={classId} onChange={(event) => setClassId(event.target.value)} disabled={busy || Boolean(preview)}>
+          <Select
+            value={classId}
+            onChange={(event) => {
+              setClassId(event.target.value);
+              setAcademicYearId("");
+              setSupersedesDocumentId("");
+            }}
+            disabled={busy || Boolean(preview)}
+          >
             <option value="">Selecione</option>
             {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </Select>
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          Ano letivo acadêmico
+          <Select value={academicYearId} onChange={(event) => setAcademicYearId(event.target.value)} disabled={busy || Boolean(preview) || !classId}>
+            <option value="">Selecione</option>
+            {availableAcademicYears.map((item) => <option key={item.id} value={item.id}>{item.year} · {item.starts_on.split("-").reverse().join("/")} a {item.ends_on.split("-").reverse().join("/")}</option>)}
+          </Select>
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          Substitui QTS anterior
+          <Select
+            value={supersedesDocumentId}
+            onChange={(event) => setSupersedesDocumentId(event.target.value)}
+            disabled={busy || Boolean(preview) || !classId}
+          >
+            <option value="">Não é uma substituição</option>
+            {replaceableDocuments.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.original_filename} · {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}
+              </option>
+            ))}
           </Select>
         </label>
         <label className="space-y-1 text-sm font-medium">
@@ -247,13 +330,35 @@ export function QtsPublicationForm({
           </Button>
           <label className="flex items-start gap-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
             <input type="checkbox" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} />
-            <span>Conferi horários, atividades, uniforme, local e responsável com o PDF original. Ao publicar, uma correção exigirá uma nova versão do QTS.</span>
+            <span>Conferi horários, atividades, uniforme, local e responsável com o PDF original. Atividades sem horário ficam pendentes de complementação; uma correção exige nova versão do QTS.</span>
           </label>
           <div className="flex flex-wrap gap-2">
             <Button type="button" disabled={busy} onClick={publish}>Publicar QTS conferido</Button>
             <Button type="button" variant="secondary" disabled={busy} onClick={() => { setPreview(null); setRows([]); setReviewed(false); setError(null); }}>Cancelar</Button>
           </div>
         </div>
+      )}
+      {documents.length > 0 && (
+        <details className="mt-5 border-t border-border pt-4">
+          <summary className="cursor-pointer text-sm font-semibold">Vincular QTS já publicado ao calendário</summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 text-sm font-medium">
+              QTS publicado
+              <Select value={historicalDocumentId} onChange={(event) => { setHistoricalDocumentId(event.target.value); setHistoricalYearId(""); }} disabled={busy}>
+                <option value="">Selecione</option>
+                {documents.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}</option>)}
+              </Select>
+            </label>
+            <label className="space-y-1 text-sm font-medium">
+              Ano letivo
+              <Select value={historicalYearId} onChange={(event) => setHistoricalYearId(event.target.value)} disabled={busy || !historicalDocumentId}>
+                <option value="">Selecione</option>
+                {historicalYears.map((item) => <option key={item.id} value={item.id}>{item.year} · {item.starts_on.split("-").reverse().join("/")} a {item.ends_on.split("-").reverse().join("/")}</option>)}
+              </Select>
+            </label>
+          </div>
+          <Button className="mt-3" type="button" variant="secondary" disabled={busy || !historicalDocumentId || !historicalYearId} onClick={linkPublishedQts}>Vincular e gerar planejamento</Button>
+        </details>
       )}
     </section>
   );

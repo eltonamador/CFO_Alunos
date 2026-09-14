@@ -19,7 +19,7 @@ export default async function QtsPage({ searchParams }: { searchParams: { data?:
   return (
     <div className="space-y-6">
       <QtsViewer initial={snapshot} initialDate={selected} />
-      {options && <QtsPublicationForm classes={options.classes} qtsTypeId={options.qtsTypeId} />}
+      {options && <QtsPublicationForm classes={options.classes} academicYears={options.academicYears} documents={options.documents} qtsTypeId={options.qtsTypeId} />}
     </div>
   );
 }

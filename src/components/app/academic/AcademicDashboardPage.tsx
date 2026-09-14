@@ -12,7 +12,11 @@ import { AcademicDataError } from "@/modules/academic-management/infrastructure/
 import type { UserRoleValue } from "@/shared/domain";
 import { AcademicField, AcademicRetryButton } from "./AcademicActionForm";
 import { NewDisciplineForm, NewOfferingForm } from "./AcademicSetupForms";
+import { AcademicCalendarPanel } from "./AcademicCalendarPanel";
+import { AcademicQtsMappingPanel } from "./AcademicQtsMappingPanel";
+import { macapaDate } from "@/modules/qts/domain/qts";
 import { AcademicResultSummary } from "./AcademicResult";
+import { instructionalDays, projectedWorkload } from "@/modules/academic-management/domain/instructionJournal";
 
 export type AcademicSearchParams = { fase?: string; turma?: string; cadete?: string };
 export const phaseLabel = (phase: number) =>
@@ -66,6 +70,30 @@ export async function AcademicDashboardPage({
   );
   const base = `/${role}/academico`;
   const canManage = role === "coordenacao";
+  const today = macapaDate();
+  const validatedSessions = data.sessions.filter((item) => item.status === "validated");
+  const pendingSessions = data.sessions.filter(
+    (item) => item.classification === "instruction" && ["planned", "proposed"].includes(item.status),
+  );
+  const unmappedSessions = data.sessions.filter((item) => item.classification === "unmapped");
+  const overdueSessions = pendingSessions.filter((item) => item.scheduled_on < today);
+  const workloadAlerts = data.offerings.map((offering) => {
+    const year = data.academicYears.find((item) => item.id === offering.academic_year_id);
+    const offeringSessions = data.sessions.filter((item) => item.offering_id === offering.id);
+    const taught = offeringSessions.filter((item) => item.status === "validated").reduce((sum, item) => sum + (item.taught_hours ?? 0), 0);
+    const future = offeringSessions.filter((item) => ["planned", "proposed"].includes(item.status) && item.scheduled_on >= today).reduce((sum, item) => sum + item.planned_hours, 0);
+    const blockedDates = year
+      ? data.calendarEvents.filter((item) => item.academic_year_id === year.id && item.blocks_instruction && (!item.class_id || item.class_id === offering.class_id)).map((item) => item.event_date)
+      : [];
+    const cadence = year ? instructionalDays({ startsOn: year.starts_on, endsOn: year.ends_on, blockedDates, asOf: today }) : null;
+    return {
+      offering,
+      cadence,
+      projection: projectedWorkload({ adoptedHours: offering.workload_hours, taughtHours: taught, scheduledFutureHours: future, hasAcademicYear: Boolean(year), hasMappedFuturePlan: future > 0 }),
+    };
+  });
+  const deficitAlerts = workloadAlerts.filter((item) => item.projection.status === "deficit_risk");
+  const insufficientAlerts = workloadAlerts.filter((item) => item.projection.status === "insufficient_data");
   return (
     <div className="space-y-5">
       <header>
@@ -134,6 +162,64 @@ export async function AcademicDashboardPage({
           <p className="font-display text-3xl font-bold">{disciplines.length}</p>
         </Card>
       </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo do diário de instrução">
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Aulas validadas</p>
+          <p className="font-display text-2xl font-bold">{validatedSessions.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Aulas pendentes</p>
+          <p className="font-display text-2xl font-bold">{pendingSessions.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">QTS sem disciplina</p>
+          <p className="font-display text-2xl font-bold">{unmappedSessions.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Diários vencidos</p>
+          <p className="font-display text-2xl font-bold">{overdueSessions.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Risco de déficit</p>
+          <p className="font-display text-2xl font-bold">{deficitAlerts.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Projeções incompletas</p>
+          <p className="font-display text-2xl font-bold">{insufficientAlerts.length}</p>
+        </Card>
+      </section>
+      {(overdueSessions.length > 0 || unmappedSessions.length > 0 || deficitAlerts.length > 0 || insufficientAlerts.length > 0) && (
+        <Alert>
+          {overdueSessions.length > 0 && `${overdueSessions.length} aula(s) já ocorreram e ainda aguardam proposta ou validação. `}
+          {unmappedSessions.length > 0 && `${unmappedSessions.length} item(ns) do QTS precisam ser classificados pela coordenação. `}
+          {deficitAlerts.length > 0 && `${deficitAlerts.length} disciplina(s) têm risco de déficit de carga. `}
+          {insufficientAlerts.length > 0 && `${insufficientAlerts.length} disciplina(s) ainda não têm calendário ou planejamento futuro suficiente.`}
+        </Alert>
+      )}
+      {deficitAlerts.length > 0 && (
+        <Card className="p-4">
+          <h2 className="font-semibold">Cadência e carga que exigem atenção</h2>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {deficitAlerts.map(({ offering, projection, cadence }) => (
+              <li key={offering.id}>
+                <strong>{offering.discipline.name}</strong>: faltam {projection.deficitHours.toFixed(2).replace(".", ",")} h/a
+                {cadence ? ` em ${cadence.remaining} dia(s) instrucional(is) restante(s)` : ""}.
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      <section className="space-y-3" aria-labelledby="academic-calendar-workspace">
+        <AcademicCalendarPanel
+          canManage={canManage}
+          courses={data.courses}
+          classes={data.classes}
+          years={data.academicYears}
+          events={data.calendarEvents}
+          offerings={data.offerings}
+        />
+      </section>
+      {canManage && <AcademicQtsMappingPanel sessions={data.sessions} offerings={data.offerings} />}
       <section aria-labelledby="academic-offerings" className="space-y-3">
         <h2 id="academic-offerings" className="font-display text-xl font-semibold">
           Ofertas da fase
@@ -238,6 +324,7 @@ export async function AcademicDashboardPage({
               <NewOfferingForm
                 classes={data.classes}
                 disciplines={data.disciplines.filter((item) => item.active)}
+                academicYears={data.academicYears}
               />
             </div>
           </details>

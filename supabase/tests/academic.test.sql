@@ -36,7 +36,7 @@ create function pg_temp.ac_parameters() returns jsonb language sql immutable as 
 $$;
 
 select is((select count(*)::int from pg_tables where schemaname = 'public'
-  and tablename like 'academic_%' and rowsecurity), 8, 'RLS habilitada nas oito tabelas');
+  and tablename like 'academic_%' and rowsecurity), 16, 'RLS habilitada nas dezesseis tabelas acadêmicas');
 select ok(not has_table_privilege('anon','public.academic_grades','select'), 'anon sem SELECT de notas');
 select ok(not has_table_privilege('authenticated','public.academic_grades','insert'), 'sem INSERT REST de notas');
 select ok(not has_table_privilege('authenticated','public.academic_grades','update'), 'sem UPDATE REST de notas');
@@ -291,6 +291,83 @@ select is(pg_temp.ac_try('coord', $q$
 $q$),'23505','oferta duplicada falha integralmente');
 select is((select count(*)::int from public.academic_policies
  where decision_ref='Tentativa duplicada fictícia'),0,'falha da oferta não deixa política órfã');
+
+-- Diário instrucional: horas validadas e chamada detalhada começam sem reescrever o consolidado legado.
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_year(
+   pg_temp.ac_id('course'),2099,date '2099-01-01',date '2099-12-31','Calendário fictício aprovado'
+ )
+$q$),'ok','coordenação abre ano letivo acadêmico');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_set_offering_year(
+   pg_temp.ac_id('offering'),
+   (select id from public.academic_years where course_id=pg_temp.ac_id('course') and year=2099),
+   'Vínculo da oferta ao calendário de teste'
+ )
+$q$),'ok','oferta histórica é vinculada ao calendário sem alterar a carga');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_manual_session(
+   pg_temp.ac_id('offering'),date '2099-06-10',time '08:00',time '09:40','Aula prática fictícia','ABM',null
+ )
+$q$),'ok','coordenação cria sessão planejada manual');
+select is(pg_temp.ac_count('instrutor','select count(*) from public.academic_instruction_sessions'),1,
+ 'instrutor designado consulta apenas o próprio diário');
+select is(pg_temp.ac_try('instrutor', $q$
+ select public.academic_propose_session(
+   (select id from public.academic_instruction_sessions where title='Aula prática fictícia'),
+   time '08:00',time '09:40','Conteúdo prático confirmado','ABM','validated',
+   jsonb_build_array((select id from public.academic_assignments where offering_id=pg_temp.ac_id('offering') and profile_id=pg_temp.ac_id('instrutor') and active limit 1))
+ )
+$q$),'ok','instrutor designado propõe execução e participantes');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_validate_session(
+   (select id from public.academic_instruction_sessions where title='Aula prática fictícia'),
+   (select revision from public.academic_instruction_sessions where title='Aula prática fictícia'),
+   'validated',
+   jsonb_build_array(
+     jsonb_build_object('enrollmentId',pg_temp.ac_id('enrollment1'),'status','present'),
+     jsonb_build_object('enrollmentId',pg_temp.ac_id('enrollment2'),'status','unjustified_absence')
+   ),
+   'Chamada completa conferida pela coordenação'
+ )
+$q$),'ok','coordenação valida a sessão com chamada completa');
+select is((select taught_hours from public.academic_instruction_sessions where title='Aula prática fictícia'),2.00::numeric,
+ '100 minutos equivalem a duas horas-aula de cinquenta minutos');
+select is((select count(*)::int from public.academic_session_attendances where session_id=(select id from public.academic_instruction_sessions where title='Aula prática fictícia')),
+ 2,'uma chamada é gravada para cada matrícula da oferta');
+select is(pg_temp.ac_count('aluno1','select count(*) from public.academic_session_attendances'),1,
+ 'cadete consulta somente a própria chamada');
+select is(pg_temp.ac_count('instrutor','select count(*) from public.academic_session_attendances'),2,
+ 'instrutor designado consulta a chamada da própria oferta sem poder alterá-la');
+select is(pg_temp.ac_try('instrutor', $q$
+ insert into public.academic_session_attendances(session_id,enrollment_id,status)
+ values ((select id from public.academic_instruction_sessions where title='Aula prática fictícia'),pg_temp.ac_id('enrollment1'),'present')
+$q$),'42501','instrutor não contorna a chamada via REST');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_manual_session(
+   pg_temp.ac_id('offering'),date '2099-06-11',time '08:00',time '08:50','Aula com chamada duplicada','ABM',null
+ )
+$q$),'ok','coordenação cria segunda sessão para validar integridade da chamada');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_propose_session(
+   (select id from public.academic_instruction_sessions where title='Aula com chamada duplicada'),
+   time '08:00',time '08:50','Conteúdo confirmado','ABM','validated',
+   jsonb_build_array((select id from public.academic_assignments where offering_id=pg_temp.ac_id('offering') and profile_id=pg_temp.ac_id('instrutor') and active limit 1))
+ )
+$q$),'ok','coordenação pode registrar proposta para conferência da chamada');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_validate_session(
+   (select id from public.academic_instruction_sessions where title='Aula com chamada duplicada'),
+   (select revision from public.academic_instruction_sessions where title='Aula com chamada duplicada'),
+   'validated',
+   jsonb_build_array(
+     jsonb_build_object('enrollmentId',pg_temp.ac_id('enrollment1'),'status','present'),
+     jsonb_build_object('enrollmentId',pg_temp.ac_id('enrollment1'),'status','present')
+   ),'Tentativa de chamada duplicada'
+ )
+$q$),'23514','chamada com matrícula repetida é rejeitada');
+select ok((select count(*) >= 1 from public.academic_audit_events where entity='academic_instruction_sessions'),
+ 'diário instrucional é auditado');
 
 select * from finish();
 rollback;

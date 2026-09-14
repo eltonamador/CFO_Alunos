@@ -1,0 +1,13 @@
+# Dependências, artefatos e arquivos locais não fazem parte da aplicação publicada.
+node_modules/
+.next/
+.git/
+backups/
+artifacts/
+output/
+tmp/
+*.mov
+*.mp4
+*.log
+*.bak
+lista.txt

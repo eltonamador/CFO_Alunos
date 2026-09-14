@@ -167,9 +167,12 @@ export function AcademicGradebook({
             )}
             <details className="rounded-md border border-border p-3">
               <summary className="cursor-pointer text-sm font-semibold">
-                Frequência · justificadas: {formatAcademicNumber(enrollment.justified_absences)} ·
-                não justificadas: {formatAcademicNumber(enrollment.unjustified_absences)}
+                Frequência consolidada · justificadas: {formatAcademicNumber(enrollment.result.attendancePercent === null ? null : (enrollment.legacy_justified_absences ?? 0) + (enrollment.journal_justified_absences ?? 0))} ·
+                não justificadas: {formatAcademicNumber(enrollment.result.attendancePercent === null ? null : (enrollment.legacy_unjustified_absences ?? 0) + (enrollment.journal_unjustified_absences ?? 0))}
               </summary>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Legado: {formatAcademicNumber(enrollment.legacy_justified_absences)} h/a justificadas e {formatAcademicNumber(enrollment.legacy_unjustified_absences)} h/a não justificadas. Diário por aula: {formatAcademicNumber(enrollment.journal_justified_absences)} h/a justificadas e {formatAcademicNumber(enrollment.journal_unjustified_absences)} h/a não justificadas.
+              </p>
               {canManage ? (
                 <div className="mt-4">
                   <AcademicActionForm
@@ -183,8 +186,7 @@ export function AcademicGradebook({
                     submitLabel="Salvar frequência"
                   >
                     <p className="text-sm text-muted-foreground">
-                      Informe os totais acumulados nesta oferta até a conferência. O salvamento
-                      substitui os totais anteriores.
+                      Este formulário preserva o histórico consolidado anterior ao diário. As faltas registradas por aula são calculadas separadamente e não podem ser alteradas aqui.
                     </p>
                     <div className="grid gap-3 md:grid-cols-2">
                       <AcademicField label="Faltas justificadas (h/a)">

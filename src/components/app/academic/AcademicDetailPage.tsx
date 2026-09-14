@@ -15,6 +15,8 @@ import { AcademicPolicyForm } from "./AcademicPolicyForm";
 import { AssessmentForm, AssignmentForm, EnrollmentForm } from "./AcademicSetupForms";
 import { AcademicGradebook } from "./AcademicGradebook";
 import { AcademicAudit } from "./AcademicAudit";
+import { AcademicInstructionJournal } from "./AcademicInstructionJournal";
+import { AcademicDisciplineAliases } from "./AcademicDisciplineAliases";
 import { designationReferenceFor } from "@/modules/academic-management/domain/designations";
 
 export async function AcademicDetailPage({
@@ -44,7 +46,7 @@ export async function AcademicDetailPage({
     (data.offering.active &&
       role === "instrutor" &&
       data.assignments.some((item) => item.active && item.profile_id === session.userId));
-  const tab = ["notas", "responsaveis", "regras", "historico"].includes(searchParams.tab ?? "")
+  const tab = ["notas", "diario", "responsaveis", "regras", "historico"].includes(searchParams.tab ?? "")
     ? searchParams.tab
     : "notas";
   const availableStudents = data.availableStudents.filter(
@@ -93,6 +95,7 @@ export async function AcademicDetailPage({
         defaultValue="notas"
         items={[
           { value: "notas", label: "Notas e situação" },
+          { value: "diario", label: "Diário e frequência" },
           { value: "responsaveis", label: "Responsáveis" },
           { value: "regras", label: "Regras e fontes" },
           { value: "historico", label: "Histórico" },
@@ -129,6 +132,20 @@ export async function AcademicDetailPage({
             </details>
           )}
         </section>
+      )}
+      {tab === "diario" && (
+        <AcademicInstructionJournal
+          role={role}
+          currentUserId={session.userId}
+          offeringId={offering.id}
+          workloadHours={offering.workload_hours}
+          academicYearLinked={Boolean(offering.academic_year_id)}
+          sessions={data.sessions}
+          assignments={data.assignments}
+          enrollments={data.enrollments}
+          sessionInstructors={data.sessionInstructors}
+          sessionAttendances={data.sessionAttendances}
+        />
       )}
       {tab === "responsaveis" && (
         <section className="space-y-4" aria-label="Responsáveis pela disciplina">
@@ -303,6 +320,9 @@ export async function AcademicDetailPage({
             atas e decisões administrativas dependem de validação própria.
           </p>
         </section>
+      )}
+      {tab === "regras" && (
+        <AcademicDisciplineAliases disciplineId={discipline.id} aliases={data.aliases} canManage={canManage} />
       )}
       {tab === "historico" && (
         <section className="space-y-3" aria-label="Histórico acadêmico">

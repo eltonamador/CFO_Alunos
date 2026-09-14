@@ -10,6 +10,7 @@ import { PendingChangeRow } from "./PendingChangeRow";
 import { DocumentValidationCard } from "@/components/app/documents/DocumentValidationCard";
 import { PendingEquipmentCard } from "./PendingEquipmentCard";
 import { Filter, Search } from "lucide-react";
+import { AcademicInstructionPendingSummary } from "@/components/app/academic/AcademicInstructionDashboardAlert";
 
 export const metadata = { title: "Pendências de Validação — Coordenação" };
 
@@ -71,11 +72,12 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
         status,
         validation_status,
         student_notes,
-        student:students(id, war_name, student_number, sex),
+        student:students!inner(id, war_name, student_number, sex, course_status),
         requirement:equipment_requirements(id, name, quantity, unit, phase)
       `)
       .eq("status", "comprado")
-      .eq("validation_status", "nao_validado"),
+      .eq("validation_status", "nao_validado")
+      .eq("student.course_status", "matriculado"),
   ]);
 
   const pendingEquip = (pendingEquipData.data ?? []) as any[];
@@ -126,6 +128,8 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
           Homologue alterações cadastrais, valide documentos ou confirme o recebimento do enxoval.
         </p>
       </header>
+
+      <AcademicInstructionPendingSummary />
 
       {/* Barra de Filtros */}
       <section className="rounded-xl border bg-card p-4 shadow-card-sm">

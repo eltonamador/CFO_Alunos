@@ -7,6 +7,7 @@ import { AcademicActionForm, AcademicField } from "./AcademicActionForm";
 import type {
   AcademicClass,
   AcademicStaff,
+  AcademicYear,
   AcademicStudent,
   Discipline,
 } from "@/modules/academic-management/application/types";
@@ -52,12 +53,20 @@ export function NewDisciplineForm() {
 export function NewOfferingForm({
   disciplines,
   classes,
+  academicYears = [],
 }: {
   disciplines: Discipline[];
   classes: AcademicClass[];
+  academicYears?: AcademicYear[];
 }) {
   const [disciplineId, setDisciplineId] = useState("");
+  const [classId, setClassId] = useState("");
   const [academicYear, setAcademicYear] = useState("2026");
+  const [academicYearId, setAcademicYearId] = useState("");
+  const selectedClass = classes.find((item) => item.id === classId);
+  const availableYears = academicYears.filter(
+    (item) => item.course_id === selectedClass?.course_id && item.status === "open",
+  );
   const discipline = disciplines.find((item) => item.id === disciplineId);
   const designation = discipline
     ? designationReferenceFor(discipline.code, Number(academicYear))
@@ -85,7 +94,15 @@ export function NewOfferingForm({
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <AcademicField label="Turma">
-          <Select name="class_id" required defaultValue="">
+          <Select
+            name="class_id"
+            required
+            value={classId}
+            onChange={(event) => {
+              setClassId(event.target.value);
+              setAcademicYearId("");
+            }}
+          >
             <option value="" disabled>
               Selecione
             </option>
@@ -123,6 +140,29 @@ export function NewOfferingForm({
             value={academicYear}
             onChange={(event) => setAcademicYear(event.target.value)}
           />
+        </AcademicField>
+        <AcademicField
+          label="Calendário acadêmico"
+          hint="Opcional para ofertas históricas; necessário para diário, projeções e QTS."
+        >
+          <Select
+            name="academic_year_id"
+            value={academicYearId}
+            disabled={!selectedClass}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              setAcademicYearId(nextId);
+              const selected = availableYears.find((item) => item.id === nextId);
+              if (selected) setAcademicYear(String(selected.year));
+            }}
+          >
+            <option value="">Sem calendário vinculado</option>
+            {availableYears.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.year} · {item.starts_on.split("-").reverse().join("/")} a {item.ends_on.split("-").reverse().join("/")}
+              </option>
+            ))}
+          </Select>
         </AcademicField>
         <AcademicField
           label="Carga horária adotada (h/a)"

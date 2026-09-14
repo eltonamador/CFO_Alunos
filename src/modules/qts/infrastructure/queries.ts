@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { macapaDate, shiftQtsDate, type QtsSnapshot } from "../domain/qts";
 import type { QtsDatabase, QtsDocumentRow } from "./qtsDatabase";
+import { createAcademicClient } from "@/modules/academic-management/infrastructure/database";
 
 function validRange(start: string, end: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start)
@@ -70,14 +71,26 @@ export async function getQtsOverview() {
 
 export async function getQtsPublicationOptions() {
   const client = createSupabaseServerClient();
-  const [classes, type] = await Promise.all([
-    client.from("classes").select("id,name").order("name"),
+  const academicClient = createAcademicClient();
+  const [classes, type, academicYears] = await Promise.all([
+    client.from("classes").select("id,name,course_id").order("name"),
     client.from("schedule_types").select("id").eq("code", "qts").maybeSingle(),
+    academicClient.from("academic_years").select("id,course_id,year,starts_on,ends_on,status").eq("status", "open").order("year", { ascending: false }),
   ]);
-  if (classes.error || type.error || !type.data)
+  if (classes.error || type.error || academicYears.error || !type.data)
     throw new Error("Não foi possível preparar a publicação do QTS.");
+  const documents = await client
+    .from("schedule_documents")
+    .select("id,class_id,original_filename,period_start,period_end")
+    .eq("schedule_type_id", type.data.id)
+    .eq("publication_status", "published")
+    .neq("processing_status", "superseded")
+    .order("period_start", { ascending: false });
+  if (documents.error) throw new Error("Não foi possível consultar QTS já publicados.");
   return {
     classes: classes.data ?? [],
+    academicYears: academicYears.data ?? [],
+    documents: documents.data ?? [],
     qtsTypeId: type.data.id,
   };
 }

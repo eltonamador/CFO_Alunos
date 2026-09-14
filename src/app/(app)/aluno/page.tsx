@@ -8,6 +8,7 @@ import { getUpcomingScheduleAssignments } from "@/modules/schedule-repository/in
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
 import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
+import { AcademicInstructionDashboardAlert } from "@/components/app/academic/AcademicInstructionDashboardAlert";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -224,6 +225,7 @@ export default async function AlunoHome() {
 
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/aluno/escalas" />
       <QtsDashboardCard overview={qtsOverview} />
+      <AcademicInstructionDashboardAlert role="aluno" />
       <PendingFollowUpAlert studentId={session.studentId} />
       <UpcomingScheduleAssignments assignments={scheduleAssignments} />
 
