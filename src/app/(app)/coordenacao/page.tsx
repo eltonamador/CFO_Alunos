@@ -8,6 +8,8 @@ import { PushNotificationControl } from "@/components/app/PushNotificationContro
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
+import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
 
 export const metadata = { title: "Início — Coordenação" };
 export const dynamic = "force-dynamic";
@@ -46,6 +48,7 @@ export default async function CoordenacaoHome() {
   const supabase = createSupabaseServerClient();
   const birthdayAlertsPromise = getAdministrativeBirthdayAlerts();
   const dutyOverviewPromise = getDutyOverview();
+  const qtsOverviewPromise = getQtsOverview();
 
   // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
   const { data: rawStudentsData, error } = await supabase
@@ -263,7 +266,7 @@ export default async function CoordenacaoHome() {
   );
   const studentsWithoutCangaCount = totalStudents - studentsWithCangaIds.size;
   const birthdayAlerts = await birthdayAlertsPromise;
-  const dutyOverview = await dutyOverviewPromise;
+  const [dutyOverview, qtsOverview] = await Promise.all([dutyOverviewPromise, qtsOverviewPromise]);
 
   // Criação dos KPIs para exibição
   const kpis = [
@@ -288,6 +291,7 @@ export default async function CoordenacaoHome() {
       </header>
 
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/coordenacao/escalas" />
+      <QtsDashboardCard overview={qtsOverview} />
 
       {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

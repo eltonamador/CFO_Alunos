@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   "/primeiro-acesso",
   "/offline",
   "/escala-offline.html",
+  "/qts-offline.html",
   "/api/jobs/duty-reminders",
   "/api/jobs/birthday-notifications",
 ];

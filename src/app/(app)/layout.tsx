@@ -4,6 +4,7 @@ import { getSession } from "@/modules/identity/presentation/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BirthdayBanner } from "@/components/app/BirthdayBanner";
 import { OfflineRosterSession } from "@/components/app/schedules/OfflineRosterSession";
+import { OfflineQtsSession } from "@/components/app/qts/OfflineQtsSession";
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 
 async function getUnreadAnnouncementsCount(studentId: string): Promise<number> {
@@ -70,6 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     >
       <BirthdayBanner alerts={birthdayAlerts} />
       <OfflineRosterSession userId={session.userId} />
+      <OfflineQtsSession userId={session.userId} />
       {children}
     </AppShell>
   );

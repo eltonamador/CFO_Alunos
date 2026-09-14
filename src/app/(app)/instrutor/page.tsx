@@ -5,6 +5,8 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { StudentListCard } from "@/components/app/StudentListCard";
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
+import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
 
 export const metadata = { title: "Instrutor" };
 
@@ -16,9 +18,10 @@ export default async function InstrutorHome({ searchParams }: PageProps) {
   await requireRole("instrutor");
 
   const supabase = createSupabaseServerClient();
-  const [results, dutyOverview] = await Promise.all([
+  const [results, dutyOverview, qtsOverview] = await Promise.all([
     searchInstructorCards(supabase, searchParams.q ?? ""),
     getDutyOverview(),
+    getQtsOverview(),
   ]);
 
   const cardsWithPhotos = await Promise.all(
@@ -31,6 +34,7 @@ export default async function InstrutorHome({ searchParams }: PageProps) {
   return (
     <div className="space-y-4">
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/instrutor/escalas" />
+      <QtsDashboardCard overview={qtsOverview} />
       <header>
         <h1 className="text-2xl font-bold">Buscar aluno</h1>
         <p className="text-sm text-muted-foreground">Por número ou nome de guerra</p>

@@ -8,16 +8,19 @@ import { PushNotificationControl } from "@/components/app/PushNotificationContro
 import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
+import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
 
 export const metadata = { title: "Início — Secretaria" };
 
 export default async function SecretariaHome() {
   const session = await requireRole("secretaria");
   const supabase = createSupabaseServerClient();
-  const [counts, birthdayAlerts, dutyOverview] = await Promise.all([
+  const [counts, birthdayAlerts, dutyOverview, qtsOverview] = await Promise.all([
     countDocumentsByStatus(supabase),
     getAdministrativeBirthdayAlerts(),
     getDutyOverview(),
+    getQtsOverview(),
   ]);
 
   const pendingCount = counts.enviado + counts.em_analise;
@@ -58,6 +61,7 @@ export default async function SecretariaHome() {
       </header>
 
       <TodayTomorrowDuty overview={dutyOverview} />
+      <QtsDashboardCard overview={qtsOverview} />
 
       {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-3">

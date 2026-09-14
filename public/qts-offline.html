@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#a6192e" />
+    <title>QTS salvo — CFO Alunos</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, -apple-system, sans-serif; background:#f7f5f2; color:#201b1d; }
+      body { margin:0; padding:24px; } main { max-width:760px; margin:auto; }
+      h1 { margin:0; font-size:1.5rem; } .eyebrow { color:#a6192e; font-size:.75rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+      .notice, article { border:1px solid #d9d2cc; border-radius:12px; background:#fff; padding:16px; margin-top:16px; box-shadow:0 1px 3px #0001; }
+      .notice { background:#fff7df; border-color:#e7bd52; } .day { margin-top:28px; } .time { color:#a6192e; font-weight:800; font-variant-numeric:tabular-nums; }
+      h2 { font-size:1.05rem; text-transform:capitalize; } h3 { margin:7px 0; font-size:1rem; } p { margin:5px 0; color:#5e5658; font-size:.9rem; }
+      .uniform { display:inline-block; margin-top:7px; border-radius:999px; background:#f8eac2; color:#604400; padding:4px 8px; font-size:.75rem; font-weight:700; }
+      @media (prefers-color-scheme:dark) { :root{background:#181315;color:#faf7f8} .notice, article{background:#251f21;border-color:#51484a} p{color:#cdbfc2}.notice{background:#473713}.uniform{background:#5b4312;color:#ffe7a2} }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">CFO Alunos · modo offline</p>
+      <h1>Quadro de Trabalho Semanal salvo</h1>
+      <div id="content" class="notice">Carregando a última consulta salva neste aparelho…</div>
+    </main>
+    <script>
+      (() => {
+        const root = document.getElementById('content');
+        try {
+          const snapshot = JSON.parse(localStorage.getItem('cfo:qts:v1') || 'null');
+          const maximumAge = 7 * 86400000;
+          if (!snapshot || snapshot.version !== 1 || !Array.isArray(snapshot.entries) || !Date.parse(snapshot.savedAt) || Date.now() - Date.parse(snapshot.savedAt) > maximumAge) {
+            root.textContent = 'Não há um QTS válido salvo neste aparelho. Conecte-se e consulte o QTS novamente.';
+            return;
+          }
+          const saved = new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Belem'}).format(new Date(snapshot.savedAt));
+          root.innerHTML = '<strong>Sem conexão.</strong> Esta consulta foi salva em ' + saved + ' e expira após 7 dias.';
+          const byDate = snapshot.entries.reduce((map, item) => { (map[item.date] ||= []).push(item); return map; }, {});
+          Object.keys(byDate).sort().forEach(date => {
+            const section = document.createElement('section'); section.className = 'day';
+            const label = new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date + 'T12:00:00Z'));
+            section.innerHTML = '<h2>' + label + '</h2>';
+            byDate[date].sort((a,b)=>(a.startsAt||'99:99').localeCompare(b.startsAt||'99:99')).forEach(item => {
+              const article = document.createElement('article');
+              const time = (item.startsAt || '—').slice(0,5) + '–' + (item.endsAt || '—').slice(0,5);
+              article.innerHTML = '<div class="time">' + time + '</div><h3></h3><p></p><span class="uniform" hidden></span>';
+              article.querySelector('h3').textContent = item.activity;
+              article.querySelector('p').textContent = [item.location, item.instructor, item.workload ? 'CH ' + item.workload : ''].filter(Boolean).join(' · ');
+              if (item.uniform) { const badge = article.querySelector('.uniform'); badge.hidden = false; badge.textContent = 'Uniforme: ' + item.uniform; }
+              section.appendChild(article);
+            });
+            document.querySelector('main').appendChild(section);
+          });
+          if (!Object.keys(byDate).length) root.textContent = 'A última consulta não contém atividades neste período.';
+        } catch (_) { root.textContent = 'Não foi possível ler o QTS salvo neste aparelho.'; }
+      })();
+    </script>
+  </body>
+</html>

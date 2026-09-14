@@ -6,6 +6,8 @@ import { UpcomingScheduleAssignments } from "@/components/app/schedules/Upcoming
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
 import { getUpcomingScheduleAssignments } from "@/modules/schedule-repository/infrastructure/queries";
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
+import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const metadata = { title: "Portal do Aluno" };
@@ -32,9 +34,10 @@ const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
 
 export default async function AlunoHome() {
   const session = await requireRole("aluno");
-  const [scheduleAssignments, dutyOverview] = await Promise.all([
+  const [scheduleAssignments, dutyOverview, qtsOverview] = await Promise.all([
     getUpcomingScheduleAssignments(),
     getDutyOverview(),
+    getQtsOverview(),
   ]);
 
   // Usa war_name e student_number já carregados na sessão
@@ -220,6 +223,7 @@ export default async function AlunoHome() {
       </header>
 
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/aluno/escalas" />
+      <QtsDashboardCard overview={qtsOverview} />
       <PendingFollowUpAlert studentId={session.studentId} />
       <UpcomingScheduleAssignments assignments={scheduleAssignments} />
 
