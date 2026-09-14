@@ -14,7 +14,9 @@ function validRange(start: string, end: string) {
 async function signedDocuments(client: SupabaseClient<QtsDatabase>, documents: QtsDocumentRow[]) {
   return Promise.all(
     documents.map(async (document) => {
-      const signed = await client.storage.from("schedule-pdfs").createSignedUrl(document.storage_path, 3600);
+      const signed = await client.storage
+        .from("schedule-pdfs")
+        .createSignedUrl(document.storage_path, 3600, { download: document.original_filename });
       return {
         id: document.id,
         periodStart: document.period_start,
