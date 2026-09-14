@@ -156,7 +156,7 @@ export function QtsPublicationForm({
               p_document_id: document.id,
               p_reason: "Falha no envio do QTS conferido",
             });
-            throw new Error("O PDF não pôde ser enviado. Tente novamente.");
+            throw new Error(`O PDF não pôde ser enviado: ${upload.error.message}`);
           }
           setProgress("Publicando a agenda conferida…");
           const published = await client.rpc("qts_publish_reviewed_document", {
