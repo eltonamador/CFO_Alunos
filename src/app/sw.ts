@@ -105,7 +105,22 @@ const serwist = new Serwist({
   fallbacks: {
     entries: [
       {
+        url: "/qts-offline.html",
+        matcher: ({ request }) => {
+          const pathname = new URL(request.url).pathname;
+          return request.destination === "document" && (pathname === "/qts" || pathname.startsWith("/qts/"));
+        },
+      },
+      {
         url: "/escala-offline.html",
+        matcher: ({ request }) =>
+          request.destination === "document" &&
+          /\/(?:escalas\/calendario|(?:coordenacao|secretaria|instrutor|aluno)\/escalas)(?:\/|$)/.test(
+            new URL(request.url).pathname,
+          ),
+      },
+      {
+        url: "/offline",
         matcher: ({ request }) => request.destination === "document",
       },
     ],
