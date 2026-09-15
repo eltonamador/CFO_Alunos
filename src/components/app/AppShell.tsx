@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Megaphone,
   ClipboardCheck,
+  History,
   Info,
   type LucideIcon,
 } from "lucide-react";
@@ -56,6 +57,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
     { href: "/coordenacao/relatorios", label: "Relatórios", icon: FileText },
+    { href: "/coordenacao/historico", label: "Histórico", icon: History },
   ],
   secretaria: [
     { href: "/secretaria", label: "Início", icon: Home, exact: true },
@@ -82,7 +84,12 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
   ],
   aluno: [
     { href: "/aluno", label: "Início", icon: Home, exact: true },
-    { href: "/aluno/academico", label: "Minhas disciplinas", shortLabel: "Acadêmico", icon: GraduationCap },
+    {
+      href: "/aluno/academico",
+      label: "Minhas disciplinas",
+      shortLabel: "Acadêmico",
+      icon: GraduationCap,
+    },
     { href: "/aluno/escalas", label: "Escalas PDF", shortLabel: "Escalas", icon: Folder },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
