@@ -120,15 +120,42 @@ export function AcademicCalendarPanel({
             </AcademicActionForm>
           )}
           {canManage && selectedYear.status === "draft" && (
-            <AcademicActionForm
-              operation="open_academic_year"
-              hidden={{ academic_year_id: selectedYear.id }}
-              submitLabel="Abrir para lançamentos"
-            >
-              <AcademicField label="Motivo da abertura">
-                <Input name="reason" minLength={5} required defaultValue="Calendário conferido pela coordenação" />
-              </AcademicField>
-            </AcademicActionForm>
+            <div className="space-y-3">
+              <details className="rounded-md border border-border p-3">
+                <summary className="cursor-pointer font-medium">Corrigir rascunho do calendário</summary>
+                <div className="mt-3">
+                  <AcademicActionForm
+                    operation="update_academic_year"
+                    hidden={{ academic_year_id: selectedYear.id, expected_revision: selectedYear.revision }}
+                    submitLabel="Salvar correção"
+                  >
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <AcademicField label="Início">
+                        <Input name="starts_on" type="date" required defaultValue={selectedYear.starts_on} />
+                      </AcademicField>
+                      <AcademicField label="Término">
+                        <Input name="ends_on" type="date" required defaultValue={selectedYear.ends_on} />
+                      </AcademicField>
+                      <AcademicField label="Documento de referência">
+                        <Input name="source_ref" minLength={5} required defaultValue={selectedYear.source_ref} />
+                      </AcademicField>
+                      <AcademicField label="Motivo da correção">
+                        <Input name="reason" minLength={5} required defaultValue="Atualização do calendário provisório" />
+                      </AcademicField>
+                    </div>
+                  </AcademicActionForm>
+                </div>
+              </details>
+              <AcademicActionForm
+                operation="open_academic_year"
+                hidden={{ academic_year_id: selectedYear.id }}
+                submitLabel="Abrir para lançamentos"
+              >
+                <AcademicField label="Motivo da abertura">
+                  <Input name="reason" minLength={5} required defaultValue="Calendário conferido pela coordenação" />
+                </AcademicField>
+              </AcademicActionForm>
+            </div>
           )}
           {canManage && selectedYear.status === "closed" && (
             <AcademicActionForm

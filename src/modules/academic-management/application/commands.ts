@@ -157,6 +157,15 @@ export const academicCommandSchema = z.discriminatedUnion("operation", [
   }),
   z.object({ operation: z.literal("open_academic_year"), academic_year_id: id, reason: text(5, 2000) }),
   z.object({
+    operation: z.literal("update_academic_year"),
+    academic_year_id: id,
+    starts_on: requiredDate,
+    ends_on: requiredDate,
+    source_ref: text(5, 2000),
+    expected_revision: number(1, 1_000_000, true),
+    reason: text(5, 2000),
+  }),
+  z.object({
     operation: z.literal("save_calendar_event"),
     event_id: nullableId,
     academic_year_id: id,

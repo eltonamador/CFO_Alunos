@@ -19,6 +19,8 @@ export async function academicAction(
   if (!parsed.success)
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const command = parsed.data;
+  if (command.operation === "update_academic_year" && command.starts_on > command.ends_on)
+    return { ok: false, message: "O término deve ser posterior ao início." };
   const instructorOperation = ["save_grade", "create_assessment", "propose_session"].includes(command.operation);
   if (session.role !== "coordenacao" && !(session.role === "instrutor" && instructorOperation)) {
     return { ok: false, message: "Seu perfil não tem permissão para esta operação." };
@@ -173,6 +175,18 @@ export async function academicAction(
       case "open_academic_year": {
         const { error } = await client.rpc("academic_open_year", {
           p_academic_year_id: command.academic_year_id,
+          p_reason: command.reason,
+        });
+        if (error) throw academicError(error);
+        break;
+      }
+      case "update_academic_year": {
+        const { error } = await client.rpc("academic_update_year", {
+          p_academic_year_id: command.academic_year_id,
+          p_starts_on: command.starts_on,
+          p_ends_on: command.ends_on,
+          p_source_ref: command.source_ref,
+          p_expected_revision: command.expected_revision,
           p_reason: command.reason,
         });
         if (error) throw academicError(error);

@@ -85,6 +85,17 @@ type AcademicFunctions = {
     Returns: string;
   };
   academic_open_year: { Args: { p_academic_year_id: string; p_reason: string }; Returns: string };
+  academic_update_year: {
+    Args: {
+      p_academic_year_id: string;
+      p_starts_on: string;
+      p_ends_on: string;
+      p_source_ref: string;
+      p_expected_revision: number;
+      p_reason: string;
+    };
+    Returns: string;
+  };
   academic_save_calendar_event: {
     Args: { p_event_id: string | null; p_academic_year_id: string; p_class_id: string | null; p_event_date: string; p_event_type: string; p_title: string; p_blocks_instruction: boolean; p_source_ref: string; p_reason: string };
     Returns: string;

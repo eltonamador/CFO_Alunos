@@ -162,4 +162,49 @@ describe("academic Server Action authorization", () => {
       p_decision_ref: "Aplicação provisória conforme RI ABM 2023",
     });
   });
+
+  it("edits only through the audited academic-year RPC", async () => {
+    const client = fakeClient();
+    mocks.client.mockReturnValue(client);
+    const result = await academicAction(
+      null,
+      form({
+        operation: "update_academic_year",
+        academic_year_id: id,
+        starts_on: "2026-06-02",
+        ends_on: "2026-12-31",
+        source_ref: "Calendário oficial da coordenação",
+        expected_revision: "1",
+        reason: "Correção da data de encerramento",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(client.rpc).toHaveBeenCalledWith("academic_update_year", {
+      p_academic_year_id: id,
+      p_starts_on: "2026-06-02",
+      p_ends_on: "2026-12-31",
+      p_source_ref: "Calendário oficial da coordenação",
+      p_expected_revision: 1,
+      p_reason: "Correção da data de encerramento",
+    });
+  });
+
+  it("rejects a draft calendar whose end precedes its start", async () => {
+    const client = fakeClient();
+    mocks.client.mockReturnValue(client);
+    const result = await academicAction(
+      null,
+      form({
+        operation: "update_academic_year",
+        academic_year_id: id,
+        starts_on: "2026-12-31",
+        ends_on: "2026-06-02",
+        source_ref: "Calendário oficial da coordenação",
+        expected_revision: "1",
+        reason: "Correção da data de encerramento",
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
 });
