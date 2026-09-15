@@ -81,7 +81,7 @@ type AcademicFunctions = {
     Returns: string;
   };
   academic_create_year: {
-    Args: { p_course_id: string; p_year: number; p_starts_on: string; p_ends_on: string; p_source_ref: string; p_status?: string };
+    Args: { p_course_id: string; p_year: number; p_starts_on: string; p_ends_on: string; p_source_ref: string; p_status?: string; p_source_verified?: boolean };
     Returns: string;
   };
   academic_open_year: { Args: { p_academic_year_id: string; p_reason: string }; Returns: string };
@@ -93,6 +93,7 @@ type AcademicFunctions = {
       p_source_ref: string;
       p_expected_revision: number;
       p_reason: string;
+      p_source_verified?: boolean;
     };
     Returns: string;
   };

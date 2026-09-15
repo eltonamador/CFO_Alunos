@@ -108,6 +108,11 @@ export function AcademicCalendarPanel({
               {selectedYear.status === "open" ? "Aberto" : selectedYear.status === "closed" ? "Fechado" : "Rascunho"}
             </Badge>
           </div>
+          {!selectedYear.source_verified && (
+            <Alert>
+              A referência oficial ainda não foi conferida. O calendário não pode ser aberto para lançamentos.
+            </Alert>
+          )}
           {canManage && selectedYear.status === "open" && (
             <AcademicActionForm
               operation="close_academic_year"
@@ -142,6 +147,19 @@ export function AcademicCalendarPanel({
                       <AcademicField label="Motivo da correção">
                         <Input name="reason" minLength={5} required defaultValue="Atualização do calendário provisório" />
                       </AcademicField>
+                      <div className="space-y-2 text-sm font-medium">
+                        <span>Referência oficial</span>
+                        <label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
+                          <input
+                            aria-label="Referência oficial conferida"
+                            name="source_verified"
+                            type="checkbox"
+                            value="true"
+                            defaultChecked={selectedYear.source_verified}
+                          />
+                          Confirmo que o documento de referência foi conferido pela coordenação.
+                        </label>
+                      </div>
                     </div>
                   </AcademicActionForm>
                 </div>
@@ -150,6 +168,7 @@ export function AcademicCalendarPanel({
                 operation="open_academic_year"
                 hidden={{ academic_year_id: selectedYear.id }}
                 submitLabel="Abrir para lançamentos"
+                disabled={!selectedYear.source_verified}
               >
                 <AcademicField label="Motivo da abertura">
                   <Input name="reason" minLength={5} required defaultValue="Calendário conferido pela coordenação" />
@@ -202,11 +221,18 @@ export function AcademicCalendarPanel({
                   <Input name="source_ref" minLength={5} required placeholder="Calendário acadêmico aprovado…" />
                 </AcademicField>
                 <AcademicField label="Situação inicial">
-                  <Select name="status" defaultValue="open">
+                  <Select name="status" defaultValue="draft">
                     <option value="open">Aberto para lançamentos</option>
                     <option value="draft">Rascunho para conferência</option>
                   </Select>
                 </AcademicField>
+                <div className="space-y-2 text-sm font-medium">
+                  <span>Referência oficial</span>
+                  <label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
+                    <input aria-label="Referência oficial conferida" name="source_verified" type="checkbox" value="true" />
+                    Confirmo que o documento de referência foi conferido pela coordenação.
+                  </label>
+                </div>
               </div>
             </AcademicActionForm>
           </div>

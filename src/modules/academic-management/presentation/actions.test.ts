@@ -174,6 +174,7 @@ describe("academic Server Action authorization", () => {
         starts_on: "2026-06-02",
         ends_on: "2026-12-31",
         source_ref: "Calendário oficial da coordenação",
+        source_verified: "true",
         expected_revision: "1",
         reason: "Correção da data de encerramento",
       }),
@@ -184,8 +185,37 @@ describe("academic Server Action authorization", () => {
       p_starts_on: "2026-06-02",
       p_ends_on: "2026-12-31",
       p_source_ref: "Calendário oficial da coordenação",
+      p_source_verified: true,
       p_expected_revision: 1,
       p_reason: "Correção da data de encerramento",
+    });
+  });
+
+  it("sends the official-source confirmation when creating a calendar", async () => {
+    const client = fakeClient();
+    mocks.client.mockReturnValue(client);
+    const result = await academicAction(
+      null,
+      form({
+        operation: "create_academic_year",
+        course_id: id,
+        year: "2026",
+        starts_on: "2026-06-02",
+        ends_on: "2026-12-31",
+        source_ref: "Calendário oficial da coordenação",
+        status: "open",
+        source_verified: "true",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(client.rpc).toHaveBeenCalledWith("academic_create_year", {
+      p_course_id: id,
+      p_year: 2026,
+      p_starts_on: "2026-06-02",
+      p_ends_on: "2026-12-31",
+      p_source_ref: "Calendário oficial da coordenação",
+      p_status: "open",
+      p_source_verified: true,
     });
   });
 
@@ -200,6 +230,7 @@ describe("academic Server Action authorization", () => {
         starts_on: "2026-12-31",
         ends_on: "2026-06-02",
         source_ref: "Calendário oficial da coordenação",
+        source_verified: "true",
         expected_revision: "1",
         reason: "Correção da data de encerramento",
       }),

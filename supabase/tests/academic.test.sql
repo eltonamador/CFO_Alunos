@@ -295,9 +295,32 @@ select is((select count(*)::int from public.academic_policies
 -- Diário instrucional: horas validadas e chamada detalhada começam sem reescrever o consolidado legado.
 select is(pg_temp.ac_try('coord', $q$
  select public.academic_create_year(
-   pg_temp.ac_id('course'),2099,date '2099-01-01',date '2099-12-31','Calendário fictício aprovado'
+   pg_temp.ac_id('course'),2099,date '2099-01-01',date '2099-12-31','Calendário fictício aprovado','open',true
  )
 $q$),'ok','coordenação abre ano letivo acadêmico');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_year(
+   pg_temp.ac_id('course'),2100,date '2100-01-01',date '2100-12-31','Calendário sem confirmação','open',false
+ )
+$q$),'23514','calendário sem fonte verificada não pode abrir');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_create_year(
+   pg_temp.ac_id('course'),2100,date '2100-01-01',date '2100-12-31','Calendário provisório','draft',false
+ )
+$q$),'ok','coordenação registra calendário provisório como rascunho');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_update_year(
+   (select id from public.academic_years where course_id=pg_temp.ac_id('course') and year=2100),
+   date '2100-01-01',date '2100-12-30','Calendário oficial conferido',1,
+   'Documento oficial conferido pela coordenação',true
+ )
+$q$),'ok','coordenação confirma a fonte ao corrigir o rascunho');
+select is(pg_temp.ac_try('coord', $q$
+ select public.academic_open_year(
+   (select id from public.academic_years where course_id=pg_temp.ac_id('course') and year=2100),
+   'Calendário confirmado e pronto para lançamentos'
+ )
+$q$),'ok','calendário com fonte verificada pode abrir');
 select is(pg_temp.ac_try('coord', $q$
  select public.academic_set_offering_year(
    pg_temp.ac_id('offering'),

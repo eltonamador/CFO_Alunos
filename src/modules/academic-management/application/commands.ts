@@ -55,6 +55,7 @@ const nullableId = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),
   id.nullable(),
 );
+const checkbox = z.preprocess((value) => value === true || value === "true" || value === "on", z.boolean());
 const jsonArray = z.string().max(20_000).transform((value, ctx) => {
   try {
     const parsed: unknown = JSON.parse(value);
@@ -154,6 +155,7 @@ export const academicCommandSchema = z.discriminatedUnion("operation", [
     ends_on: requiredDate,
     source_ref: text(5, 2000),
     status: z.enum(["draft", "open"]),
+    source_verified: checkbox,
   }),
   z.object({ operation: z.literal("open_academic_year"), academic_year_id: id, reason: text(5, 2000) }),
   z.object({
@@ -164,6 +166,7 @@ export const academicCommandSchema = z.discriminatedUnion("operation", [
     source_ref: text(5, 2000),
     expected_revision: number(1, 1_000_000, true),
     reason: text(5, 2000),
+    source_verified: checkbox,
   }),
   z.object({
     operation: z.literal("save_calendar_event"),

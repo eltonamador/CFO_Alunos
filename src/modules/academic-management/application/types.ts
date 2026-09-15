@@ -104,6 +104,7 @@ export interface AcademicYear {
   ends_on: string;
   status: AcademicYearStatus;
   source_ref: string;
+  source_verified: boolean;
   revision: number;
   change_reason: string | null;
   created_at: string;

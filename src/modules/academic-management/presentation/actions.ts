@@ -168,6 +168,7 @@ export async function academicAction(
           p_ends_on: command.ends_on,
           p_source_ref: command.source_ref,
           p_status: command.status,
+          p_source_verified: command.source_verified,
         });
         if (error) throw academicError(error);
         break;
@@ -188,6 +189,7 @@ export async function academicAction(
           p_source_ref: command.source_ref,
           p_expected_revision: command.expected_revision,
           p_reason: command.reason,
+          p_source_verified: command.source_verified,
         });
         if (error) throw academicError(error);
         break;
