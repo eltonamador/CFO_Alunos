@@ -1,42 +1,41 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { requireRole } from "@/components/app/RoleGuard";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { AlertCircle, Users, FileText, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { requireRole } from "@/components/app/RoleGuard";
 import { BirthdayCard } from "@/components/app/BirthdayCard";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
-import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
-import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
 import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
-import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
 import { AcademicInstructionDashboardAlert } from "@/components/app/academic/AcademicInstructionDashboardAlert";
+import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
+import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
+import { getAdministrativeBirthdayAlerts } from "@/modules/student-profile/infrastructure/getAdministrativeBirthdayAlerts";
+import { getCoordinationDashboardSummary } from "@/modules/student-profile/infrastructure/getCoordinationDashboardSummary";
 
 export const metadata = { title: "Início — Coordenação" };
 export const dynamic = "force-dynamic";
 
-interface ProgressBarProps {
-  done: number;
-  total: number;
-  label: string;
-}
-
-function ProgressBar({ done, total, label }: ProgressBarProps) {
+function ProgressBar({ done, total, label }: { done: number; total: number; label: string }) {
   const pct = total === 0 ? 100 : Math.round((done / total) * 100);
   return (
-    <div className="space-y-1.5 rounded-lg border bg-card p-4 shadow-card-sm hover:shadow-card-md transition-shadow">
-      <div className="flex justify-between items-baseline text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        <span className="text-xs font-semibold">{label}</span>
+    <div className="space-y-1.5 rounded-lg border bg-card p-4 shadow-card-sm transition-shadow hover:shadow-card-md">
+      <div className="flex items-baseline justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
         <span className="font-display text-sm font-bold text-foreground">
           {String(done).padStart(2, "0")} / {String(total).padStart(2, "0")}{" "}
-          <span className="text-[10px] text-muted-foreground font-normal">({pct}%)</span>
+          <span className="text-[10px] font-normal text-muted-foreground">({pct}%)</span>
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded bg-muted/30">
         <div
-          className={`h-full rounded transition-all duration-500 ${
-            pct === 100 ? "bg-green-500" : "bg-primary"
-          }`}
+          className={pct === 100 ? "h-full rounded bg-green-500" : "h-full rounded bg-primary"}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -44,237 +43,107 @@ function ProgressBar({ done, total, label }: ProgressBarProps) {
   );
 }
 
+type AlertTone = "warning" | "success" | "danger" | "info";
+function AlertBox({
+  icon: Icon,
+  title,
+  message,
+  href,
+  action,
+  tone,
+}: {
+  icon: typeof AlertCircle;
+  title: string;
+  message: string;
+  href?: string;
+  action?: string;
+  tone: AlertTone;
+}) {
+  const colors: Record<AlertTone, string> = {
+    warning:
+      "border-orange-200/60 bg-orange-50/20 dark:border-orange-950/40 dark:bg-orange-950/5 text-orange-500",
+    success:
+      "border-green-200/60 bg-green-50/10 dark:border-green-950/40 dark:bg-green-950/5 text-green-500",
+    danger: "border-red-200/60 bg-red-50/20 dark:border-red-950/40 dark:bg-red-950/5 text-red-500",
+    info: "border-blue-200/60 bg-blue-50/10 dark:border-blue-950/40 dark:bg-blue-950/5 text-blue-500",
+  };
+  return (
+    <div className={`flex items-start gap-3 rounded-lg border p-3.5 ${colors[tone]}`}>
+      <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+      <div className="flex-1 space-y-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{message}</p>
+        {href && action && (
+          <Link
+            href={href}
+            className="inline-flex items-center gap-1 pt-1.5 text-xs font-semibold text-primary hover:underline"
+          >
+            {action} <ArrowRight className="h-3 w-3" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+async function DutySection() {
+  const overview = await getDutyOverview();
+  return <TodayTomorrowDuty overview={overview} schedulesHref="/coordenacao/escalas" />;
+}
+
+async function QtsSection() {
+  const overview = await getQtsOverview();
+  return <QtsDashboardCard overview={overview} />;
+}
+
+async function BirthdaySection() {
+  const alerts = await getAdministrativeBirthdayAlerts();
+  return <BirthdayCard alerts={alerts} />;
+}
+
+function DashboardCardFallback() {
+  return <div className="h-24 animate-pulse rounded-xl border bg-muted/30" aria-hidden />;
+}
+
 export default async function CoordenacaoHome() {
   const session = await requireRole("coordenacao");
-  const supabase = createSupabaseServerClient();
-  const birthdayAlertsPromise = getAdministrativeBirthdayAlerts();
-  const dutyOverviewPromise = getDutyOverview();
-  const qtsOverviewPromise = getQtsOverview();
-
-  // 1. Busca básica de alunos e suas sub-tabelas para completitude do cadastro
-  const { data: rawStudentsData, error } = await supabase
-    .from("students")
-    .select(`
-      id,
-      sex,
-      cpf, rg, birth_date, marital_status, mother_name, education_level,
-      student_contacts(whatsapp, email_personal),
-      student_addresses(street, city, zip, state),
-      health_restrictions(blood_type, validation_status, has_allergies, has_continuous_medication, has_chronic_disease, has_physical_restriction, has_dietary_restriction),
-      emergency_contacts(id, priority),
-      student_logistics(student_id),
-      vehicles(student_id, has_cnh)
-    `)
-    .is("deleted_at", null)
-    .eq("course_status", "matriculado");
-
-  if (error) console.error("Error fetching students:", error);
-
-  const allStudentsData = (rawStudentsData ?? []) as any[];
-  const totalStudents = allStudentsData.length;
-
-  // Cálculo de Cadastro Completo (contagem bruta)
-  let completedProfilesCount = 0;
-  let pendingHealthValidationsCount = 0;
-
-  if (allStudentsData) {
-    for (const s of allStudentsData) {
-      const c = Array.isArray(s.student_contacts) ? s.student_contacts[0] : s.student_contacts;
-      const a = Array.isArray(s.student_addresses) ? s.student_addresses[0] : s.student_addresses;
-      const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
-      const eList = Array.isArray(s.emergency_contacts) ? s.emergency_contacts : (s.emergency_contacts ? [s.emergency_contacts] : []);
-      const em = eList.find((x: any) => x.priority === 1);
-      const l = Array.isArray(s.student_logistics) ? s.student_logistics[0] : s.student_logistics;
-      const v = Array.isArray(s.vehicles) ? s.vehicles[0] : s.vehicles;
-
-      const cadastroFields = [
-        s.cpf,
-        s.rg,
-        s.birth_date,
-        s.marital_status,
-        s.mother_name,
-        s.sex,
-        s.education_level,
-        c?.whatsapp,
-        c?.email_personal,
-        a?.street,
-        a?.city,
-        a?.zip,
-        a?.state,
-        h?.blood_type,
-        em?.id,
-        l?.student_id,
-        v?.student_id,
-      ];
-      if (cadastroFields.every(Boolean)) {
-        completedProfilesCount++;
-      }
-
-      if (h?.validation_status === "pendente") {
-        pendingHealthValidationsCount++;
-      }
-    }
-  }
-
-  // 2. Documentos — tipos obrigatórios são condicionais:
-  //    cnh: somente se aluno declarou possuir CNH (vehicles.has_cnh)
-  //    declaracao_medica: somente se aluno declarou alguma restrição de saúde
-  //    rg_cpf, comprovante_residencia, foto_3x4: sempre obrigatórios
-  const BASE_DOC_TYPES = ["rg_cpf", "comprovante_residencia", "foto_3x4"];
-  const { data: rawDocs } = await supabase
-    .from("documents")
-    .select("student_id, doc_type, status")
-    .neq("status", "recusado");
-  const allDocs = (rawDocs ?? []) as any[];
-
-  const { count: docsValidados } = await supabase
-    .from("documents")
-    .select("student:students!inner(course_status)", { count: "exact", head: true })
-    .eq("student.course_status", "matriculado")
-    .eq("status", "validado");
-
-  const studentDocsMap = new Map<string, Set<string>>();
-  for (const d of allDocs) {
-    if (!studentDocsMap.has(d.student_id)) {
-      studentDocsMap.set(d.student_id, new Set());
-    }
-    studentDocsMap.get(d.student_id)!.add(d.doc_type);
-  }
-
-  let studentsWithAllDocs = 0;
-  for (const s of allStudentsData) {
-    const v = Array.isArray(s.vehicles) ? s.vehicles[0] : s.vehicles;
-    const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
-    const required = [...BASE_DOC_TYPES];
-    if (v?.has_cnh) required.push("cnh");
-    const hasRestriction = !!(
-      h?.has_allergies ||
-      h?.has_continuous_medication ||
-      h?.has_chronic_disease ||
-      h?.has_physical_restriction ||
-      h?.has_dietary_restriction
-    );
-    if (hasRestriction) required.push("declaracao_medica");
-
-    const types = studentDocsMap.get(s.id) ?? new Set<string>();
-    if (required.every((t) => types.has(t))) {
-      studentsWithAllDocs++;
-    }
-  }
-
-  // 3. Materiais / Enxoval
-  const { data: rawReqs } = await supabase
-    .from("equipment_requirements")
-    .select("id, phase, mandatory, applicability")
-    .eq("active", true);
-  const reqs = (rawReqs ?? []) as any[];
-
-  const { data: rawEqStatuses } = await supabase
-    .from("student_equipment_status")
-    .select("student_id, requirement_id, status, validation_status");
-  const allEqStatuses = (rawEqStatuses ?? []) as any[];
-
-  let quarentenaCompletedCount = 0;
-  let geralCompletedCount = 0;
-
-  if (allStudentsData && reqs) {
-    const reqsQuarentena = reqs.filter((r) => r.phase === "quarentena" && r.mandatory);
-    // "Geral" = enxoval do curso completo (quarentena + início). Itens da fase
-    // "posterior" (pós-curso) não entram no progresso operacional da turma.
-    const reqsGeral = reqs.filter((r) => r.mandatory && r.phase !== "posterior");
-
-    const statusesByStudent = new Map<string, Map<string, { status: string; validation_status: string }>>();
-    if (allEqStatuses) {
-      for (const es of allEqStatuses) {
-        if (!statusesByStudent.has(es.student_id)) {
-          statusesByStudent.set(es.student_id, new Map());
-        }
-        statusesByStudent.get(es.student_id)!.set(es.requirement_id, {
-          status: es.status,
-          validation_status: es.validation_status,
-        });
-      }
-    }
-
-    // "Entregue" inclui qualquer item que o aluno declarou possuir (mesmo que
-    // ainda não validado pela coordenação) — a validação pendente é exibida
-    // no painel de pendências.
-    const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
-    const isItemDone = (_r: any, s?: { status: string; validation_status: string }) => {
-      if (!s) return false;
-      return DONE_STATUSES.has(s.status);
-    };
-
-    for (const student of allStudentsData) {
-      const studentSex = student.sex;
-      const studentStatuses = statusesByStudent.get(student.id) || new Map();
-
-      // Quarentena
-      const studentQuarentenaReqs = reqsQuarentena.filter((r) => {
-        if (r.applicability === "todos" || r.applicability === "condicional") return true;
-        if (studentSex === "M" && r.applicability === "masculino") return true;
-        if (studentSex === "F" && r.applicability === "feminino") return true;
-        return false;
-      });
-      const quarentenaDone = studentQuarentenaReqs.every((r) => isItemDone(r, studentStatuses.get(r.id)));
-      if (studentQuarentenaReqs.length > 0 && quarentenaDone) {
-        quarentenaCompletedCount++;
-      }
-
-      // Geral
-      const studentGeralReqs = reqsGeral.filter((r) => {
-        if (r.applicability === "todos" || r.applicability === "condicional") return true;
-        if (studentSex === "M" && r.applicability === "masculino") return true;
-        if (studentSex === "F" && r.applicability === "feminino") return true;
-        return false;
-      });
-      const geralDone = studentGeralReqs.every((r) => isItemDone(r, studentStatuses.get(r.id)));
-      if (studentGeralReqs.length > 0 && geralDone) {
-        geralCompletedCount++;
-      }
-    }
-  }
-
-  // 4. Pendências Consolidadas
-  const [pendingChangesCount, pendingDocsCount, pendingEquipCount, currentCangas] = await Promise.all([
-    supabase
-      .from("pending_changes")
-      .select("student:students!inner(course_status)", { count: "exact", head: true })
-      .eq("student.course_status", "matriculado")
-      .eq("status", "pendente"),
-    supabase
-      .from("documents")
-      .select("student:students!inner(course_status)", { count: "exact", head: true })
-      .eq("student.course_status", "matriculado")
-      .in("status", ["enviado", "em_analise"]),
-    supabase
-      .from("student_equipment_status")
-      .select("student:students!inner(course_status)", { count: "exact", head: true })
-      .eq("student.course_status", "matriculado")
-      .eq("status", "comprado")
-      .eq("validation_status", "nao_validado"),
-    supabase.from("canga_assignments").select("student_id").eq("is_current", true),
-  ]);
-
-  const openPendencias = (pendingChangesCount.count ?? 0) + (pendingDocsCount.count ?? 0) + (pendingEquipCount.count ?? 0);
-
-  // Alunos sem canga
-  const activeStudentIds = new Set(allStudentsData.map((student) => student.id));
-  const studentsWithCangaIds = new Set(
-    (currentCangas.data ?? [])
-      .map((c: any) => c.student_id)
-      .filter((studentId: string) => activeStudentIds.has(studentId)),
-  );
-  const studentsWithoutCangaCount = totalStudents - studentsWithCangaIds.size;
-  const birthdayAlerts = await birthdayAlertsPromise;
-  const [dutyOverview, qtsOverview] = await Promise.all([dutyOverviewPromise, qtsOverviewPromise]);
-
-  // Criação dos KPIs para exibição
+  const summary = await getCoordinationDashboardSummary();
+  const metrics = summary ?? {
+    totalStudents: 0,
+    completedProfiles: 0,
+    documentsValidated: 0,
+    openPendingItems: 0,
+    studentsWithDocuments: 0,
+    studentsQuarantineEquipment: 0,
+    studentsEquipmentCompleted: 0,
+    studentsWithoutCanga: 0,
+    pendingHealthValidations: 0,
+  };
   const kpis = [
-    { label: "Total de Alunos", value: String(totalStudents).padStart(2, "0"), icon: Users, color: "text-blue-500 bg-blue-50 dark:bg-blue-950/20" },
-    { label: "Cadastros Completos", value: String(completedProfilesCount).padStart(2, "0"), icon: CheckCircle2, color: "text-green-500 bg-green-50 dark:bg-green-950/20" },
-    { label: "Docs Validados", value: String(docsValidados ?? 0).padStart(2, "0"), icon: FileText, color: "text-purple-500 bg-purple-50 dark:bg-purple-950/20" },
-    { label: "Pendências Abertas", value: String(openPendencias).padStart(2, "0"), icon: AlertCircle, color: "text-orange-500 bg-orange-50 dark:bg-orange-950/20" },
+    {
+      label: "Total de Alunos",
+      value: metrics.totalStudents,
+      icon: Users,
+      color: "text-blue-500 bg-blue-50 dark:bg-blue-950/20",
+    },
+    {
+      label: "Cadastros Completos",
+      value: metrics.completedProfiles,
+      icon: CheckCircle2,
+      color: "text-green-500 bg-green-50 dark:bg-green-950/20",
+    },
+    {
+      label: "Docs Validados",
+      value: metrics.documentsValidated,
+      icon: FileText,
+      color: "text-purple-500 bg-purple-50 dark:bg-purple-950/20",
+    },
+    {
+      label: "Pendências Abertas",
+      value: metrics.openPendingItems,
+      icon: AlertCircle,
+      color: "text-orange-500 bg-orange-50 dark:bg-orange-950/20",
+    },
   ];
 
   return (
@@ -290,122 +159,114 @@ export default async function CoordenacaoHome() {
           Bem-vindo ao Painel de Controle Operacional do <strong>CFO 2026.1</strong>.
         </p>
       </header>
-
-      <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/coordenacao/escalas" />
-      <QtsDashboardCard overview={qtsOverview} />
+      <Suspense fallback={<DashboardCardFallback />}>
+        <DutySection />
+      </Suspense>
+      <Suspense fallback={<DashboardCardFallback />}>
+        <QtsSection />
+      </Suspense>
       <AcademicInstructionDashboardAlert role="coordenacao" />
-
-      {/* Seção de KPIs */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className="flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card-sm transition-all hover:shadow-card-md">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${k.color}`}>
-              <k.icon className="h-6 w-6" />
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card-sm transition-all hover:shadow-card-md"
+          >
+            <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${kpi.color}`}>
+              <kpi.icon className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{k.label}</p>
-              <p className="font-display text-2xl font-bold text-foreground tracking-tight mt-0.5">{k.value}</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {kpi.label}
+              </p>
+              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-foreground">
+                {String(kpi.value).padStart(2, "0")}
+              </p>
             </div>
           </div>
         ))}
       </section>
-
-      <BirthdayCard alerts={birthdayAlerts} />
+      <Suspense fallback={null}>
+        <BirthdaySection />
+      </Suspense>
       <PushNotificationControl />
-
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Seção de Progresso da Turma */}
-        <section className="rounded-xl border bg-card p-5 space-y-4">
+        <section className="space-y-4 rounded-xl border bg-card p-5">
           <div className="space-y-1">
-            <h2 className="font-display text-lg font-bold text-foreground">Progresso Geral da Turma</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              Progresso Geral da Turma
+            </h2>
             <p className="text-xs text-muted-foreground">
               Acompanhamento quantitativo do preenchimento e conformidade dos 30 alunos.
             </p>
           </div>
-
           <div className="space-y-3.5 pt-2">
-            <ProgressBar label="Ficha Cadastral (100% preenchida)" done={completedProfilesCount} total={totalStudents} />
-            <ProgressBar label="Documentação Obrigatória Enviada" done={studentsWithAllDocs} total={totalStudents} />
-            <ProgressBar label="Enxoval de Quarentena Entregue" done={quarentenaCompletedCount} total={totalStudents} />
-            <ProgressBar label="Enxoval Geral Concluído" done={geralCompletedCount} total={totalStudents} />
+            <ProgressBar
+              label="Ficha Cadastral (100% preenchida)"
+              done={metrics.completedProfiles}
+              total={metrics.totalStudents}
+            />
+            <ProgressBar
+              label="Documentação Obrigatória Enviada"
+              done={metrics.studentsWithDocuments}
+              total={metrics.totalStudents}
+            />
+            <ProgressBar
+              label="Enxoval de Quarentena Entregue"
+              done={metrics.studentsQuarantineEquipment}
+              total={metrics.totalStudents}
+            />
+            <ProgressBar
+              label="Enxoval Geral Concluído"
+              done={metrics.studentsEquipmentCompleted}
+              total={metrics.totalStudents}
+            />
           </div>
         </section>
-
-        {/* Seção de Alertas e Ações Recomendadas */}
-        <section className="rounded-xl border bg-card p-5 space-y-4">
+        <section className="space-y-4 rounded-xl border bg-card p-5">
           <div className="space-y-1">
             <h2 className="font-display text-lg font-bold text-foreground">Alertas Operacionais</h2>
             <p className="text-xs text-muted-foreground">
               Ações prioritárias e inconsistências identificadas que demandam revisão.
             </p>
           </div>
-
           <div className="space-y-3 pt-2">
-            {/* Alerta de Canga */}
-            {studentsWithoutCangaCount > 0 ? (
-              <div className="flex items-start gap-3 rounded-lg border border-orange-200/60 bg-orange-50/20 p-3.5 dark:border-orange-950/40 dark:bg-orange-950/5">
-                <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Canga não atribuído</p>
-                  <p className="text-xs text-muted-foreground">
-                    Existem {studentsWithoutCangaCount} alunos sem parceiro de canga definido no sistema.
-                  </p>
-                  <Link
-                    href="/coordenacao/alunos"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-1.5"
-                  >
-                    Atribuir cangas na lista de alunos <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
+            {metrics.studentsWithoutCanga > 0 ? (
+              <AlertBox
+                icon={AlertTriangle}
+                title="Canga não atribuído"
+                message={`Existem ${metrics.studentsWithoutCanga} alunos sem parceiro de canga definido no sistema.`}
+                href="/coordenacao/alunos"
+                action="Atribuir cangas na lista de alunos"
+                tone="warning"
+              />
             ) : (
-              <div className="flex items-start gap-3 rounded-lg border border-green-200/60 bg-green-50/10 p-3.5 dark:border-green-950/40 dark:bg-green-950/5">
-                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Cangas OK</p>
-                  <p className="text-xs text-muted-foreground">
-                    Todos os alunos ativos possuem canga atribuído corretamente.
-                  </p>
-                </div>
-              </div>
+              <AlertBox
+                icon={CheckCircle2}
+                title="Cangas OK"
+                message="Todos os alunos ativos possuem canga atribuído corretamente."
+                tone="success"
+              />
             )}
-
-            {/* Alerta de Restrições de Saúde */}
-            {pendingHealthValidationsCount > 0 && (
-              <div className="flex items-start gap-3 rounded-lg border border-red-200/60 bg-red-50/20 p-3.5 dark:border-red-950/40 dark:bg-red-950/5">
-                <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Saúde pendente de revisão</p>
-                  <p className="text-xs text-muted-foreground">
-                    Existem {pendingHealthValidationsCount} restrições médicas/fisiológicas aguardando homologação operacional da coordenação.
-                  </p>
-                  <Link
-                    href="/coordenacao/alunos"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-1.5"
-                  >
-                    Homologar restrições na lista <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
+            {metrics.pendingHealthValidations > 0 && (
+              <AlertBox
+                icon={AlertCircle}
+                title="Saúde pendente de revisão"
+                message={`Existem ${metrics.pendingHealthValidations} restrições médicas/fisiológicas aguardando homologação operacional da coordenação.`}
+                href="/coordenacao/alunos"
+                action="Homologar restrições na lista"
+                tone="danger"
+              />
             )}
-
-            {/* Alerta de Documentos/Validações */}
-            {openPendencias > 0 && (
-              <div className="flex items-start gap-3 rounded-lg border border-blue-200/60 bg-blue-50/10 p-3.5 dark:border-blue-950/40 dark:bg-blue-950/5">
-                <FileText className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Fila de Validações</p>
-                  <p className="text-xs text-muted-foreground">
-                    Você possui {openPendencias} itens de validação (cadastros, documentos ou materiais) aguardando conferência.
-                  </p>
-                  <Link
-                    href="/coordenacao/pendencias"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-1.5"
-                  >
-                    Acessar central de pendências <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
+            {metrics.openPendingItems > 0 && (
+              <AlertBox
+                icon={FileText}
+                title="Fila de Validações"
+                message={`Você possui ${metrics.openPendingItems} itens de validação (cadastros, documentos ou materiais) aguardando conferência.`}
+                href="/coordenacao/pendencias"
+                action="Acessar central de pendências"
+                tone="info"
+              />
             )}
           </div>
         </section>

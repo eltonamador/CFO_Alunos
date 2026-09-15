@@ -1,26 +1,17 @@
+import { Suspense } from "react";
 import { requireRole } from "@/components/app/RoleGuard";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
 import { PushNotificationControl } from "@/components/app/PushNotificationControl";
 import { UpcomingScheduleAssignments } from "@/components/app/schedules/UpcomingScheduleAssignments";
 import { TodayTomorrowDuty } from "@/components/app/schedules/TodayTomorrowDuty";
+import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
+import { AcademicInstructionDashboardAlert } from "@/components/app/academic/AcademicInstructionDashboardAlert";
 import { getUpcomingScheduleAssignments } from "@/modules/schedule-repository/infrastructure/queries";
 import { getDutyOverview } from "@/modules/schedule-repository/infrastructure/dashboardQueries";
-import { QtsDashboardCard } from "@/components/app/qts/QtsDashboardCard";
 import { getQtsOverview } from "@/modules/qts/infrastructure/queries";
-import { AcademicInstructionDashboardAlert } from "@/components/app/academic/AcademicInstructionDashboardAlert";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { getStudentDashboardSummary } from "@/modules/student-profile/infrastructure/getStudentDashboardSummary";
 
 export const metadata = { title: "Portal do Aluno" };
-
-// Tipos obrigatórios de documentos (excluindo "outro", que é opcional)
-const REQUIRED_DOC_TYPES = [
-  "rg_cpf",
-  "cnh",
-  "comprovante_residencia",
-  "foto_3x4",
-  "declaracao_medica",
-] as const;
 
 const REQUIRED_DOC_LABELS: Record<string, string> = {
   rg_cpf: "RG / CPF",
@@ -30,230 +21,79 @@ const REQUIRED_DOC_LABELS: Record<string, string> = {
   declaracao_medica: "Declaração Médica",
 };
 
-// Statuses que contam como "item providenciado" no progresso
-const DONE_STATUSES = new Set(["ok", "comprado", "nao_se_aplica"]);
+function LoadingCard() {
+  return <div className="h-28 animate-pulse rounded-xl border bg-muted/30" aria-hidden />;
+}
 
-export default async function AlunoHome() {
-  const session = await requireRole("aluno");
-  const [scheduleAssignments, dutyOverview, qtsOverview] = await Promise.all([
+async function StudentOperationalSections({ studentId }: { studentId: string | null }) {
+  const [assignments, dutyOverview, qtsOverview] = await Promise.all([
     getUpcomingScheduleAssignments(),
     getDutyOverview(),
     getQtsOverview(),
   ]);
-
-  // Usa war_name e student_number já carregados na sessão
-  const warName = session.warName;
-  const studentNumber = session.studentNumber;
-  const numLabel = studentNumber ? String(studentNumber).padStart(2, "0") : null;
-  const greetingId = warName ? (numLabel ? `${warName} — ${numLabel}` : warName) : session.fullName;
-
-  type ProgressItem = { label: string; value: number };
-  type Pendencia = { label: string };
-
-  let progress: ProgressItem[] = [
-    { label: "Cadastro", value: 0 },
-    { label: "Documentos", value: 0 },
-    { label: "Materiais (quarentena)", value: 0 },
-    { label: "Materiais (geral)", value: 0 },
-  ];
-  let pendencias: Pendencia[] = [];
-
-  if (session.studentId) {
-    const supabase = createSupabaseServerClient();
-
-    // Busca paralela de todos os dados necessários
-    const [
-      studentRes,
-      contactRes,
-      addressRes,
-      healthRes,
-      docsRes,
-      equipStatusRes,
-      equipReqsRes,
-      emergencyRes,
-      logRes,
-      vehRes,
-    ] = await Promise.all([
-      supabase
-        .from("students")
-        .select("cpf,rg,birth_date,marital_status,mother_name,sex,education_level")
-        .eq("id", session.studentId)
-        .maybeSingle(),
-      supabase
-        .from("student_contacts")
-        .select("whatsapp,email_personal")
-        .eq("student_id", session.studentId)
-        .maybeSingle(),
-      supabase
-        .from("student_addresses")
-        .select("street,city,zip,state")
-        .eq("student_id", session.studentId)
-        .maybeSingle(),
-      supabase
-        .from("health_restrictions")
-        .select("blood_type,rh_factor,id")
-        .eq("student_id", session.studentId)
-        .maybeSingle(),
-      supabase
-        .from("documents")
-        .select("doc_type")
-        .eq("student_id", session.studentId)
-        .neq("status", "recusado"),
-      supabase
-        .from("student_equipment_status")
-        .select("requirement_id,status")
-        .eq("student_id", session.studentId),
-      supabase.from("equipment_requirements").select("id,phase,mandatory").eq("active", true),
-      supabase
-        .from("emergency_contacts")
-        .select("id")
-        .eq("student_id", session.studentId)
-        .eq("priority", 1)
-        .maybeSingle(),
-      supabase
-        .from("student_logistics")
-        .select("student_id")
-        .eq("student_id", session.studentId)
-        .maybeSingle(),
-      supabase
-        .from("vehicles")
-        .select("student_id")
-        .eq("student_id", session.studentId)
-        .maybeSingle(),
-    ]);
-
-    // ── Cadastro % ──────────────────────────────────────────────────────
-    const s = studentRes.data as Record<string, unknown> | null;
-    const c = contactRes.data as Record<string, unknown> | null;
-    const a = addressRes.data as Record<string, unknown> | null;
-    const h = healthRes.data as Record<string, unknown> | null;
-    const em = emergencyRes.data as Record<string, unknown> | null;
-    const l = logRes.data as Record<string, unknown> | null;
-    const v = vehRes.data as Record<string, unknown> | null;
-
-    const cadastroFields = [
-      s?.cpf,
-      s?.rg,
-      s?.birth_date,
-      s?.marital_status,
-      s?.mother_name,
-      s?.sex,
-      s?.education_level,
-      c?.whatsapp,
-      c?.email_personal,
-      a?.street,
-      a?.city,
-      a?.zip,
-      a?.state,
-      h?.id, // Verifica se o registro de saúde existe
-      h?.blood_type,
-      em?.id, // Emergência
-      l?.student_id, // Logística
-      v?.student_id, // Veículo
-    ];
-    const cadastroFilled = cadastroFields.filter(Boolean).length;
-    const cadastroPct = Math.round((cadastroFilled / cadastroFields.length) * 100);
-
-    // ── Documentos % ────────────────────────────────────────────────────
-    const uploadedTypes = new Set(
-      (docsRes.data ?? []).map((d: Record<string, unknown>) => d.doc_type as string),
-    );
-    const docsUploaded = REQUIRED_DOC_TYPES.filter((t) => uploadedTypes.has(t)).length;
-    const docsPct = Math.round((docsUploaded / REQUIRED_DOC_TYPES.length) * 100);
-    const missingDocs = REQUIRED_DOC_TYPES.filter((t) => !uploadedTypes.has(t));
-
-    // ── Materiais % ─────────────────────────────────────────────────────
-    const reqs = (equipReqsRes.data ?? []) as Array<{
-      id: string;
-      phase: string;
-      mandatory: boolean;
-    }>;
-    const statusMap = new Map(
-      (equipStatusRes.data ?? []).map((e: Record<string, unknown>) => [
-        e.requirement_id as string,
-        e.status as string,
-      ]),
-    );
-
-    const quarentenaReqs = reqs.filter((r) => r.phase === "quarentena");
-    const quarentenaDone = quarentenaReqs.filter((r) =>
-      DONE_STATUSES.has(statusMap.get(r.id) ?? ""),
-    ).length;
-    const quarentenaPct =
-      quarentenaReqs.length > 0 ? Math.round((quarentenaDone / quarentenaReqs.length) * 100) : 0;
-
-    const geralDone = reqs.filter((r) => DONE_STATUSES.has(statusMap.get(r.id) ?? "")).length;
-    const geralPct = reqs.length > 0 ? Math.round((geralDone / reqs.length) * 100) : 0;
-
-    // ── Pendências ──────────────────────────────────────────────────────
-    const pendEquipamento = quarentenaReqs.filter(
-      (r) => r.mandatory && !DONE_STATUSES.has(statusMap.get(r.id) ?? ""),
-    ).length;
-
-    progress = [
-      { label: "Cadastro", value: cadastroPct },
-      { label: "Documentos", value: docsPct },
-      { label: "Materiais (quarentena)", value: quarentenaPct },
-      { label: "Materiais (geral)", value: geralPct },
-    ];
-
-    pendencias = [
-      ...missingDocs.map((t) => ({ label: `Documento: ${REQUIRED_DOC_LABELS[t] ?? t}` })),
-      ...(pendEquipamento > 0
-        ? [
-            {
-              label: `${pendEquipamento} item${pendEquipamento > 1 ? "s" : ""} de quarentena a providenciar`,
-            },
-          ]
-        : []),
-    ];
-  }
-
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="section-eyebrow">Portal do Aluno</p>
-        <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
-          {greetingId}
-        </h1>
-        {!session.studentId && (
-          <p className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Sua conta ainda não está vinculada a um aluno. Procure a Coordenação.
-          </p>
-        )}
-      </header>
-
+    <>
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/aluno/escalas" />
       <QtsDashboardCard overview={qtsOverview} />
       <AcademicInstructionDashboardAlert role="aluno" />
-      <PendingFollowUpAlert studentId={session.studentId} />
-      <UpcomingScheduleAssignments assignments={scheduleAssignments} />
+      <PendingFollowUpAlert studentId={studentId} />
+      <UpcomingScheduleAssignments assignments={assignments} />
+    </>
+  );
+}
 
-      {/* Barras de progresso */}
+async function StudentProgressSection({ studentId }: { studentId: string | null }) {
+  const summary = studentId ? await getStudentDashboardSummary() : null;
+  const progress = summary
+    ? [
+        { label: "Cadastro", value: summary.profileCompletionPercent },
+        { label: "Documentos", value: summary.documentsCompletionPercent },
+        { label: "Materiais (quarentena)", value: summary.quarantineEquipmentCompletionPercent },
+        { label: "Materiais (geral)", value: summary.equipmentCompletionPercent },
+      ]
+    : [
+        { label: "Cadastro", value: 0 },
+        { label: "Documentos", value: 0 },
+        { label: "Materiais (quarentena)", value: 0 },
+        { label: "Materiais (geral)", value: 0 },
+      ];
+  const pendencias = summary
+    ? [
+        ...summary.missingDocumentTypes.map((type) => ({
+          label: `Documento: ${REQUIRED_DOC_LABELS[type] ?? type}`,
+        })),
+        ...(summary.pendingQuarantineEquipment > 0
+          ? [
+              {
+                label: `${summary.pendingQuarantineEquipment} item${summary.pendingQuarantineEquipment > 1 ? "s" : ""} de quarentena a providenciar`,
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  return (
+    <>
       <section className="grid gap-3 sm:grid-cols-2">
-        {progress.map((p) => (
-          <div key={p.label} className="rounded-lg border bg-card p-4">
+        {progress.map((item) => (
+          <div key={item.label} className="rounded-lg border bg-card p-4">
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-medium">{p.label}</p>
+              <p className="text-sm font-medium">{item.label}</p>
               <p
-                className={`text-sm font-semibold tabular-nums ${
-                  p.value === 100 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
-                }`}
+                className={`text-sm font-semibold tabular-nums ${item.value === 100 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}
               >
-                {p.value}%
+                {item.value}%
               </p>
             </div>
             <div className="h-2 overflow-hidden rounded bg-muted">
               <div
-                className={`h-full transition-all ${p.value === 100 ? "bg-green-500" : "bg-primary"}`}
-                style={{ width: `${p.value}%` }}
+                className={`h-full transition-all ${item.value === 100 ? "bg-green-500" : "bg-primary"}`}
+                style={{ width: `${item.value}%` }}
               />
             </div>
           </div>
         ))}
       </section>
-
-      {/* Pendências */}
       <section className="rounded-lg border bg-card p-6">
         <h2 className="font-semibold">Pendências</h2>
         {pendencias.length === 0 ? (
@@ -262,16 +102,49 @@ export default async function AlunoHome() {
           </p>
         ) : (
           <ul className="mt-2 space-y-1.5">
-            {pendencias.map((p) => (
-              <li key={p.label} className="flex items-center gap-2 text-sm text-muted-foreground">
+            {pendencias.map((item) => (
+              <li
+                key={item.label}
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+              >
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" />
-                {p.label}
+                {item.label}
               </li>
             ))}
           </ul>
         )}
       </section>
+    </>
+  );
+}
 
+export default async function AlunoHome() {
+  const session = await requireRole("aluno");
+  const number = session.studentNumber ? String(session.studentNumber).padStart(2, "0") : null;
+  const greeting = session.warName
+    ? number
+      ? `${session.warName} — ${number}`
+      : session.warName
+    : session.fullName;
+  return (
+    <div className="space-y-6">
+      <header>
+        <p className="section-eyebrow">Portal do Aluno</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
+          {greeting}
+        </h1>
+        {!session.studentId && (
+          <p className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Sua conta ainda não está vinculada a um aluno. Procure a Coordenação.
+          </p>
+        )}
+      </header>
+      <Suspense fallback={<LoadingCard />}>
+        <StudentOperationalSections studentId={session.studentId} />
+      </Suspense>
+      <Suspense fallback={<LoadingCard />}>
+        <StudentProgressSection studentId={session.studentId} />
+      </Suspense>
       <PushNotificationControl description="Receba avisos de escala, de FO− e lembretes de prazo mesmo com o app fechado." />
     </div>
   );

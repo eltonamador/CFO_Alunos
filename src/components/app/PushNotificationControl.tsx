@@ -56,6 +56,8 @@ export function PushNotificationControl({
 
   useEffect(() => {
     let cancelled = false;
+    let idleCallbackId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     if ("clearAppBadge" in navigator) {
       navigator.clearAppBadge().catch(() => undefined);
@@ -98,15 +100,30 @@ export function PushNotificationControl({
       }
     }
 
-    initialize().catch((error: unknown) => {
-      if (!cancelled) {
-        setMessage(error instanceof Error ? error.message : "Falha ao preparar notificações");
-        setStatus("unsupported");
-      }
-    });
+    const startWhenIdle = () => {
+      initialize().catch((error: unknown) => {
+        if (!cancelled) {
+          setMessage(error instanceof Error ? error.message : "Falha ao preparar notificações");
+          setStatus("unsupported");
+        }
+      });
+    };
+
+    // Registro do Service Worker e consulta de assinatura não são necessários
+    // para a primeira interação no painel. Em celulares, adiá-los evita
+    // disputar CPU e rede com a hidratação inicial.
+    if ("requestIdleCallback" in window) {
+      idleCallbackId = window.requestIdleCallback(startWhenIdle, { timeout: 3_000 });
+    } else {
+      timeoutId = setTimeout(startWhenIdle, 1_000);
+    }
 
     return () => {
       cancelled = true;
+      if (idleCallbackId !== undefined && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
   }, []);
 

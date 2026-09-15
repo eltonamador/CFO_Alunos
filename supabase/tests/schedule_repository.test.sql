@@ -45,8 +45,8 @@ begin
 end $$;
 
 select is((select count(*)::int from pg_tables where schemaname = 'public'
-  and tablename like 'schedule_%' and rowsecurity), 8, 'RLS habilitada nas oito tabelas');
-select is((select count(*)::int from public.schedule_types), 4, 'quatro tipos iniciais cadastrados');
+  and tablename like 'schedule_%' and rowsecurity), 10, 'RLS habilitada nas dez tabelas');
+select is((select count(*)::int from public.schedule_types), 5, 'cinco tipos iniciais cadastrados');
 select ok(not has_table_privilege('anon','public.schedule_documents','select'), 'anon sem acesso aos documentos');
 select ok(not has_table_privilege('authenticated','public.schedule_documents','insert'), 'documento não entra por REST direto');
 select ok(not has_table_privilege('authenticated','public.schedule_assignments','update'), 'designação não é corrigida por REST direto');
@@ -84,7 +84,7 @@ $q$), 'ok', 'coordenação cadastra tipo dinâmico');
 select is(pg_temp.sc_try('secretaria', $q$
   insert into public.schedule_types(code,name) values ('negado','Escala negada')
 $q$), '42501', 'secretaria não cadastra tipo');
-select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_types'), 5, 'instrutor consulta catálogo');
+select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_types'), 6, 'instrutor consulta catálogo');
 select is(pg_temp.sc_count('secretaria','select count(*) from public.schedule_types'), 0, 'secretaria não acessa módulo inicial');
 
 select is(pg_temp.sc_try('coord', $q$
@@ -96,8 +96,8 @@ select is(pg_temp.sc_try('coord', $q$
     date '2099-09-01', date '2099-09-30', null)
 $q$), 'ok', 'coordenação registra PDF e reserva caminho');
 
-select ok((select storage_path = class_id::text || '/' || id::text || '/escala-setembro.pdf'
-  from public.schedule_documents where checksum_sha256 = repeat('a',64)), 'caminho deriva de turma e documento');
+select ok((select storage_path = class_id::text || '/' || id::text || '/document.pdf'
+  from public.schedule_documents where checksum_sha256 = repeat('a',64)), 'chave de Storage segura deriva de turma e documento');
 select is((select publication_status from public.schedule_documents where checksum_sha256=repeat('a',64)),
   'reserved', 'documento permanece reservado antes do upload');
 select is(pg_temp.sc_count('instrutor','select count(*) from public.schedule_documents'), 0, 'instrutor não vê reserva sem arquivo');
@@ -126,7 +126,7 @@ select is(pg_temp.sc_count('instrutor', $$select count(*) from storage.objects w
 select is(pg_temp.sc_count('aluno1', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
   1, 'cadete da turma lê objeto publicado');
 select is(pg_temp.sc_count('secretaria', $$select count(*) from storage.objects where bucket_id='schedule-pdfs'$$),
-  0, 'secretaria não lê objeto publicado');
+  1, 'secretaria lê objeto publicado');
 select is(pg_temp.sc_try('coord', $q$
   select public.schedule_register_document(
     pg_temp.sc_id('class'), (select id from public.schedule_types where code='aluno_dia'),

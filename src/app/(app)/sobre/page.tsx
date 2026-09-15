@@ -67,7 +67,7 @@ export default function SobrePage() {
       <footer className="flex flex-col items-center gap-2 border-t border-border pt-5 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2">
           <Image
-            src="/brasao-abm.png"
+            src="/brasao-abm-256.png"
             alt=""
             width={18}
             height={18}

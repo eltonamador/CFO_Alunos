@@ -179,7 +179,7 @@ export function AppShell({
             </p>
             <div className="mt-0.5 flex items-center gap-1.5">
               <Image
-                src="/brasao-abm.png"
+                src="/brasao-abm-256.png"
                 alt="ABM"
                 width={16}
                 height={16}

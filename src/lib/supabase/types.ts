@@ -3747,6 +3747,20 @@ export type Database = {
         Args: { target: Database["public"]["Tables"]["announcements"]["Row"] };
         Returns: boolean;
       };
+      coordination_dashboard_summary: {
+        Args: never;
+        Returns: {
+          completed_profiles: number;
+          documents_validated: number;
+          open_pending_items: number;
+          pending_health_validations: number;
+          students_equipment_completed: number;
+          students_quarantine_equipment: number;
+          students_with_documents: number;
+          students_without_canga: number;
+          total_students: number;
+        }[];
+      };
       current_role: { Args: never; Returns: string };
       current_student_id: { Args: never; Returns: string };
       expire_follow_up_deadlines: { Args: never; Returns: number };
@@ -3936,6 +3950,17 @@ export type Database = {
       schedule_same_active_class: {
         Args: { p_student_id: string };
         Returns: boolean;
+      };
+      student_dashboard_summary: {
+        Args: never;
+        Returns: {
+          documents_completion_percent: number;
+          equipment_completion_percent: number;
+          missing_document_types: string[];
+          pending_quarantine_equipment: number;
+          profile_completion_percent: number;
+          quarantine_equipment_completion_percent: number;
+        }[];
       };
       submit_follow_up_manifestation: {
         Args: { p_body: string; p_record_id: string };

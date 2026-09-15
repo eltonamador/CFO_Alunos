@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { getSession } from "@/modules/identity/presentation/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,6 +49,16 @@ async function getPendingFollowUpsCount(role: string, studentId: string | null):
   }
 }
 
+/**
+ * Alertas institucionais são informativos: não devem atrasar a entrega do
+ * shell nem da página solicitada. O Suspense permite que sejam inseridos no
+ * stream assim que a consulta terminar, sem expor dados de outra sessão.
+ */
+async function BirthdayBannerLoader() {
+  const alerts = await getAdministrativeBirthdayAlerts();
+  return <BirthdayBanner alerts={alerts} />;
+}
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -55,11 +66,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session.active) redirect("/login");
 
   const canSeeBirthdayAlerts = session.role === "coordenacao" || session.role === "secretaria";
-  const [unreadAnnouncements, birthdayAlerts, pendingFollowUps] = await Promise.all([
+  const [unreadAnnouncements, pendingFollowUps] = await Promise.all([
     session.role === "aluno" && session.studentId
       ? getUnreadAnnouncementsCount(session.studentId)
       : Promise.resolve(0),
-    canSeeBirthdayAlerts ? getAdministrativeBirthdayAlerts() : Promise.resolve([]),
     getPendingFollowUpsCount(session.role, session.studentId),
   ]);
 
@@ -69,7 +79,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       unreadAnnouncements={unreadAnnouncements}
       pendingFollowUps={pendingFollowUps}
     >
-      <BirthdayBanner alerts={birthdayAlerts} />
+      {canSeeBirthdayAlerts && (
+        <Suspense fallback={null}>
+          <BirthdayBannerLoader />
+        </Suspense>
+      )}
       <OfflineRosterSession userId={session.userId} />
       <OfflineQtsSession userId={session.userId} />
       {children}

@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {/* Brasão ABM — coruja, circular, menor */}
             <div className="relative h-[64px] w-[64px] flex-shrink-0">
               <Image
-                src="/brasao-abm.png"
+                src="/brasao-abm-256.png"
                 alt="Academia Bombeiro Militar — CBMAP"
                 fill
                 className="object-contain drop-shadow-lg"
@@ -44,7 +44,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {/* Brasão EFO — fênix, maior, protagonista */}
             <div className="relative h-[76px] w-[76px] flex-shrink-0">
               <Image
-                src="/brasao-efo.png"
+                src="/brasao-efo-256.png"
                 alt="Escola de Formação de Oficiais — CFO / CBMAP"
                 fill
                 className="object-contain drop-shadow-lg"
