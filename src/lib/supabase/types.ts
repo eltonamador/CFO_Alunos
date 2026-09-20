@@ -3802,6 +3802,19 @@ export type Database = {
           storage_path: string;
         }[];
       };
+      schedule_claim_processing_run_for_document: {
+        Args: { p_document_id: string; p_parser_revision: string };
+        Returns: {
+          attempt: number;
+          class_id: string;
+          document_id: string;
+          method: string;
+          period_start: string;
+          run_id: string;
+          schedule_type_name: string;
+          storage_path: string;
+        }[];
+      };
       schedule_complete_notification_delivery: {
         Args: {
           p_delivery_id: string;
@@ -3941,6 +3954,10 @@ export type Database = {
       };
       schedule_request_reprocess: {
         Args: { p_document_id: string; p_method?: string };
+        Returns: string;
+      };
+      schedule_retire_duplicate_document: {
+        Args: { p_document_id: string; p_reason: string };
         Returns: string;
       };
       schedule_reserve_notification_delivery: {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { processScheduleDocumentNow } from "../infrastructure/processor";
 
 export type ScheduleActionResult = { ok: boolean; message: string };
 
@@ -83,8 +84,60 @@ export async function reprocessScheduleAction(
     p_method: "auto",
   });
   if (error) return { ok: false, message: "Não foi possível adicionar o PDF à fila." };
+  try {
+    const result = await processScheduleDocumentNow(parsed.data);
+    revalidatePath("/coordenacao/escalas");
+    if (result?.status === "failed") {
+      return { ok: false, message: "O processamento começou, mas o PDF precisa de revisão." };
+    }
+    if (result) return { ok: true, message: "PDF processado agora." };
+  } catch {
+    // O cron diário mantém a recuperação caso a execução imediata indisponha.
+  }
   revalidatePath("/coordenacao/escalas");
-  return { ok: true, message: "Solicitação adicionada à fila de processamento." };
+  return {
+    ok: true,
+    message: "Solicitação adicionada à fila; a recuperação automática continua ativa.",
+  };
+}
+
+export async function processScheduleNowAction(documentId: string): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode iniciar o processamento." };
+  }
+  if (!z.string().uuid().safeParse(documentId).success) {
+    return { ok: false, message: "Documento inválido." };
+  }
+  try {
+    const result = await processScheduleDocumentNow(documentId);
+    revalidatePath("/coordenacao/escalas");
+    if (!result) return { ok: true, message: "O PDF já está sendo processado." };
+    if (result.status === "failed")
+      return { ok: false, message: "O PDF precisa de revisão no repositório." };
+    return { ok: true, message: "PDF processado agora." };
+  } catch {
+    return { ok: true, message: "PDF publicado; a fila automática concluirá o processamento." };
+  }
+}
+
+export async function retireDuplicateScheduleAction(
+  _previous: ScheduleActionResult | null,
+  formData: FormData,
+): Promise<ScheduleActionResult> {
+  if (!(await activeCoordination())) {
+    return { ok: false, message: "Somente a Coordenação pode retirar uma cópia duplicada." };
+  }
+  const parsed = z.string().uuid().safeParse(formData.get("document_id"));
+  if (!parsed.success) return { ok: false, message: "Documento inválido." };
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.rpc("schedule_retire_duplicate_document", {
+    p_document_id: parsed.data,
+    p_reason: "Cópia idêntica retirada da vigência pela Coordenação.",
+  });
+  if (error) return { ok: false, message: "Não foi possível retirar esta cópia duplicada." };
+  revalidatePath("/coordenacao/escalas");
+  revalidatePath("/qts");
+  return { ok: true, message: "Cópia duplicada retirada da vigência e preservada no histórico." };
 }
 
 export async function confirmScheduleCandidateAction(

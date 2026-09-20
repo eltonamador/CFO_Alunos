@@ -35,15 +35,7 @@ async function finishFailure(client: AdminClient, runId: string, error: unknown)
   return { status: "failed" as const, runId, errorCode: code };
 }
 
-export async function processNextSchedule() {
-  const client = createSupabaseAdminClient();
-  const { data, error } = await client.rpc("schedule_claim_processing_run", {
-    p_parser_revision: SCHEDULE_PARSER_REVISION,
-  });
-  if (error) throw new Error(`Falha ao obter item da fila: ${error.message}`);
-  const run = (data?.[0] ?? null) as ClaimedRun | null;
-  if (!run) return null;
-
+async function processClaimedSchedule(client: AdminClient, run: ClaimedRun) {
   try {
     const download = await client.storage.from("schedule-pdfs").download(run.storage_path);
     if (download.error || !download.data) {
@@ -130,4 +122,26 @@ export async function processNextSchedule() {
   } catch (error) {
     return finishFailure(client, run.run_id, error);
   }
+}
+
+export async function processNextSchedule() {
+  const client = createSupabaseAdminClient();
+  const { data, error } = await client.rpc("schedule_claim_processing_run", {
+    p_parser_revision: SCHEDULE_PARSER_REVISION,
+  });
+  if (error) throw new Error(`Falha ao obter item da fila: ${error.message}`);
+  const run = (data?.[0] ?? null) as ClaimedRun | null;
+  return run ? processClaimedSchedule(client, run) : null;
+}
+
+/** Processa a solicitação recém-criada sem depender do cron diário. */
+export async function processScheduleDocumentNow(documentId: string) {
+  const client = createSupabaseAdminClient();
+  const { data, error } = await client.rpc("schedule_claim_processing_run_for_document", {
+    p_document_id: documentId,
+    p_parser_revision: SCHEDULE_PARSER_REVISION,
+  });
+  if (error) throw new Error(`Falha ao iniciar o processamento imediato: ${error.message}`);
+  const run = (data?.[0] ?? null) as ClaimedRun | null;
+  return run ? processClaimedSchedule(client, run) : null;
 }

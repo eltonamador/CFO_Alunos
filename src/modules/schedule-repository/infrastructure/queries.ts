@@ -98,9 +98,13 @@ export async function getScheduleRepository(
       currentCandidates = (currentResponse.data ?? []) as ScheduleCandidate[];
     }
     const latestOfficerRunIds = rawDocuments
-      .map((document) => runs.find((run) =>
-        run.document_id === document.id && ["succeeded", "partial"].includes(run.status),
-      )?.id)
+      .map(
+        (document) =>
+          runs.find(
+            (run) =>
+              run.document_id === document.id && ["succeeded", "partial"].includes(run.status),
+          )?.id,
+      )
       .filter((id): id is string => Boolean(id));
     if (latestOfficerRunIds.length) {
       const officersResponse = await supabase
@@ -207,10 +211,21 @@ export async function getScheduleRepository(
         schedule_type_name:
           types.find((item) => item.id === document.schedule_type_id)?.name ?? "Tipo de escala",
         download_url: downloadUrl,
+        has_active_duplicate: rawDocuments.some(
+          (other) =>
+            other.id !== document.id &&
+            other.class_id === document.class_id &&
+            other.schedule_type_id === document.schedule_type_id &&
+            other.checksum_sha256 === document.checksum_sha256 &&
+            other.publication_status === "published" &&
+            other.processing_status !== "superseded",
+        ),
         latest_run: runs.find((run) => run.document_id === document.id) ?? null,
         review_count: reviewCounts.get(document.id) ?? 0,
         candidates: currentCandidates.filter((candidate) => candidate.document_id === document.id),
-        officer_assignments: officerAssignments.filter((entry) => entry.document_id === document.id),
+        officer_assignments: officerAssignments.filter(
+          (entry) => entry.document_id === document.id,
+        ),
       };
     }),
   );

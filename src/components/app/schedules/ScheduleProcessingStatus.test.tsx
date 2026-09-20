@@ -6,6 +6,7 @@ import { ScheduleProcessingStatus } from "./ScheduleProcessingStatus";
 
 vi.mock("@/modules/schedule-repository/presentation/actions", () => ({
   reprocessScheduleAction: vi.fn(),
+  retireDuplicateScheduleAction: vi.fn(),
 }));
 vi.mock("react-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof ReactDOM>()),
@@ -17,6 +18,7 @@ function document(overrides: Partial<ScheduleDocumentView> = {}): ScheduleDocume
     id: "document-1",
     publication_status: "published",
     processing_status: "processed_with_issues",
+    has_active_duplicate: false,
     review_count: 0,
     candidates: [],
     latest_run: {
@@ -78,5 +80,11 @@ describe("estado do processamento de escalas", () => {
     );
     expect(screen.getByText("Matrícula no PDF")).toBeVisible();
     expect(screen.getByText("10163140")).toBeVisible();
+  });
+
+  it("oferece retirada auditável quando há cópia vigente idêntica", () => {
+    render(<ScheduleProcessingStatus document={document({ has_active_duplicate: true })} />);
+    expect(screen.getByRole("button", { name: "Retirar cópia duplicada" })).toBeVisible();
+    expect(screen.getByText(/Mantém o registro na auditoria/)).toBeVisible();
   });
 });

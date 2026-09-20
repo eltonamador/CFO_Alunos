@@ -1,11 +1,14 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { RefreshCw } from "lucide-react";
+import { CopyX, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { ScheduleDocumentView } from "@/modules/schedule-repository/application/types";
-import { reprocessScheduleAction } from "@/modules/schedule-repository/presentation/actions";
+import {
+  reprocessScheduleAction,
+  retireDuplicateScheduleAction,
+} from "@/modules/schedule-repository/presentation/actions";
 
 const statusLabel: Record<string, string> = {
   uploaded: "Aguardando processamento",
@@ -53,6 +56,7 @@ function statusVariant(status: string) {
 
 export function ScheduleProcessingStatus({ document }: { document: ScheduleDocumentView }) {
   const [reprocessResult, reprocessAction] = useFormState(reprocessScheduleAction, null);
+  const [retireResult, retireAction] = useFormState(retireDuplicateScheduleAction, null);
   const run = document.latest_run;
   const metrics = (run?.metrics ?? {}) as Record<string, unknown>;
   const extractedText = typeof metrics.extractedText === "string" ? metrics.extractedText : "";
@@ -147,7 +151,16 @@ export function ScheduleProcessingStatus({ document }: { document: ScheduleDocum
                 {document.officer_assignments.map((entry) => (
                   <tr key={entry.id} className="border-t border-border">
                     <td className="p-2">{formatDate(entry.duty_date)}</td>
-                    <td className="p-2">{{ manha: "Manhã", tarde: "Tarde", noite: "Noite", diurno: "Diurno", noturno: "Noturno" }[entry.shift] ?? entry.shift} · {entry.starts_at.slice(0, 5)}–{entry.ends_at.slice(0, 5)}</td>
+                    <td className="p-2">
+                      {{
+                        manha: "Manhã",
+                        tarde: "Tarde",
+                        noite: "Noite",
+                        diurno: "Diurno",
+                        noturno: "Noturno",
+                      }[entry.shift] ?? entry.shift}{" "}
+                      · {entry.starts_at.slice(0, 5)}–{entry.ends_at.slice(0, 5)}
+                    </td>
                     <td className="p-2">{entry.display_name}</td>
                     <td className="p-2">{entry.duty_function}</td>
                   </tr>
@@ -193,6 +206,23 @@ export function ScheduleProcessingStatus({ document }: { document: ScheduleDocum
               className={reprocessResult.ok ? "text-foreground" : "text-destructive"}
             >
               {reprocessResult.message}
+            </p>
+          )}
+        </form>
+      )}
+      {document.has_active_duplicate && (
+        <form action={retireAction} className="space-y-1 border-t border-border pt-3">
+          <input type="hidden" name="document_id" value={document.id} />
+          <Button type="submit" variant="outline" size="sm">
+            <CopyX className="h-4 w-4" />
+            Retirar cópia duplicada
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Mantém o registro na auditoria, mas o remove da vigência e da fila.
+          </p>
+          {retireResult && (
+            <p role="status" className={retireResult.ok ? "text-foreground" : "text-destructive"}>
+              {retireResult.message}
             </p>
           )}
         </form>

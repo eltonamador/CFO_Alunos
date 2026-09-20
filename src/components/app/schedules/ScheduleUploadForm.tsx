@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Alert } from "@/components/ui/Alert";
@@ -13,6 +14,7 @@ import type {
   ScheduleDocumentView,
   ScheduleType,
 } from "@/modules/schedule-repository/application/types";
+import { processScheduleNowAction } from "@/modules/schedule-repository/presentation/actions";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 type RegisterArgs = Database["public"]["Functions"]["schedule_register_document"]["Args"];
@@ -52,7 +54,7 @@ export function ScheduleUploadForm({
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [pending, startTransition] = useTransition();
-  const activeTypes = types.filter((item) => item.active);
+  const activeTypes = types.filter((item) => item.active && item.code !== "qts");
 
   async function submit(formData: FormData) {
     setMessage(null);
@@ -68,6 +70,13 @@ export function ScheduleUploadForm({
     }
     if (!classId || !scheduleTypeId) {
       setMessage({ ok: false, text: "Selecione a turma e o tipo de escala." });
+      return;
+    }
+    if (types.find((item) => item.id === scheduleTypeId)?.code === "qts") {
+      setMessage({
+        ok: false,
+        text: "Use a página de QTS para ler, conferir e publicar a programação semanal.",
+      });
       return;
     }
     if (file.size > MAX_BYTES) {
@@ -136,12 +145,13 @@ export function ScheduleUploadForm({
     formRef.current?.reset();
     setSelectedClass("");
     setSelectedType("");
-    setMessage({
-      ok: true,
-      text: queued.error
-        ? "Escala publicada. O processamento automático precisa ser solicitado novamente."
-        : "Escala publicada e adicionada à fila de processamento.",
-    });
+    const processed = queued.error
+      ? {
+          ok: false,
+          message: "Escala publicada. O processamento automático precisa ser solicitado novamente.",
+        }
+      : await processScheduleNowAction(document.id);
+    setMessage({ ok: processed.ok, text: processed.message });
     router.refresh();
   }
 
@@ -151,6 +161,13 @@ export function ScheduleUploadForm({
       className="space-y-4"
       action={(formData) => startTransition(() => void submit(formData))}
     >
+      <Alert variant="default">
+        Para publicar um Quadro de Trabalho Semanal, use{" "}
+        <Link href="/qts" className="font-semibold underline">
+          a página de QTS
+        </Link>
+        . Ela extrai horários, atividades e dados acadêmicos antes da publicação.
+      </Alert>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Turma">
           <Select

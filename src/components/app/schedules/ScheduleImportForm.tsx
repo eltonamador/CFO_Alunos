@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Plus, Trash2 } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
@@ -55,6 +56,7 @@ export function ScheduleImportForm({
   const [reservation, setReservation] = useState<{ id: string; storage_path: string } | null>(null);
   const selectedStudents = students.filter((student) => student.classId === classId);
   const typeName = types.find((type) => type.id === typeId)?.name ?? "Serviço de escala";
+  const availableTypes = types.filter((item) => item.active && item.code !== "qts");
   useEffect(() => {
     if (!source) {
       setSourceUrl("");
@@ -71,6 +73,10 @@ export function ScheduleImportForm({
   async function extract() {
     if (!source || !classId || !typeId) {
       setError("Selecione turma, tipo e arquivo.");
+      return;
+    }
+    if (types.find((type) => type.id === typeId)?.code === "qts") {
+      setError("Use a página de QTS para ler, conferir e publicar a programação semanal.");
       return;
     }
     setBusy(true);
@@ -211,6 +217,13 @@ export function ScheduleImportForm({
     );
   return (
     <form onSubmit={(event) => void publish(event)} className="space-y-4">
+      <Alert variant="default">
+        QTS deve ser publicado em{" "}
+        <Link href="/qts" className="font-semibold underline">
+          Quadro de Trabalho Semanal
+        </Link>
+        , onde os horários e atividades são conferidos antes da publicação.
+      </Alert>
       <fieldset disabled={busy || Boolean(preview)} className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm">
           Turma
@@ -227,13 +240,11 @@ export function ScheduleImportForm({
           Tipo de escala
           <Select required value={typeId} onChange={(event) => setTypeId(event.target.value)}>
             <option value="">Selecione</option>
-            {types
-              .filter((item) => item.active)
-              .map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
+            {availableTypes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </Select>
         </label>
         <label className="space-y-1 text-sm sm:col-span-2">

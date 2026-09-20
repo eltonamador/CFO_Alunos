@@ -16,6 +16,7 @@ export interface ScheduleDocumentView extends ScheduleDocument {
   class_name: string;
   schedule_type_name: string;
   download_url: string | null;
+  has_active_duplicate: boolean;
   latest_run: ScheduleProcessingRun | null;
   review_count: number;
   candidates: ScheduleCandidate[];
