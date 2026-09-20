@@ -52,6 +52,10 @@ export type QtsDatabase = Omit<Database, "public"> & {
         Args: { p_document_id: string; p_activities: Json; p_academic_year_id: string };
         Returns: string;
       };
+      qts_publish_provisional_document: {
+        Args: { p_document_id: string; p_activities: Json; p_reason?: string };
+        Returns: string;
+      };
       schedule_register_document: {
         Args: {
           p_class_id: string;

@@ -38,7 +38,8 @@ export async function getQtsCalendar(start: string, end: string): Promise<QtsSna
     client.rpc("qts_calendar", { p_start: start, p_end: end }),
     client.rpc("qts_published_documents", { p_start: start, p_end: end }),
   ]);
-  if (activities.error || documents.error) throw new Error("Não foi possível carregar o QTS agora.");
+  if (activities.error || documents.error)
+    throw new Error("Não foi possível carregar o QTS agora.");
   return {
     version: 1,
     userId: session.userId,
@@ -75,22 +76,34 @@ export async function getQtsPublicationOptions() {
   const [classes, type, academicYears] = await Promise.all([
     client.from("classes").select("id,name,course_id").order("name"),
     client.from("schedule_types").select("id").eq("code", "qts").maybeSingle(),
-    academicClient.from("academic_years").select("id,course_id,year,starts_on,ends_on,status").eq("status", "open").order("year", { ascending: false }),
+    academicClient
+      .from("academic_years")
+      .select("id,course_id,year,starts_on,ends_on,status")
+      .in("status", ["open", "draft"])
+      .order("year", { ascending: false }),
   ]);
   if (classes.error || type.error || academicYears.error || !type.data)
     throw new Error("Não foi possível preparar a publicação do QTS.");
   const documents = await client
     .from("schedule_documents")
-    .select("id,class_id,original_filename,period_start,period_end")
+    .select("id,class_id,original_filename,period_start,period_end,storage_path")
     .eq("schedule_type_id", type.data.id)
     .eq("publication_status", "published")
     .neq("processing_status", "superseded")
     .order("period_start", { ascending: false });
   if (documents.error) throw new Error("Não foi possível consultar QTS já publicados.");
+  const documentsWithUrl = await Promise.all(
+    (documents.data ?? []).map(async (document) => {
+      const signed = await client.storage
+        .from("schedule-pdfs")
+        .createSignedUrl(document.storage_path, 60 * 10, { download: document.original_filename });
+      return { ...document, download_url: signed.data?.signedUrl ?? null };
+    }),
+  );
   return {
     classes: classes.data ?? [],
     academicYears: academicYears.data ?? [],
-    documents: documents.data ?? [],
+    documents: documentsWithUrl,
     qtsTypeId: type.data.id,
   };
 }

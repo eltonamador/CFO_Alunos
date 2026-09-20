@@ -38,7 +38,9 @@ const emptyRow = (): QtsDraftActivity => ({
 
 async function checksum(file: File) {
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 function normalizeRows(rows: QtsDraftActivity[]) {
@@ -62,8 +64,22 @@ export function QtsPublicationForm({
   qtsTypeId,
 }: {
   classes: { id: string; name: string; course_id: string }[];
-  academicYears: { id: string; course_id: string; year: number; starts_on: string; ends_on: string; status: string }[];
-  documents: { id: string; class_id: string; original_filename: string; period_start: string | null; period_end: string | null }[];
+  academicYears: {
+    id: string;
+    course_id: string;
+    year: number;
+    starts_on: string;
+    ends_on: string;
+    status: string;
+  }[];
+  documents: {
+    id: string;
+    class_id: string;
+    original_filename: string;
+    period_start: string | null;
+    period_end: string | null;
+    download_url: string | null;
+  }[];
   qtsTypeId: string;
 }) {
   const [classId, setClassId] = useState(classes.length === 1 ? classes[0]!.id : "");
@@ -73,8 +89,10 @@ export function QtsPublicationForm({
   const [historicalYearId, setHistoricalYearId] = useState("");
   const selectedClass = classes.find((item) => item.id === classId);
   const availableAcademicYears = academicYears.filter(
-    (item) => item.course_id === selectedClass?.course_id && item.status === "open",
+    (item) =>
+      item.course_id === selectedClass?.course_id && ["open", "draft"].includes(item.status),
   );
+  const selectedAcademicYear = academicYears.find((item) => item.id === academicYearId);
   const replaceableDocuments = documents.filter((item) => item.class_id === classId);
   const historicalDocument = documents.find((item) => item.id === historicalDocumentId);
   const historicalClass = classes.find((item) => item.id === historicalDocument?.class_id);
@@ -121,10 +139,34 @@ export function QtsPublicationForm({
       setPreview(next);
       setRows(next.rows);
       setReviewed(false);
-      if (!next.rows.length) setError("Não identifiquei atividades. Adicione as linhas manualmente antes de publicar.");
+      if (!next.rows.length)
+        setError("Não identifiquei atividades. Adicione as linhas manualmente antes de publicar.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível ler este QTS.");
     } finally {
+      setProgress("");
+    }
+  }
+
+  async function loadSelectedPublishedPdf() {
+    const document = documents.find((item) => item.id === supersedesDocumentId);
+    if (!document?.download_url) {
+      setError("Selecione o QTS publicado que será corrigido.");
+      return;
+    }
+    setError(null);
+    setDone(null);
+    setProgress("Recuperando o PDF publicado…");
+    try {
+      const response = await fetch(document.download_url);
+      if (!response.ok) throw new Error("Não foi possível recuperar o PDF publicado.");
+      const blob = await response.blob();
+      setSource(new File([blob], document.original_filename, { type: "application/pdf" }));
+      setProgress("PDF recuperado. Agora leia e confira a tabela.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível recuperar o PDF publicado.",
+      );
       setProgress("");
     }
   }
@@ -142,16 +184,18 @@ export function QtsPublicationForm({
     if (
       !values.length ||
       values.some(
-        (row) =>
-          !row.date ||
-          !row.activity ||
-          Boolean(row.startsAt) !== Boolean(row.endsAt),
+        (row) => !row.date || !row.activity || Boolean(row.startsAt) !== Boolean(row.endsAt),
       )
     ) {
-      setError("Revise data, atividade e horários. Uma atividade pode ficar sem horário, mas início e término devem ser informados juntos.");
+      setError(
+        "Revise data, atividade e horários. Uma atividade pode ficar sem horário, mas início e término devem ser informados juntos.",
+      );
       return;
     }
-    if (period.end < period.start || values.some((row) => row.date < period.start || row.date > period.end)) {
+    if (
+      period.end < period.start ||
+      values.some((row) => row.date < period.start || row.date > period.end)
+    ) {
       setError("Todas as atividades devem ficar dentro da vigência indicada no PDF.");
       return;
     }
@@ -174,10 +218,12 @@ export function QtsPublicationForm({
           if (reserved.error || !reserved.data)
             throw new Error(reserved.error?.message ?? "Não foi possível reservar o QTS.");
           const document = reserved.data;
-          const upload = await client.storage.from("schedule-pdfs").upload(document.storage_path, preview.file, {
-            contentType: "application/pdf",
-            upsert: false,
-          });
+          const upload = await client.storage
+            .from("schedule-pdfs")
+            .upload(document.storage_path, preview.file, {
+              contentType: "application/pdf",
+              upsert: false,
+            });
           if (upload.error) {
             await client.rpc("schedule_fail_upload", {
               p_document_id: document.id,
@@ -186,13 +232,25 @@ export function QtsPublicationForm({
             throw new Error(`O PDF não pôde ser enviado: ${upload.error.message}`);
           }
           setProgress("Publicando a agenda conferida…");
-          const published = await client.rpc("qts_publish_reviewed_document", {
-            p_document_id: document.id,
-            p_activities: values as unknown as Json,
-            p_academic_year_id: academicYearId,
-          });
+          const published =
+            selectedAcademicYear?.status === "draft"
+              ? await client.rpc("qts_publish_provisional_document", {
+                  p_document_id: document.id,
+                  p_activities: values as unknown as Json,
+                  p_reason:
+                    "QTS publicado provisoriamente enquanto aguarda o calendário letivo oficial",
+                })
+              : await client.rpc("qts_publish_reviewed_document", {
+                  p_document_id: document.id,
+                  p_activities: values as unknown as Json,
+                  p_academic_year_id: academicYearId,
+                });
           if (published.error) throw new Error(published.error.message);
-          setDone(`QTS${preview.qtsNumber ? ` nº ${preview.qtsNumber}` : ""} publicado com ${values.length} atividades.`);
+          setDone(
+            selectedAcademicYear?.status === "draft"
+              ? `QTS${preview.qtsNumber ? ` nº ${preview.qtsNumber}` : ""} publicado provisoriamente com ${values.length} atividades. O diário acadêmico será vinculado após o calendário oficial.`
+              : `QTS${preview.qtsNumber ? ` nº ${preview.qtsNumber}` : ""} publicado com ${values.length} atividades.`,
+          );
           setPreview(null);
           setRows([]);
           setSource(null);
@@ -223,7 +281,9 @@ export function QtsPublicationForm({
             p_reason: "Vínculo de QTS publicado anteriormente ao diário acadêmico",
           });
           if (linked.error) throw new Error(linked.error.message);
-          setDone(`QTS vinculado ao ano letivo; ${linked.data ?? 0} aula(s) planejada(s) foram verificadas.`);
+          setDone(
+            `QTS vinculado ao ano letivo; ${linked.data ?? 0} aula(s) planejada(s) foram verificadas.`,
+          );
         } catch (cause) {
           setError(cause instanceof Error ? cause.message : "Não foi possível vincular o QTS.");
         }
@@ -236,10 +296,21 @@ export function QtsPublicationForm({
       <div>
         <p className="section-eyebrow">Coordenação</p>
         <h2 className="font-display text-lg font-bold">Publicar novo QTS</h2>
-        <p className="mt-1 text-sm text-muted-foreground">O sistema lê o PDF nativo e exige a conferência da tabela antes da publicação.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          O sistema lê o PDF nativo e exige a conferência da tabela antes da publicação.
+        </p>
       </div>
-      {done && <Alert variant="success" className="mt-4"><CheckCircle2 className="h-4 w-4" />{done}</Alert>}
-      {error && <Alert variant="destructive" className="mt-4">{error}</Alert>}
+      {done && (
+        <Alert variant="success" className="mt-4">
+          <CheckCircle2 className="h-4 w-4" />
+          {done}
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="destructive" className="mt-4">
+          {error}
+        </Alert>
+      )}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-medium">
           Turma
@@ -253,14 +324,28 @@ export function QtsPublicationForm({
             disabled={busy || Boolean(preview)}
           >
             <option value="">Selecione</option>
-            {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {classes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </Select>
         </label>
         <label className="space-y-1 text-sm font-medium">
           Ano letivo acadêmico
-          <Select value={academicYearId} onChange={(event) => setAcademicYearId(event.target.value)} disabled={busy || Boolean(preview) || !classId}>
+          <Select
+            value={academicYearId}
+            onChange={(event) => setAcademicYearId(event.target.value)}
+            disabled={busy || Boolean(preview) || !classId}
+          >
             <option value="">Selecione</option>
-            {availableAcademicYears.map((item) => <option key={item.id} value={item.id}>{item.year} · {item.starts_on.split("-").reverse().join("/")} a {item.ends_on.split("-").reverse().join("/")}</option>)}
+            {availableAcademicYears.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.year} · {item.starts_on.split("-").reverse().join("/")} a{" "}
+                {item.ends_on.split("-").reverse().join("/")}
+                {item.status === "draft" ? " · provisório" : ""}
+              </option>
+            ))}
           </Select>
         </label>
         <label className="space-y-1 text-sm font-medium">
@@ -273,7 +358,8 @@ export function QtsPublicationForm({
             <option value="">Não é uma substituição</option>
             {replaceableDocuments.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.original_filename} · {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}
+                {item.original_filename} ·{" "}
+                {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}
               </option>
             ))}
           </Select>
@@ -288,76 +374,263 @@ export function QtsPublicationForm({
           />
         </label>
       </div>
+      {selectedAcademicYear?.status === "draft" && (
+        <Alert className="mt-3">
+          Este QTS aparecerá no painel imediatamente, mas não criará diário, frequência ou carga
+          instrucional até a abertura do calendário oficial.
+        </Alert>
+      )}
+      {supersedesDocumentId && !source && (
+        <Button
+          className="mt-3"
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={() => void loadSelectedPublishedPdf()}
+        >
+          Usar PDF do QTS selecionado
+        </Button>
+      )}
       {!preview && (
-        <Button className="mt-4" type="button" disabled={!source || busy} onClick={() => void extract()}>
+        <Button
+          className="mt-4"
+          type="button"
+          disabled={!source || busy}
+          onClick={() => void extract()}
+        >
           <FileUp className="h-4 w-4" aria-hidden /> Ler e conferir QTS
         </Button>
       )}
-      {progress && <p role="status" className="mt-3 text-sm text-muted-foreground">{progress}</p>}
+      {progress && (
+        <p role="status" className="mt-3 text-sm text-muted-foreground">
+          {progress}
+        </p>
+      )}
       {preview && (
         <div className="mt-5 space-y-4 border-t border-border pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
-              {preview.qtsNumber ? `QTS nº ${preview.qtsNumber}` : "QTS"} · {preview.pages} página(s) · {rows.length} atividade(s)
+              {preview.qtsNumber ? `QTS nº ${preview.qtsNumber}` : "QTS"} · {preview.pages}{" "}
+              página(s) · {rows.length} atividade(s)
             </p>
-            <span className="text-sm font-semibold">Vigência: {period.start.split("-").reverse().join("/")} a {period.end.split("-").reverse().join("/")}</span>
+            <span className="text-sm font-semibold">
+              Vigência: {period.start.split("-").reverse().join("/")} a{" "}
+              {period.end.split("-").reverse().join("/")}
+            </span>
           </div>
           <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="min-w-[1050px] w-full text-left text-xs">
+            <table className="w-full min-w-[1050px] text-left text-xs">
               <thead className="bg-muted text-muted-foreground">
-                <tr>{["Data", "Início", "Término", "Atividade", "CH", "Instrutor", "Uniforme", "Local", "Pausa", ""].map((label) => <th key={label} className="p-2 font-semibold">{label}</th>)}</tr>
+                <tr>
+                  {[
+                    "Data",
+                    "Início",
+                    "Término",
+                    "Atividade",
+                    "CH",
+                    "Instrutor",
+                    "Uniforme",
+                    "Local",
+                    "Pausa",
+                    "",
+                  ].map((label) => (
+                    <th key={label} className="p-2 font-semibold">
+                      {label}
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td className="p-1"><Input className="h-8 min-w-32" type="date" value={row.date} onChange={(event) => updateRow(row.id, { date: event.target.value })} /></td>
-                    <td className="p-1"><Input className="h-8 w-24" type="time" value={row.startsAt ?? ""} onChange={(event) => updateRow(row.id, { startsAt: event.target.value })} /></td>
-                    <td className="p-1"><Input className="h-8 w-24" type="time" value={row.endsAt ?? ""} onChange={(event) => updateRow(row.id, { endsAt: event.target.value })} /></td>
-                    <td className="p-1"><Input className="h-8 min-w-44" value={row.activity} onChange={(event) => updateRow(row.id, { activity: event.target.value })} /></td>
-                    <td className="p-1"><Input className="h-8 w-20" value={row.workload ?? ""} onChange={(event) => updateRow(row.id, { workload: event.target.value || null })} /></td>
-                    <td className="p-1"><Input className="h-8 min-w-32" value={row.instructor ?? ""} onChange={(event) => updateRow(row.id, { instructor: event.target.value || null })} /></td>
-                    <td className="p-1"><Input className="h-8 min-w-28" value={row.uniform ?? ""} onChange={(event) => updateRow(row.id, { uniform: event.target.value || null })} /></td>
-                    <td className="p-1"><Input className="h-8 min-w-24" value={row.location ?? ""} onChange={(event) => updateRow(row.id, { location: event.target.value || null })} /></td>
-                    <td className="p-1 text-center"><input aria-label={`Marcar ${row.activity || "atividade"} como pausa`} type="checkbox" checked={row.isBreak} onChange={(event) => updateRow(row.id, { isBreak: event.target.checked })} /></td>
-                    <td className="p-1"><Button type="button" variant="ghost" size="icon" aria-label="Remover atividade" onClick={() => { setRows((current) => current.filter((item) => item.id !== row.id)); setReviewed(false); }}><Trash2 className="h-4 w-4" /></Button></td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 min-w-32"
+                        type="date"
+                        value={row.date}
+                        onChange={(event) => updateRow(row.id, { date: event.target.value })}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 w-24"
+                        type="time"
+                        value={row.startsAt ?? ""}
+                        onChange={(event) => updateRow(row.id, { startsAt: event.target.value })}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 w-24"
+                        type="time"
+                        value={row.endsAt ?? ""}
+                        onChange={(event) => updateRow(row.id, { endsAt: event.target.value })}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 min-w-44"
+                        value={row.activity}
+                        onChange={(event) => updateRow(row.id, { activity: event.target.value })}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 w-20"
+                        value={row.workload ?? ""}
+                        onChange={(event) =>
+                          updateRow(row.id, { workload: event.target.value || null })
+                        }
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 min-w-32"
+                        value={row.instructor ?? ""}
+                        onChange={(event) =>
+                          updateRow(row.id, { instructor: event.target.value || null })
+                        }
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 min-w-28"
+                        value={row.uniform ?? ""}
+                        onChange={(event) =>
+                          updateRow(row.id, { uniform: event.target.value || null })
+                        }
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        className="h-8 min-w-24"
+                        value={row.location ?? ""}
+                        onChange={(event) =>
+                          updateRow(row.id, { location: event.target.value || null })
+                        }
+                      />
+                    </td>
+                    <td className="p-1 text-center">
+                      <input
+                        aria-label={`Marcar ${row.activity || "atividade"} como pausa`}
+                        type="checkbox"
+                        checked={row.isBreak}
+                        onChange={(event) => updateRow(row.id, { isBreak: event.target.checked })}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover atividade"
+                        onClick={() => {
+                          setRows((current) => current.filter((item) => item.id !== row.id));
+                          setReviewed(false);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={() => { setRows((current) => [...current, { ...emptyRow(), date: period.start }]); setReviewed(false); }}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setRows((current) => [...current, { ...emptyRow(), date: period.start }]);
+              setReviewed(false);
+            }}
+          >
             <Plus className="h-4 w-4" aria-hidden /> Adicionar atividade
           </Button>
           <label className="flex items-start gap-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-            <input type="checkbox" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} />
-            <span>Conferi horários, atividades, uniforme, local e responsável com o PDF original. Atividades sem horário ficam pendentes de complementação; uma correção exige nova versão do QTS.</span>
+            <input
+              type="checkbox"
+              checked={reviewed}
+              onChange={(event) => setReviewed(event.target.checked)}
+            />
+            <span>
+              Conferi horários, atividades, uniforme, local e responsável com o PDF original.
+              Atividades sem horário ficam pendentes de complementação; uma correção exige nova
+              versão do QTS.
+            </span>
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={busy} onClick={publish}>Publicar QTS conferido</Button>
-            <Button type="button" variant="secondary" disabled={busy} onClick={() => { setPreview(null); setRows([]); setReviewed(false); setError(null); }}>Cancelar</Button>
+            <Button type="button" disabled={busy} onClick={publish}>
+              Publicar QTS conferido
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setPreview(null);
+                setRows([]);
+                setReviewed(false);
+                setError(null);
+              }}
+            >
+              Cancelar
+            </Button>
           </div>
         </div>
       )}
       {documents.length > 0 && (
         <details className="mt-5 border-t border-border pt-4">
-          <summary className="cursor-pointer text-sm font-semibold">Vincular QTS já publicado ao calendário</summary>
+          <summary className="cursor-pointer text-sm font-semibold">
+            Vincular QTS já publicado ao calendário
+          </summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 text-sm font-medium">
               QTS publicado
-              <Select value={historicalDocumentId} onChange={(event) => { setHistoricalDocumentId(event.target.value); setHistoricalYearId(""); }} disabled={busy}>
+              <Select
+                value={historicalDocumentId}
+                onChange={(event) => {
+                  setHistoricalDocumentId(event.target.value);
+                  setHistoricalYearId("");
+                }}
+                disabled={busy}
+              >
                 <option value="">Selecione</option>
-                {documents.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}</option>)}
+                {documents.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.original_filename} ·{" "}
+                    {item.period_start?.split("-").reverse().join("/") ?? "sem vigência"}
+                  </option>
+                ))}
               </Select>
             </label>
             <label className="space-y-1 text-sm font-medium">
               Ano letivo
-              <Select value={historicalYearId} onChange={(event) => setHistoricalYearId(event.target.value)} disabled={busy || !historicalDocumentId}>
+              <Select
+                value={historicalYearId}
+                onChange={(event) => setHistoricalYearId(event.target.value)}
+                disabled={busy || !historicalDocumentId}
+              >
                 <option value="">Selecione</option>
-                {historicalYears.map((item) => <option key={item.id} value={item.id}>{item.year} · {item.starts_on.split("-").reverse().join("/")} a {item.ends_on.split("-").reverse().join("/")}</option>)}
+                {historicalYears.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.year} · {item.starts_on.split("-").reverse().join("/")} a{" "}
+                    {item.ends_on.split("-").reverse().join("/")}
+                  </option>
+                ))}
               </Select>
             </label>
           </div>
-          <Button className="mt-3" type="button" variant="secondary" disabled={busy || !historicalDocumentId || !historicalYearId} onClick={linkPublishedQts}>Vincular e gerar planejamento</Button>
+          <Button
+            className="mt-3"
+            type="button"
+            variant="secondary"
+            disabled={busy || !historicalDocumentId || !historicalYearId}
+            onClick={linkPublishedQts}
+          >
+            Vincular e gerar planejamento
+          </Button>
         </details>
       )}
     </section>
