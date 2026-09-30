@@ -11,3 +11,13 @@ tmp/
 *.log
 *.bak
 lista.txt
+scripts/maintenance/
+scripts/provision-coordination-logins.ts
+docs/RELATORIO_*.md
+docs/ESCALA_065_REVISAO_20260929.md
+*.tsbuildinfo
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/workbox-*.js
+public/schedule-readers/

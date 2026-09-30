@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { canLinkCoordinationLogin } from "@/modules/identity/domain/coordinationAccess";
 
 export type CoordinationTeamActionResult = { ok: boolean; message: string };
 
@@ -34,6 +35,17 @@ export async function linkCoordinationMemberProfileAction(
 
   const supabase = createSupabaseServerClient();
   try {
+    const { data: member, error: memberError } = await supabase
+      .from("cfo_coordination_members")
+      .select("registration")
+      .eq("id", parsed.data.memberId)
+      .maybeSingle();
+    if (memberError) throw memberError;
+    if (!member) return { ok: false, message: "Integrante não encontrado." };
+    if (parsed.data.profileId && !canLinkCoordinationLogin(member.registration)) {
+      return { ok: false, message: "Este integrante não possui autorização para login." };
+    }
+
     if (parsed.data.profileId) {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")

@@ -16,6 +16,7 @@ Esta pasta contém **somente os artefatos de planejamento (Fase 1)**. Nenhum có
 9. [Plano de Implementação](09-implementation-plan.md)
 10. [Plano de Testes](10-test-plan.md)
 11. [Decisões e Suposições](decisions.md)
+12. [Plano do Módulo de Controle de Estágio](PLANO_MODULO_CONTROLE_ESTAGIO.md)
 
 ## Como ler
 - Comece por **01** (visão) → **02** (glossário) → **04** (contextos) → **05** (dados).

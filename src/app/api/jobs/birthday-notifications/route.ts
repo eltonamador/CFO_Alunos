@@ -86,7 +86,8 @@ export async function GET(request: NextRequest) {
   const { data: studentData, error: studentError } = await supabase
     .from("students")
     .select("id, full_name, birth_date")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado");
   if (studentError) {
     return NextResponse.json({ error: studentError.message }, { status: 500 });
   }

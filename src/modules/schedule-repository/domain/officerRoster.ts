@@ -48,6 +48,17 @@ const TIMES = {
   noturno: ["19:00", "07:00"],
 } as const;
 
+/** Nome da função na consulta, conforme o posto; mantém funções desconhecidas. */
+export function officerDutyFunction(displayName: string, sourceFunction: string): string {
+  const name = normalizeScheduleText(displayName);
+  if (/^(MAJ|MAJOR)\b/.test(name)) return "Superior de dia";
+  if (/^(CAP|CAPITAO)\b/.test(name) || /^(?:(?:1|2)\s*(?:O\s*)?)?(TEN|TENENTE)\b/.test(name)) {
+    // Tenente-coronel não é tenente subalterno.
+    if (!/^(TEN|TENENTE)\s*(?:-\s*)?(CEL|CORONEL)\b/.test(name)) return "Oficial de dia";
+  }
+  return sourceFunction.trim();
+}
+
 /** Lê apenas células de serviço da tabela ODA; ignora prescrição e observações. */
 export function parseOfficerRosterItems(
   items: OfficerTextItem[],
@@ -89,7 +100,7 @@ export function parseOfficerRosterItems(
         sequence: entries.length + 1,
         duty_date: row.date,
         display_name: name.text.trim(),
-        duty_function: functionItem.text.trim(),
+        duty_function: officerDutyFunction(name.text, functionItem.text),
         shift,
         starts_at,
         ends_at,

@@ -3,6 +3,49 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      internship_scale_numbers: {
+        Row: {voided_at:string|null;void_reason:string|null;id:string;program_id:string;service:string;gbm_site_id:string|null;source_roster_id:string|null;period_start:string;period_end:string;sequence_number:number;sequence_year:number;issued_at:string;issued_by:string};
+        Insert: never; Update: never; Relationships: [];
+      };
+      internship_scale_revisions: {
+        Row: {id:string;scale_number_id:string;revision:number;rectification:number|null;snapshot:Json;change_summary:string;pdf_base64:string;issued_at:string;issued_by:string};
+        Insert: never; Update: never; Relationships: [];
+      };
+
+      internship_schedule_restarts: {
+        Row: { id: string; program_id: string; actor_id: string; reason: string; cancelled_shifts: number; cancelled_assignments: number; revoked_invites: number; created_at: string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      internship_evaluations: {
+        Row: {
+          id: string; assignment_id: string; version: number; student_id: string; context: Json;
+          source: string; status: string; recipient_name: string; recipient_contact: string;
+          token_hash: string | null; expires_at: string | null; created_by: string; created_at: string;
+          evaluator_name: string | null; evaluator_unit: string | null; ratings: Json | null;
+          details: Json;
+          guidance: string | null; incident: boolean | null; incident_note: string | null;
+          paper_reference: string | null; submitted_at: string | null; reviewed_at: string | null;
+          reviewed_by: string | null; review_note: string | null;
+          whatsapp_targets: string[]; whatsapp_sender_phone: string | null;
+          whatsapp_verified_at: string | null; whatsapp_verified_by: string | null;
+        };
+        Insert: never; Update: never; Relationships: [];
+      };
+      internship_evaluation_whatsapp_contacts: {
+        Row: {
+          program_id: string; primary_phone: string; secondary_phone: string | null;
+          updated_at: string; updated_by: string | null;
+        };
+        Insert: {
+          program_id: string; primary_phone: string; secondary_phone?: string | null;
+          updated_at?: string; updated_by?: string | null;
+        };
+        Update: {
+          primary_phone?: string; secondary_phone?: string | null;
+          updated_at?: string; updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       academic_assessments: {
         Row: {
           held_on: string | null;
@@ -164,6 +207,118 @@ export type Database = {
           },
         ];
       };
+      academic_calendar_events: {
+        Row: {
+          academic_year_id: string;
+          blocks_instruction: boolean;
+          change_reason: string | null;
+          class_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          event_date: string;
+          event_type: string;
+          id: string;
+          revision: number;
+          source_ref: string;
+          title: string;
+        };
+        Insert: {
+          academic_year_id: string;
+          blocks_instruction?: boolean;
+          change_reason?: string | null;
+          class_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          event_date: string;
+          event_type: string;
+          id?: string;
+          revision?: number;
+          source_ref: string;
+          title: string;
+        };
+        Update: {
+          academic_year_id?: string;
+          blocks_instruction?: boolean;
+          change_reason?: string | null;
+          class_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          event_date?: string;
+          event_type?: string;
+          id?: string;
+          revision?: number;
+          source_ref?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_calendar_events_academic_year_id_fkey";
+            columns: ["academic_year_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_years";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_calendar_events_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_calendar_events_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      academic_discipline_aliases: {
+        Row: {
+          active: boolean;
+          alias: string;
+          created_at: string;
+          created_by: string | null;
+          discipline_id: string;
+          id: string;
+          normalized_alias: string;
+        };
+        Insert: {
+          active?: boolean;
+          alias: string;
+          created_at?: string;
+          created_by?: string | null;
+          discipline_id: string;
+          id?: string;
+          normalized_alias: string;
+        };
+        Update: {
+          active?: boolean;
+          alias?: string;
+          created_at?: string;
+          created_by?: string | null;
+          discipline_id?: string;
+          id?: string;
+          normalized_alias?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_discipline_aliases_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_discipline_aliases_discipline_id_fkey";
+            columns: ["discipline_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_disciplines";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       academic_disciplines: {
         Row: {
           active: boolean;
@@ -317,9 +472,160 @@ export type Database = {
           },
         ];
       };
+      academic_instruction_sessions: {
+        Row: {
+          academic_year_id: string;
+          actual_ends_at: string | null;
+          actual_starts_at: string | null;
+          change_reason: string | null;
+          class_id: string;
+          classification: string;
+          content: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          location: string | null;
+          offering_id: string | null;
+          planned_ends_at: string | null;
+          planned_hours: number;
+          planned_instructor: string | null;
+          planned_starts_at: string | null;
+          proposed_at: string | null;
+          proposed_by: string | null;
+          proposed_outcome: string;
+          qts_activity_id: string | null;
+          rescheduled_from_id: string | null;
+          revision: number;
+          scheduled_on: string;
+          status: string;
+          taught_hours: number | null;
+          title: string;
+          validated_at: string | null;
+          validated_by: string | null;
+        };
+        Insert: {
+          academic_year_id: string;
+          actual_ends_at?: string | null;
+          actual_starts_at?: string | null;
+          change_reason?: string | null;
+          class_id: string;
+          classification?: string;
+          content?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          location?: string | null;
+          offering_id?: string | null;
+          planned_ends_at?: string | null;
+          planned_hours?: number;
+          planned_instructor?: string | null;
+          planned_starts_at?: string | null;
+          proposed_at?: string | null;
+          proposed_by?: string | null;
+          proposed_outcome?: string;
+          qts_activity_id?: string | null;
+          rescheduled_from_id?: string | null;
+          revision?: number;
+          scheduled_on: string;
+          status?: string;
+          taught_hours?: number | null;
+          title: string;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Update: {
+          academic_year_id?: string;
+          actual_ends_at?: string | null;
+          actual_starts_at?: string | null;
+          change_reason?: string | null;
+          class_id?: string;
+          classification?: string;
+          content?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          location?: string | null;
+          offering_id?: string | null;
+          planned_ends_at?: string | null;
+          planned_hours?: number;
+          planned_instructor?: string | null;
+          planned_starts_at?: string | null;
+          proposed_at?: string | null;
+          proposed_by?: string | null;
+          proposed_outcome?: string;
+          qts_activity_id?: string | null;
+          rescheduled_from_id?: string | null;
+          revision?: number;
+          scheduled_on?: string;
+          status?: string;
+          taught_hours?: number | null;
+          title?: string;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_instruction_sessions_academic_year_id_fkey";
+            columns: ["academic_year_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_years";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_offering_id_fkey";
+            columns: ["offering_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_offerings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_proposed_by_fkey";
+            columns: ["proposed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_qts_activity_id_fkey";
+            columns: ["qts_activity_id"];
+            isOneToOne: true;
+            referencedRelation: "qts_activities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_rescheduled_from_id_fkey";
+            columns: ["rescheduled_from_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_instruction_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_instruction_sessions_validated_by_fkey";
+            columns: ["validated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       academic_offerings: {
         Row: {
           academic_year: number;
+          academic_year_id: string | null;
           active: boolean;
           class_id: string;
           created_at: string;
@@ -332,6 +638,7 @@ export type Database = {
         };
         Insert: {
           academic_year: number;
+          academic_year_id?: string | null;
           active?: boolean;
           class_id: string;
           created_at?: string;
@@ -344,6 +651,7 @@ export type Database = {
         };
         Update: {
           academic_year?: number;
+          academic_year_id?: string | null;
           active?: boolean;
           class_id?: string;
           created_at?: string;
@@ -355,6 +663,13 @@ export type Database = {
           workload_hours?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "academic_offerings_academic_year_id_fkey";
+            columns: ["academic_year_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_years";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "academic_offerings_class_id_fkey";
             columns: ["class_id"];
@@ -445,6 +760,239 @@ export type Database = {
           {
             foreignKeyName: "academic_policies_approved_by_fkey";
             columns: ["approved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      academic_qts_documents: {
+        Row: {
+          academic_year_id: string;
+          change_reason: string;
+          class_id: string;
+          document_id: string;
+          linked_at: string;
+          linked_by: string | null;
+        };
+        Insert: {
+          academic_year_id: string;
+          change_reason: string;
+          class_id: string;
+          document_id: string;
+          linked_at?: string;
+          linked_by?: string | null;
+        };
+        Update: {
+          academic_year_id?: string;
+          change_reason?: string;
+          class_id?: string;
+          document_id?: string;
+          linked_at?: string;
+          linked_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_qts_documents_academic_year_id_fkey";
+            columns: ["academic_year_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_years";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_qts_documents_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_qts_documents_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: true;
+            referencedRelation: "schedule_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_qts_documents_linked_by_fkey";
+            columns: ["linked_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      academic_session_attendances: {
+        Row: {
+          change_reason: string | null;
+          enrollment_id: string;
+          id: string;
+          marked_at: string;
+          marked_by: string | null;
+          revision: number;
+          session_id: string;
+          status: string;
+        };
+        Insert: {
+          change_reason?: string | null;
+          enrollment_id: string;
+          id?: string;
+          marked_at?: string;
+          marked_by?: string | null;
+          revision?: number;
+          session_id: string;
+          status: string;
+        };
+        Update: {
+          change_reason?: string | null;
+          enrollment_id?: string;
+          id?: string;
+          marked_at?: string;
+          marked_by?: string | null;
+          revision?: number;
+          session_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_session_attendances_enrollment_id_fkey";
+            columns: ["enrollment_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_enrollments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_session_attendances_marked_by_fkey";
+            columns: ["marked_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_session_attendances_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_instruction_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      academic_session_instructors: {
+        Row: {
+          assignment_id: string | null;
+          created_at: string;
+          display_name: string;
+          id: string;
+          profile_id: string | null;
+          session_id: string;
+        };
+        Insert: {
+          assignment_id?: string | null;
+          created_at?: string;
+          display_name: string;
+          id?: string;
+          profile_id?: string | null;
+          session_id: string;
+        };
+        Update: {
+          assignment_id?: string | null;
+          created_at?: string;
+          display_name?: string;
+          id?: string;
+          profile_id?: string | null;
+          session_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_session_instructors_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_session_instructors_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_session_instructors_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_instruction_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      academic_years: {
+        Row: {
+          change_reason: string | null;
+          closed_at: string | null;
+          closed_by: string | null;
+          course_id: string;
+          created_at: string;
+          created_by: string | null;
+          ends_on: string;
+          id: string;
+          revision: number;
+          source_ref: string;
+          source_verified: boolean;
+          starts_on: string;
+          status: string;
+          year: number;
+        };
+        Insert: {
+          change_reason?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          course_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          ends_on: string;
+          id?: string;
+          revision?: number;
+          source_ref: string;
+          source_verified?: boolean;
+          starts_on: string;
+          status?: string;
+          year: number;
+        };
+        Update: {
+          change_reason?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          course_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          ends_on?: string;
+          id?: string;
+          revision?: number;
+          source_ref?: string;
+          source_verified?: boolean;
+          starts_on?: string;
+          status?: string;
+          year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "academic_years_closed_by_fkey";
+            columns: ["closed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_years_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "academic_years_created_by_fkey";
+            columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
@@ -2032,6 +2580,1145 @@ export type Database = {
           },
         ];
       };
+      internship_attendance_points: {
+        Row: {
+          accuracy_m: number;
+          assignment_id: string;
+          distance_m: number | null;
+          id: string;
+          latitude: number;
+          location_status: string;
+          longitude: number;
+          point_type: string;
+          recorded_at: string;
+          recorded_by: string;
+          site_latitude: number | null;
+          site_longitude: number | null;
+          site_radius_m: number | null;
+          student_id: string;
+          supervisor_name: string | null;
+        };
+        Insert: {
+          accuracy_m: number;
+          assignment_id: string;
+          distance_m?: number | null;
+          id?: string;
+          latitude: number;
+          location_status: string;
+          longitude: number;
+          point_type: string;
+          recorded_at?: string;
+          recorded_by: string;
+          site_latitude?: number | null;
+          site_longitude?: number | null;
+          site_radius_m?: number | null;
+          student_id: string;
+          supervisor_name?: string | null;
+        };
+        Update: {
+          accuracy_m?: number;
+          assignment_id?: string;
+          distance_m?: number | null;
+          id?: string;
+          latitude?: number;
+          location_status?: string;
+          longitude?: number;
+          point_type?: string;
+          recorded_at?: string;
+          recorded_by?: string;
+          site_latitude?: number | null;
+          site_longitude?: number | null;
+          site_radius_m?: number | null;
+          student_id?: string;
+          supervisor_name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_attendance_points_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_attendance_points_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_official_workload";
+            referencedColumns: ["assignment_id"];
+          },
+          {
+            foreignKeyName: "internship_attendance_points_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_attendance_points_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_attendance_points_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_shift_uniforms: {
+        Row: { id: string; shift_id: string; uniform_code: string; reason: string; updated_by: string; updated_at: string };
+        Insert: { id?: string; shift_id: string; uniform_code: string; reason: string; updated_by: string; updated_at?: string };
+        Update: { id?: string; shift_id?: string; uniform_code?: string; reason?: string; updated_by?: string; updated_at?: string };
+        Relationships: [{ foreignKeyName: "internship_shift_uniforms_shift_id_fkey"; columns: ["shift_id"]; isOneToOne: true; referencedRelation: "internship_shifts"; referencedColumns: ["id"] }];
+      };
+      internship_site_locations: {
+        Row: {
+          latitude: number;
+          longitude: number;
+          radius_m: number;
+          site_id: string;
+          updated_at: string;
+          updated_by: string;
+        };
+        Insert: {
+          latitude: number;
+          longitude: number;
+          radius_m: number;
+          site_id: string;
+          updated_at?: string;
+          updated_by: string;
+        };
+        Update: {
+          latitude?: number;
+          longitude?: number;
+          radius_m?: number;
+          site_id?: string;
+          updated_at?: string;
+          updated_by?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_site_locations_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: true;
+            referencedRelation: "internship_sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_activity_types: {
+        Row: {
+          active: boolean;
+          code: string;
+          default_minutes: number;
+          id: string;
+          name: string;
+          program_id: string;
+          requires_operation_plan: boolean;
+          training_axis: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          default_minutes: number;
+          id?: string;
+          name: string;
+          program_id: string;
+          requires_operation_plan?: boolean;
+          training_axis: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          default_minutes?: number;
+          id?: string;
+          name?: string;
+          program_id?: string;
+          requires_operation_plan?: boolean;
+          training_axis?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_activity_types_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_handovers: {
+        Row: { id: string; outgoing_assignment_id: string; outgoing_shift_id: string;
+          incoming_assignment_id: string; incoming_shift_id: string; original_starts_at: string;
+          original_ends_at: string; handover_at: string; reason: string; created_by: string; created_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      internship_assignments: {
+        Row: {
+          assignment_source: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          reason: string | null;
+          replaces_assignment_id: string | null;
+          shift_id: string;
+          status: string;
+          student_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          assignment_source?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          reason?: string | null;
+          replaces_assignment_id?: string | null;
+          shift_id: string;
+          status?: string;
+          student_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          assignment_source?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          reason?: string | null;
+          replaces_assignment_id?: string | null;
+          shift_id?: string;
+          status?: string;
+          student_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_assignments_replaces_assignment_id_fkey";
+            columns: ["replaces_assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_replaces_assignment_id_fkey";
+            columns: ["replaces_assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_official_workload";
+            referencedColumns: ["assignment_id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_shift_id_fkey";
+            columns: ["shift_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_shifts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_cadet_reports: {
+        Row: {
+          assignment_id: string;
+          id: string;
+          reason: string | null;
+          report_type: string;
+          reported_at: string;
+          reported_by: string;
+          reported_exit_at: string | null;
+          student_id: string;
+        };
+        Insert: {
+          assignment_id: string;
+          id?: string;
+          reason?: string | null;
+          report_type: string;
+          reported_at?: string;
+          reported_by: string;
+          reported_exit_at?: string | null;
+          student_id: string;
+        };
+        Update: {
+          assignment_id?: string;
+          id?: string;
+          reason?: string | null;
+          report_type?: string;
+          reported_at?: string;
+          reported_by?: string;
+          reported_exit_at?: string | null;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_cadet_reports_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_cadet_reports_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_official_workload";
+            referencedColumns: ["assignment_id"];
+          },
+          {
+            foreignKeyName: "internship_cadet_reports_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_cadet_reports_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_cadet_reports_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_change_requests: {
+        Row: {
+          id: string;
+          assignment_id: string;
+          other_assignment_id: string | null;
+          change_type: string;
+          new_student_id: string | null;
+          resource_id: string | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          handover_at: string | null;
+          supervisor_name: string | null;
+          reason_kind: string | null;
+          reason_details: string | null;
+          impediment_until: string | null;
+          reason: string | null;
+          status: string;
+          requested_by: string;
+          requested_at: string;
+          decided_by: string | null;
+          decided_at: string | null;
+          decision_note: string | null;
+          result_id: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      internship_execution_records: {
+        Row: {
+          actual_ends_at: string | null;
+          actual_starts_at: string | null;
+          approved_minutes: number | null;
+          assignment_id: string;
+          attendance_status: string;
+          calculated_minutes: number | null;
+          decision_reason: string | null;
+          entered_at: string;
+          entered_by: string;
+          id: string;
+          occurrence_justified: boolean | null;
+          occurrence_reason: string | null;
+          paper_reference: string | null;
+          revision_of_id: string | null;
+          supervisor_name: string | null;
+          supervisor_rank: string | null;
+          supervisor_unit: string | null;
+          validated_at: string | null;
+          validated_by: string | null;
+          validation_status: string;
+        };
+        Insert: {
+          actual_ends_at?: string | null;
+          actual_starts_at?: string | null;
+          approved_minutes?: number | null;
+          assignment_id: string;
+          attendance_status: string;
+          calculated_minutes?: number | null;
+          decision_reason?: string | null;
+          entered_at?: string;
+          entered_by: string;
+          id?: string;
+          occurrence_justified?: boolean | null;
+          occurrence_reason?: string | null;
+          paper_reference?: string | null;
+          revision_of_id?: string | null;
+          supervisor_name?: string | null;
+          supervisor_rank?: string | null;
+          supervisor_unit?: string | null;
+          validated_at?: string | null;
+          validated_by?: string | null;
+          validation_status: string;
+        };
+        Update: {
+          actual_ends_at?: string | null;
+          actual_starts_at?: string | null;
+          approved_minutes?: number | null;
+          assignment_id?: string;
+          attendance_status?: string;
+          calculated_minutes?: number | null;
+          decision_reason?: string | null;
+          entered_at?: string;
+          entered_by?: string;
+          id?: string;
+          occurrence_justified?: boolean | null;
+          occurrence_reason?: string | null;
+          paper_reference?: string | null;
+          revision_of_id?: string | null;
+          supervisor_name?: string | null;
+          supervisor_rank?: string | null;
+          supervisor_unit?: string | null;
+          validated_at?: string | null;
+          validated_by?: string | null;
+          validation_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_execution_records_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_execution_records_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_official_workload";
+            referencedColumns: ["assignment_id"];
+          },
+          {
+            foreignKeyName: "internship_execution_records_revision_of_id_fkey";
+            columns: ["revision_of_id"];
+            isOneToOne: true;
+            referencedRelation: "internship_execution_records";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_execution_records_revision_of_id_fkey";
+            columns: ["revision_of_id"];
+            isOneToOne: true;
+            referencedRelation: "internship_official_workload";
+            referencedColumns: ["record_id"];
+          },
+        ];
+      };
+      internship_operation_plans: {
+        Row: {
+          authorized_at: string | null;
+          authorized_by: string | null;
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          document_reference: string | null;
+          ends_at: string | null;
+          id: string;
+          officer_name: string | null;
+          program_id: string;
+          starts_at: string | null;
+          status: string;
+          title: string;
+        };
+        Insert: {
+          authorized_at?: string | null;
+          authorized_by?: string | null;
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          document_reference?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          officer_name?: string | null;
+          program_id: string;
+          starts_at?: string | null;
+          status?: string;
+          title: string;
+        };
+        Update: {
+          authorized_at?: string | null;
+          authorized_by?: string | null;
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          document_reference?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          officer_name?: string | null;
+          program_id?: string;
+          starts_at?: string | null;
+          status?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_operation_plans_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_programs: {
+        Row: {
+          abm_buffer_days: number;
+          class_id: string;
+          closed_at: string | null;
+          closed_by: string | null;
+          course_phase: string;
+          created_at: string;
+          created_by: string | null;
+          ends_on: string;
+          id: string;
+          name: string;
+          published_at: string | null;
+          published_by: string | null;
+          required_minutes: number;
+          starts_on: string;
+          status: string;
+          target_minutes: number;
+          timezone: string;
+        };
+        Insert: {
+          abm_buffer_days?: number;
+          class_id: string;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          course_phase: string;
+          created_at?: string;
+          created_by?: string | null;
+          ends_on: string;
+          id?: string;
+          name: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          required_minutes: number;
+          starts_on: string;
+          status?: string;
+          target_minutes: number;
+          timezone?: string;
+        };
+        Update: {
+          abm_buffer_days?: number;
+          class_id?: string;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          course_phase?: string;
+          created_at?: string;
+          created_by?: string | null;
+          ends_on?: string;
+          id?: string;
+          name?: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          required_minutes?: number;
+          starts_on?: string;
+          status?: string;
+          target_minutes?: number;
+          timezone?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_programs_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_resources: {
+        Row: {
+          active: boolean;
+          capacity_per_shift: number;
+          code: string;
+          display_name: string;
+          id: string;
+          regular_team_size: number | null;
+          resource_type: string;
+          site_id: string;
+        };
+        Insert: {
+          active?: boolean;
+          capacity_per_shift?: number;
+          code: string;
+          display_name: string;
+          id?: string;
+          regular_team_size?: number | null;
+          resource_type: string;
+          site_id: string;
+        };
+        Update: {
+          active?: boolean;
+          capacity_per_shift?: number;
+          code?: string;
+          display_name?: string;
+          id?: string;
+          regular_team_size?: number | null;
+          resource_type?: string;
+          site_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_resources_site_id_fkey";
+            columns: ["site_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_sites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_shift_templates: {
+        Row: {
+          counting_start_time: string;
+          includes_travel: boolean;
+          revision: number;
+          abm_departure_time: string | null;
+          abm_return_time: string | null;
+          active: boolean;
+          activity_type_id: string;
+          code: string;
+          end_day_offset: number;
+          id: string;
+          journey_minutes: number;
+          name: string;
+          obm_arrival_time: string;
+          obm_departure_time: string;
+          program_id: string;
+          start_weekdays: number[];
+        };
+        Insert: {
+          counting_start_time?: never;
+          includes_travel?: boolean;
+          revision?: number;
+          abm_departure_time: string | null;
+          abm_return_time: string | null;
+          active?: boolean;
+          activity_type_id: string;
+          code: string;
+          end_day_offset: number;
+          id?: string;
+          journey_minutes: number;
+          name: string;
+          obm_arrival_time: string;
+          obm_departure_time: string;
+          program_id: string;
+          start_weekdays: number[];
+        };
+        Update: {
+          counting_start_time?: never;
+          includes_travel?: boolean;
+          revision?: number;
+          abm_departure_time?: string | null;
+          abm_return_time?: string | null;
+          active?: boolean;
+          activity_type_id?: string;
+          code?: string;
+          end_day_offset?: number;
+          id?: string;
+          journey_minutes?: number;
+          name?: string;
+          obm_arrival_time?: string;
+          obm_departure_time?: string;
+          program_id?: string;
+          start_weekdays?: number[];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_shift_templates_activity_type_id_program_id_fkey";
+            columns: ["activity_type_id", "program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_activity_types";
+            referencedColumns: ["id", "program_id"];
+          },
+          {
+            foreignKeyName: "internship_shift_templates_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_shifts: {
+        Row: {
+          activity_type_id: string;
+          additional_member_required: boolean;
+          capacity: number;
+          change_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          ends_at: string;
+          id: string;
+          operation_plan_id: string | null;
+          planned_minutes: number | null;
+          planned_supervisor_name: string | null;
+          program_id: string;
+          published_at: string | null;
+          published_by: string | null;
+          resource_id: string;
+          site_id: string;
+          starts_at: string;
+          status: string;
+          template_id: string | null;
+        };
+        Insert: {
+          activity_type_id: string;
+          additional_member_required?: boolean;
+          capacity: number;
+          change_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at: string;
+          id?: string;
+          operation_plan_id?: string | null;
+          planned_minutes?: number | null;
+          planned_supervisor_name?: string | null;
+          program_id: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          resource_id: string;
+          site_id: string;
+          starts_at: string;
+          status?: string;
+          template_id?: string | null;
+        };
+        Update: {
+          activity_type_id?: string;
+          additional_member_required?: boolean;
+          capacity?: number;
+          change_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string;
+          id?: string;
+          operation_plan_id?: string | null;
+          planned_minutes?: number | null;
+          planned_supervisor_name?: string | null;
+          program_id?: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          resource_id?: string;
+          site_id?: string;
+          starts_at?: string;
+          status?: string;
+          template_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_shifts_activity_type_id_program_id_fkey";
+            columns: ["activity_type_id", "program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_activity_types";
+            referencedColumns: ["id", "program_id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_operation_plan_id_program_id_fkey";
+            columns: ["operation_plan_id", "program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_operation_plans";
+            referencedColumns: ["id", "program_id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_resource_id_site_id_fkey";
+            columns: ["resource_id", "site_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_resources";
+            referencedColumns: ["id", "site_id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_site_id_program_id_fkey";
+            columns: ["site_id", "program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_sites";
+            referencedColumns: ["id", "program_id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_template_id_program_id_fkey";
+            columns: ["template_id", "program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_shift_templates";
+            referencedColumns: ["id", "program_id"];
+          },
+        ];
+      };
+      internship_sites: {
+        Row: {
+          active: boolean;
+          code: string;
+          gbm_number: number | null;
+          id: string;
+          name: string;
+          program_id: string;
+          site_type: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          gbm_number?: number | null;
+          id?: string;
+          name: string;
+          program_id: string;
+          site_type: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          gbm_number?: number | null;
+          id?: string;
+          name?: string;
+          program_id?: string;
+          site_type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_sites_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_weekly_publications: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          payload: Json;
+          program_id: string;
+          request_id: string;
+          shift_ids: string[];
+          week_start: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          payload: Json;
+          program_id: string;
+          request_id: string;
+          shift_ids: string[];
+          week_start: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          payload?: Json;
+          program_id?: string;
+          request_id?: string;
+          shift_ids?: string[];
+          week_start?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_weekly_publications_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_instruction_blocks: {
+        Row: {
+          updated_at: string;
+          active: boolean;
+          created_at: string;
+          created_by: string | null;
+          ends_at: string;
+          id: string;
+          program_id: string;
+          source_reference: string;
+          starts_at: string;
+          title: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at: string;
+          id?: string;
+          program_id: string;
+          source_reference: string;
+          starts_at: string;
+          title: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string;
+          id?: string;
+          program_id?: string;
+          source_reference?: string;
+          starts_at?: string;
+          title?: string;
+        };
+        Relationships: [];
+      };
+      internship_lifeguard_windows: {
+        Row: {
+          ends_at: string;
+          program_id: string;
+          reason: string;
+          shift_date: string;
+          starts_at: string;
+        };
+        Insert: {
+          ends_at: string;
+          program_id: string;
+          reason: string;
+          shift_date: string;
+          starts_at: string;
+        };
+        Update: {
+          ends_at?: string;
+          program_id?: string;
+          reason?: string;
+          shift_date?: string;
+          starts_at?: string;
+        };
+        Relationships: [];
+      };
+      internship_student_blackouts: {
+        Row: {
+          blocked_weekdays: number[];
+          created_at: string;
+          created_by: string | null;
+          ends_on: string;
+          id: string;
+          program_id: string;
+          reason: string;
+          starts_on: string;
+          student_id: string;
+          window_minutes: number | null;
+          window_start: string | null;
+          window_start_dow: number | null;
+        };
+        Insert: {
+          blocked_weekdays: number[];
+          created_at?: string;
+          created_by?: string | null;
+          ends_on: string;
+          id?: string;
+          program_id: string;
+          reason: string;
+          starts_on: string;
+          student_id: string;
+          window_minutes?: number | null;
+          window_start?: string | null;
+          window_start_dow?: number | null;
+        };
+        Update: {
+          blocked_weekdays?: number[];
+          created_at?: string;
+          created_by?: string | null;
+          ends_on?: string;
+          id?: string;
+          program_id?: string;
+          reason?: string;
+          starts_on?: string;
+          student_id?: string;
+          window_minutes?: number | null;
+          window_start?: string | null;
+          window_start_dow?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_student_blackouts_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_student_blackouts_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_student_blackouts_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_student_blackouts_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_diary_entries: {
+        Row: {
+          assignment_id: string | null;
+          companion_ids: string[];
+          created_at: string;
+          description: string | null;
+          featured_at: string | null;
+          featured_by: string | null;
+          hidden_at: string | null;
+          hidden_by: string | null;
+          hidden_reason: string | null;
+          id: string;
+          occurred_on: string;
+          occurrence_type: string | null;
+          other_type: string | null;
+          participation: string | null;
+          perception: string | null;
+          protocol_number: string | null;
+          severity: string | null;
+          shared_at: string | null;
+          status: string;
+          student_id: string;
+          summary: string;
+          updated_at: string;
+          vehicle: string | null;
+        };
+        Insert: {
+          assignment_id?: string | null;
+          companion_ids?: string[];
+          created_at?: string;
+          description?: string | null;
+          featured_at?: string | null;
+          featured_by?: string | null;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
+          id?: string;
+          occurred_on?: string;
+          occurrence_type?: string | null;
+          other_type?: string | null;
+          participation?: string | null;
+          perception?: string | null;
+          protocol_number?: string | null;
+          severity?: string | null;
+          shared_at?: string | null;
+          status?: string;
+          student_id: string;
+          summary?: string;
+          updated_at?: string;
+          vehicle?: string | null;
+        };
+        Update: {
+          assignment_id?: string | null;
+          companion_ids?: string[];
+          created_at?: string;
+          description?: string | null;
+          featured_at?: string | null;
+          featured_by?: string | null;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
+          id?: string;
+          occurred_on?: string;
+          occurrence_type?: string | null;
+          other_type?: string | null;
+          participation?: string | null;
+          perception?: string | null;
+          protocol_number?: string | null;
+          severity?: string | null;
+          shared_at?: string | null;
+          status?: string;
+          student_id?: string;
+          summary?: string;
+          updated_at?: string;
+          vehicle?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_diary_entries_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_diary_entries_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      internship_diary_reactions: {
+        Row: {
+          created_at: string;
+          entry_id: string;
+          kind: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          entry_id: string;
+          kind: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          entry_id?: string;
+          kind?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_diary_reactions_entry_id_fkey";
+            columns: ["entry_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_diary_entries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notification_deliveries: {
         Row: {
           alert_kind: string;
@@ -2306,6 +3993,107 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      qts_activities: {
+        Row: {
+          activity: string;
+          activity_date: string;
+          created_at: string;
+          document_id: string;
+          ends_at: string | null;
+          id: string;
+          instructor: string | null;
+          is_break: boolean;
+          location: string | null;
+          sequence: number;
+          source_line: string;
+          starts_at: string | null;
+          uniform: string | null;
+          workload: string | null;
+        };
+        Insert: {
+          activity: string;
+          activity_date: string;
+          created_at?: string;
+          document_id: string;
+          ends_at?: string | null;
+          id?: string;
+          instructor?: string | null;
+          is_break?: boolean;
+          location?: string | null;
+          sequence: number;
+          source_line?: string;
+          starts_at?: string | null;
+          uniform?: string | null;
+          workload?: string | null;
+        };
+        Update: {
+          activity?: string;
+          activity_date?: string;
+          created_at?: string;
+          document_id?: string;
+          ends_at?: string | null;
+          id?: string;
+          instructor?: string | null;
+          is_break?: boolean;
+          location?: string | null;
+          sequence?: number;
+          source_line?: string;
+          starts_at?: string | null;
+          uniform?: string | null;
+          workload?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "qts_activities_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "schedule_documents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      qts_activity_adjustments: {
+        Row: {
+          active: boolean;
+          activity_date: string;
+          created_at: string;
+          created_by: string | null;
+          expected_activity: string;
+          id: string;
+          reason: string;
+          replacement_activity: string;
+          replacement_instructor: string | null;
+          replacement_workload: string | null;
+          starts_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          activity_date: string;
+          created_at?: string;
+          created_by?: string | null;
+          expected_activity: string;
+          id?: string;
+          reason: string;
+          replacement_activity: string;
+          replacement_instructor?: string | null;
+          replacement_workload?: string | null;
+          starts_at: string;
+        };
+        Update: {
+          active?: boolean;
+          activity_date?: string;
+          created_at?: string;
+          created_by?: string | null;
+          expected_activity?: string;
+          id?: string;
+          reason?: string;
+          replacement_activity?: string;
+          replacement_instructor?: string | null;
+          replacement_workload?: string | null;
+          starts_at?: string;
+        };
+        Relationships: [];
       };
       schedule_assignments: {
         Row: {
@@ -2940,6 +4728,59 @@ export type Database = {
           },
         ];
       };
+      schedule_reminder_deliveries: {
+        Row: {
+          attempts: number;
+          channel: string;
+          duty_date: string;
+          id: string;
+          last_error: string | null;
+          lease_token: string;
+          profile_id: string;
+          recipient_key: string;
+          sent_at: string | null;
+          slot: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          channel: string;
+          duty_date: string;
+          id?: string;
+          last_error?: string | null;
+          lease_token?: string;
+          profile_id: string;
+          recipient_key: string;
+          sent_at?: string | null;
+          slot: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          channel?: string;
+          duty_date?: string;
+          id?: string;
+          last_error?: string | null;
+          lease_token?: string;
+          profile_id?: string;
+          recipient_key?: string;
+          sent_at?: string | null;
+          slot?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedule_reminder_deliveries_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       schedule_types: {
         Row: {
           active: boolean;
@@ -3543,6 +5384,48 @@ export type Database = {
       };
     };
     Views: {
+      internship_official_workload: {
+        Row: {
+          approved_minutes: number | null;
+          assignment_id: string | null;
+          calculated_minutes: number | null;
+          planned_minutes: number | null;
+          program_id: string | null;
+          record_id: string | null;
+          student_id: string | null;
+          validated_at: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_card_instructor";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_assignments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "v_student_class_basic";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "internship_shifts_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "internship_programs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       v_fo_reason_stats: {
         Row: {
           active: boolean | null;
@@ -3664,6 +5547,96 @@ export type Database = {
       };
     };
     Functions: {
+      internship_is_coordinator: { Args: never; Returns: boolean };
+      internship_request_pair_swap: {
+        Args: { p_first_assignment_id: string; p_second_assignment_id: string; p_reason: string };
+        Returns: string;
+      };
+      internship_homologate_pair_swap: {
+        Args: { p_first_assignment_id: string; p_second_assignment_id: string; p_reason: string };
+        Returns: string;
+      };
+      internship_request_change: {
+        Args: {
+          p_assignment_id: string;
+          p_change_type: string;
+          p_new_student_id?: string | null;
+          p_resource_id?: string | null;
+          p_starts_at?: string | null;
+          p_ends_at?: string | null;
+          p_handover_at?: string | null;
+          p_supervisor_name?: string | null;
+          p_reason_kind?: string | null;
+          p_reason_details?: string | null;
+          p_impediment_until?: string | null;
+          p_reason?: string | null;
+        };
+        Returns: string;
+      };
+      internship_decide_change: {
+        Args: { p_request_id: string; p_approve: boolean; p_note?: string | null };
+        Returns: string | null;
+      };
+      internship_diary_moderate: {
+        Args: { p_entry_id: string; p_action: string; p_reason?: string | null };
+        Returns: undefined;
+      };
+      internship_confirm_instruction_standby: {Args:{p_instruction_id:string;p_assignment_id:string;p_expected_context:Json;p_confirmed:boolean};Returns:undefined};
+      internship_review_instruction_conflicts: {Args:{p_program_id:string};Returns:{instruction_id:string;instruction_title:string;assignment_id:string;service_id:string;service_kind:string;site_name:string;war_name:string;starts_at:string;ends_at:string;review_context:Json;standby_confirmed:boolean}[]};
+      internship_reschedule_lifeguard_day: {Args:{p_program_id:string;p_shift_date:string;p_starts_at:string;p_ends_at:string;p_expected_assignments:string[];p_expected_start:string;p_expected_end:string;p_reason:string};Returns:number};
+
+      internship_save_instruction: { Args: {p_program_id:string;p_title:string;p_starts_at:string;p_ends_at:string;p_source_reference?:string;p_id?:string;p_expected_updated_at?:string;p_active?:boolean}; Returns:string };
+      internship_instruction_conflicts: { Args: {p_program_id:string}; Returns: {instruction_id:string;instruction_title:string;assignment_id:string;service_id:string;service_kind:string;site_name:string;war_name:string;starts_at:string;ends_at:string}[] };
+
+      internship_formalize_published_lifeguard_plan: {
+        Args: { p_program_id: string; p_shift_date: string; p_document_reference: string; p_officer_name: string };
+        Returns: string;
+      };
+      internship_finalize_lifeguard_draft: {
+        Args: { p_program_id: string; p_shift_date: string; p_document_reference: string; p_officer_name: string };
+        Returns: string;
+      };
+      internship_schedule_restart_preview: { Args: { p_program_id: string }; Returns: Json };
+      internship_schedule_restart: { Args: { p_program_id: string; p_snapshot: string; p_reason: string }; Returns: string };
+      permanence_dashboard_schedule: {Args: Record<PropertyKey, never>;Returns:Json};
+      duty_replace_assignment: {Args: {p_assignment_id:string;p_student_id:string;p_reason:string}; Returns:string};
+      permanence_planning_context: { Args: { p_program_id: string }; Returns: Json };
+      permanence_stage_conflicts: {
+        Args: { p_program_id: string };
+        Returns: {
+          duty_assignment_id: string;
+          roster_id: string;
+          student_id: string;
+          student_number: number | null;
+          war_name: string;
+          duty_role: string;
+          duty_starts_at: string;
+          duty_ends_at: string;
+          shift_id: string;
+          stage_starts_at: string;
+          stage_ends_at: string;
+          conflict_kind: string;
+        }[];
+      };
+      permanence_publish: { Args: {p_program_id: string; p_starts_at: string; p_ends_at: string; p_location: string; p_uniform_code: string; p_students: string[]; p_roster_id?: string; p_reason?: string}; Returns: string };
+      permanence_publish_batch: { Args: {p_program_id: string; p_location: string; p_uniform_code: string; p_services: Json}; Returns: number };
+      permanence_cancel: { Args: {p_roster_id:string;p_reason:string}; Returns: undefined };
+      permanence_cancel_batch: { Args: {p_program_id:string;p_roster_ids:string[];p_assignment_ids:string[];p_reason:string}; Returns: number };
+
+      internship_evaluation_assignment: { Args: { p_assignment_id: string }; Returns: Json };
+      internship_create_evaluation_invite: { Args: { p_assignment_id: string; p_recipient_name: string; p_recipient_contact: string }; Returns: Json };
+      internship_create_cadet_evaluation_invite: { Args: { p_assignment_id: string; p_recipient_name: string; p_recipient_contact: string }; Returns: Json };
+      internship_my_evaluation_invites: { Args: Record<PropertyKey, never>; Returns: Json };
+      internship_read_evaluation_invite: { Args: { p_token: string }; Returns: Json };
+      internship_evaluation_whatsapp_delivery: { Args: { p_token: string }; Returns: Json };
+      internship_submit_evaluation: { Args: { p_token: string; p_evaluator_name: string; p_evaluator_unit: string; p_ratings: Json; p_guidance: string; p_incident: boolean; p_incident_note: string; p_confirmed: boolean }; Returns: string };
+      internship_submit_evaluation_v2: { Args: { p_token: string; p_evaluator_name: string; p_evaluator_unit: string; p_ratings: Json; p_guidance: string; p_incident: boolean; p_incident_note: string; p_confirmed: boolean; p_details: Json }; Returns: string };
+      internship_record_paper_evaluation: { Args: { p_assignment_id: string; p_evaluator_name: string; p_evaluator_unit: string; p_ratings: Json; p_guidance: string; p_incident: boolean; p_incident_note: string; p_paper_reference: string }; Returns: string };
+      internship_record_paper_evaluation_v2: { Args: { p_assignment_id: string; p_evaluator_name: string; p_evaluator_unit: string; p_ratings: Json; p_guidance: string; p_incident: boolean; p_incident_note: string; p_paper_reference: string; p_details: Json }; Returns: string };
+      internship_review_evaluation: { Args: { p_id: string; p_decision: string; p_note: string; p_identity_confirmed: boolean }; Returns: undefined };
+      internship_review_evaluation_with_whatsapp: { Args: { p_id: string; p_decision: string; p_note: string; p_identity_confirmed: boolean; p_whatsapp_sender_phone: string | null }; Returns: undefined };
+      internship_revoke_evaluation_invite: { Args: { p_id: string }; Returns: undefined };
+      internship_my_evaluations: { Args: Record<PropertyKey, never>; Returns: Json };
       _storage_student_id: { Args: { object_name: string }; Returns: string };
       academic_active_role: { Args: never; Returns: string };
       academic_can_grade: { Args: { p_offering_id: string }; Returns: boolean };
@@ -3671,12 +5644,28 @@ export type Database = {
         Args: { p_offering_id: string };
         Returns: boolean;
       };
+      academic_close_year: {
+        Args: { p_academic_year_id: string; p_reason: string };
+        Returns: string;
+      };
       academic_configure_policy: {
         Args: {
           p_decision_ref: string;
           p_name: string;
           p_offering_id: string;
           p_parameters: Json;
+        };
+        Returns: string;
+      };
+      academic_create_manual_session: {
+        Args: {
+          p_ends_at: string;
+          p_location?: string;
+          p_offering_id: string;
+          p_rescheduled_from_id?: string;
+          p_scheduled_on: string;
+          p_starts_at: string;
+          p_title: string;
         };
         Returns: string;
       };
@@ -3691,7 +5680,103 @@ export type Database = {
         };
         Returns: string;
       };
+      academic_create_year:
+        | {
+            Args: {
+              p_course_id: string;
+              p_ends_on: string;
+              p_source_ref: string;
+              p_starts_on: string;
+              p_status?: string;
+              p_year: number;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              p_course_id: string;
+              p_ends_on: string;
+              p_source_ref: string;
+              p_source_verified: boolean;
+              p_starts_on: string;
+              p_status: string;
+              p_year: number;
+            };
+            Returns: string;
+          };
       academic_current_student: { Args: never; Returns: string };
+      academic_import_qts_sessions: {
+        Args: { p_document_id: string };
+        Returns: number;
+      };
+      academic_instruction_hours: {
+        Args: { p_end: string; p_start: string };
+        Returns: number;
+      };
+      academic_link_qts_document: {
+        Args: {
+          p_academic_year_id: string;
+          p_document_id: string;
+          p_reason: string;
+        };
+        Returns: number;
+      };
+      academic_map_qts_session: {
+        Args: {
+          p_classification: string;
+          p_expected_revision: number;
+          p_offering_id: string;
+          p_reason: string;
+          p_session_id: string;
+        };
+        Returns: string;
+      };
+      academic_normalize_title: { Args: { p_value: string }; Returns: string };
+      academic_open_year: {
+        Args: { p_academic_year_id: string; p_reason: string };
+        Returns: string;
+      };
+      academic_propose_session: {
+        Args: {
+          p_actual_ends_at: string;
+          p_actual_starts_at: string;
+          p_assignment_ids: Json;
+          p_content: string;
+          p_location: string;
+          p_outcome: string;
+          p_session_id: string;
+        };
+        Returns: string;
+      };
+      academic_reopen_year: {
+        Args: { p_academic_year_id: string; p_reason: string };
+        Returns: string;
+      };
+      academic_require_open_year: {
+        Args: { p_academic_year_id: string };
+        Returns: {
+          change_reason: string | null;
+          closed_at: string | null;
+          closed_by: string | null;
+          course_id: string;
+          created_at: string;
+          created_by: string | null;
+          ends_on: string;
+          id: string;
+          revision: number;
+          source_ref: string;
+          source_verified: boolean;
+          starts_on: string;
+          status: string;
+          year: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "academic_years";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       academic_save_attendance: {
         Args: {
           p_enrollment_id: string;
@@ -3716,6 +5801,24 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      academic_save_calendar_event: {
+        Args: {
+          p_academic_year_id: string;
+          p_blocks_instruction: boolean;
+          p_class_id: string;
+          p_event_date: string;
+          p_event_id: string;
+          p_event_type: string;
+          p_reason: string;
+          p_source_ref: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
+      academic_save_discipline_alias: {
+        Args: { p_alias: string; p_discipline_id: string };
+        Returns: string;
       };
       academic_save_grade: {
         Args: {
@@ -3742,7 +5845,49 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      academic_set_offering_year: {
+        Args: {
+          p_academic_year_id: string;
+          p_offering_id: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      academic_update_year:
+        | {
+            Args: {
+              p_academic_year_id: string;
+              p_ends_on: string;
+              p_expected_revision: number;
+              p_reason: string;
+              p_source_ref: string;
+              p_starts_on: string;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              p_academic_year_id: string;
+              p_ends_on: string;
+              p_expected_revision: number;
+              p_reason: string;
+              p_source_ref: string;
+              p_source_verified: boolean;
+              p_starts_on: string;
+            };
+            Returns: string;
+          };
       academic_valid_parameters: { Args: { p: Json }; Returns: boolean };
+      academic_validate_session: {
+        Args: {
+          p_attendance: Json;
+          p_expected_revision: number;
+          p_outcome: string;
+          p_reason: string;
+          p_session_id: string;
+        };
+        Returns: string;
+      };
       can_read_announcement: {
         Args: { target: Database["public"]["Tables"]["announcements"]["Row"] };
         Returns: boolean;
@@ -3764,17 +5909,385 @@ export type Database = {
       current_role: { Args: never; Returns: string };
       current_student_id: { Args: never; Returns: string };
       expire_follow_up_deadlines: { Args: never; Returns: number };
+      internship_cancel_assignment: {
+        Args: { p_assignment_id: string; p_reason: string };
+        Returns: string;
+      };
+      internship_check_assignment: {
+        Args: {
+          p_assignment_id: string;
+          p_shift_id: string;
+          p_source: string;
+          p_student_id: string;
+        };
+        Returns: undefined;
+      };
+      internship_configure_cfo_2026_beaches: {
+        Args: { p_names: string[] };
+        Returns: string;
+      };
+      internship_coordination_schedule: {
+        Args: { p_program_id: string };
+        Returns: {
+          abm_departure_time: string;
+          abm_return_time: string;
+          activity_code: string;
+          activity_name: string;
+          approved_minutes: number;
+          assignment_id: string;
+          assignment_source: string;
+          assignment_status: string;
+          cadet_report_count: number;
+          document_reference: string;
+          ends_at: string;
+          movement_reason: string;
+          obm_arrival_time: string;
+          obm_departure_time: string;
+          performed_minutes: number;
+          planned_minutes: number;
+          resource_name: string;
+          shift_date: string;
+          shift_id: string;
+          shift_status: string;
+          site_name: string;
+          starts_at: string;
+          student_id: string;
+          student_number: number;
+          supervisor_name: string;
+          template_code: string;
+          validation_status: string;
+          war_name: string;
+        }[];
+      };
+      internship_coordination_workload: {
+        Args: { p_program_id: string };
+        Returns: {
+          assigned_shifts: number;
+          awaiting_homologation: number;
+          concluded: boolean;
+          excess_minutes: number;
+          missing_required_minutes: number;
+          missing_target_minutes: number;
+          open_occurrences: number;
+          performed_minutes: number;
+          planned_minutes: number;
+          required_minutes: number;
+          student_id: string;
+          student_number: number;
+          target_minutes: number;
+          validated_minutes: number;
+          war_name: string;
+        }[];
+      };
+      internship_has_role: { Args: { p_roles: string[] }; Returns: boolean };
+      internship_homologate_execution: {
+        Args: {
+          p_actual_ends_at: string;
+          p_actual_starts_at: string;
+          p_approved_minutes: number;
+          p_assignment_id: string;
+          p_attendance_status: string;
+          p_decision_reason: string;
+          p_occurrence_justified: boolean;
+          p_occurrence_reason: string;
+          p_paper_reference: string;
+          p_supervisor_name: string;
+        };
+        Returns: string;
+      };
+      internship_initialize_cfo_2026: { Args: never; Returns: string };
+      internship_my_shifts: {
+        Args: never;
+        Returns: {
+          activity_code: string;
+          activity_name: string;
+          assignment_id: string;
+          ends_at: string;
+          planned_minutes: number;
+          resource_name: string;
+          shift_id: string;
+          site_name: string;
+          starts_at: string;
+          supervisor_name: string;
+        }[];
+      };
+      internship_my_workload: {
+        Args: never;
+        Returns: {
+          performed_minutes: number;
+          planned_minutes: number;
+          required_minutes: number;
+          target_minutes: number;
+          validated_minutes: number;
+        }[];
+      };
+      internship_own_published_assignment: {
+        Args: { p_assignment_id: string };
+        Returns: boolean;
+      };
+      internship_own_published_shift: {
+        Args: { p_shift_id: string };
+        Returns: boolean;
+      };
+      internship_publish_cfo_2026: { Args: never; Returns: string };
+      internship_reschedule_gbm_assignment: {
+        Args: {
+          p_assignment_id: string;
+          p_ends_at: string;
+          p_reason: string;
+          p_resource_id: string;
+          p_source: string;
+          p_starts_at: string;
+          p_supervisor_name: string;
+        };
+        Returns: string;
+      };
+      internship_record_point: {
+        Args: {
+          p_accuracy_m: number;
+          p_assignment_id: string;
+          p_latitude: number;
+          p_longitude: number;
+          p_point_type: string;
+          p_supervisor_name?: string;
+        };
+        Returns: string;
+      };
+      internship_record_point_with_reason: {
+        Args: {
+          p_accuracy_m: number;
+          p_assignment_id: string;
+          p_early_exit_reason: string | null;
+          p_latitude: number;
+          p_longitude: number;
+          p_point_type: string;
+          p_supervisor_name: string | null;
+        };
+        Returns: string;
+      };
+      internship_can_manage: { Args: Record<PropertyKey, never>; Returns: boolean };
+      internship_planning_cadets: {
+        Args: { p_program_id: string };
+        Returns: { id: string; war_name: string; student_number: number }[];
+      };
+      internship_planning_birthdays: {
+        Args: { p_program_id: string };
+        Returns: { student_id: string; birth_month_day: string }[];
+      };
+      internship_planning_constraints: {
+        Args: { p_program_id: string };
+        Returns: {
+          id: string;
+          student_id: string;
+          starts_on: string;
+          ends_on: string;
+          kind: string;
+        }[];
+      };
+      internship_publish_week: {
+        Args: { p_program_id: string; p_week_start: string; p_request_id: string; p_lines: Json };
+        Returns: string[];
+      };
+      internship_dashboard_schedule: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          assignment_id: string;
+          student_id: string;
+          student_number: number;
+          war_name: string;
+          activity_name: string;
+          site_name: string;
+          resource_name: string;
+          starts_at: string;
+          ends_at: string;
+          uniform_code: string;
+          validated_minutes: number;
+        }[];
+      };
+      internship_schedule_gbm_from_template_uniform: {
+        Args: { p_program_id: string; p_template_code: string; p_site_id: string; p_shift_date: string; p_student_id: string; p_supervisor_name: string; p_uniform_code: string };
+        Returns: string;
+      };
+      internship_schedule_gbm_shift_uniform: {
+        Args: { p_program_id: string; p_activity_code: string; p_site_id: string; p_resource_id: string; p_starts_at: string; p_ends_at: string; p_student_id: string; p_supervisor_name: string; p_uniform_code: string };
+        Returns: string;
+      };
+      internship_schedule_lifeguard_day_uniform: {
+        Args: { p_program_id: string; p_shift_date: string; p_student_ids: string[]; p_document_reference: string; p_officer_name: string; p_uniform_code: string };
+        Returns: string;
+      };
+      internship_set_shift_uniform: {
+        Args: { p_shift_id: string; p_uniform_code: string };
+        Returns: undefined;
+      };
+      internship_schedule_gbm_from_template: {
+        Args: {
+          p_program_id: string;
+          p_shift_date: string;
+          p_site_id: string;
+          p_student_id: string;
+          p_supervisor_name: string;
+          p_template_code: string;
+        };
+        Returns: string;
+      };
+      internship_schedule_gbm_shift: {
+        Args: {
+          p_activity_code: string;
+          p_ends_at: string;
+          p_program_id: string;
+          p_resource_id: string;
+          p_site_id: string;
+          p_starts_at: string;
+          p_student_id: string;
+          p_supervisor_name: string;
+          p_template_id?: string;
+        };
+        Returns: string;
+      };
+      internship_schedule_lifeguard_day: {
+        Args: {
+          p_document_reference: string;
+          p_officer_name: string;
+          p_program_id: string;
+          p_shift_date: string;
+          p_student_ids: string[];
+        };
+        Returns: string;
+      };
+      internship_handover_assignment: {
+        Args: { p_assignment_id: string; p_new_student_id: string; p_handover_at: string; p_reason: string };
+        Returns: string;
+      };
+      internship_substitute_assignment: {
+        Args: {
+          p_assignment_id: string;
+          p_new_student_id: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      internship_fill_cancelled_vacancy: {
+        Args: {
+          p_assignment_id: string;
+          p_new_student_id: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      internship_replace_with_impediment: {
+        Args: {
+          p_assignment_id: string;
+          p_new_student_id: string;
+          p_reason_kind: string;
+          p_reason_details: string;
+          p_impediment_until: string;
+        };
+        Returns: string;
+      };
       is_admin: { Args: never; Returns: boolean };
       is_coord: { Args: never; Returns: boolean };
       normalize_label: { Args: { input: string }; Returns: string };
+      qts_add_activity_adjustment: {
+        Args: {
+          p_activity_date: string;
+          p_expected_activity: string;
+          p_reason?: string;
+          p_replacement_activity: string;
+          p_replacement_instructor?: string;
+          p_replacement_workload?: string;
+          p_starts_at: string;
+        };
+        Returns: string;
+      };
+      qts_calendar: {
+        Args: { p_end: string; p_start: string };
+        Returns: {
+          activity: string;
+          activity_date: string;
+          document_id: string;
+          ends_at: string;
+          id: string;
+          instructor: string;
+          is_break: boolean;
+          location: string;
+          original_filename: string;
+          sequence: number;
+          starts_at: string;
+          uniform: string;
+          workload: string;
+        }[];
+      };
+      qts_publish_provisional_document: {
+        Args: { p_activities: Json; p_document_id: string; p_reason?: string };
+        Returns: string;
+      };
+      qts_publish_reviewed_document: {
+        Args: {
+          p_academic_year_id: string;
+          p_activities: Json;
+          p_document_id: string;
+        };
+        Returns: string;
+      };
+      qts_published_documents: {
+        Args: { p_end: string; p_start: string };
+        Returns: {
+          id: string;
+          original_filename: string;
+          period_end: string;
+          period_start: string;
+          storage_path: string;
+        }[];
+      };
       schedule_active_role: { Args: never; Returns: string };
+      schedule_calendar: {
+        Args: { p_end: string; p_start: string };
+        Returns: {
+          date: string;
+          duty: string;
+          id: string;
+          kind: string;
+          mine: boolean;
+          person: string;
+        }[];
+      };
       schedule_can_read_document: {
         Args: { p_document_id: string };
         Returns: boolean;
       };
+      schedule_can_publish: { Args: Record<PropertyKey, never>; Returns: boolean };
+      schedule_publishing_people: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          kind: string;
+          id: string;
+          class_id: string | null;
+          student_number: number | null;
+          war_name: string | null;
+          full_name: string | null;
+          enrollment_id: string | null;
+          service_alias: string | null;
+          registration: string | null;
+          profile_id: string | null;
+        }[];
+      };
       schedule_cancel_assignment: {
         Args: { p_assignment_id: string; p_reason: string };
         Returns: undefined;
+      };
+      schedule_claim_document_notification: {
+        Args: { p_document_id: string };
+        Returns: {
+          duty_date: string;
+          duty_function: string;
+          event_id: string;
+          event_type: string;
+          idempotency_key: string;
+          original_filename: string;
+          schedule_type_name: string;
+          student_id: string;
+        }[];
       };
       schedule_claim_notification_event: {
         Args: never;
@@ -3912,8 +6425,26 @@ export type Database = {
         Args: { p_document_id: string; p_run_id: string };
         Returns: boolean;
       };
+      schedule_live_roster: {
+        Args: { p_end: string; p_start: string };
+        Returns: {
+          account_role: string;
+          class_id: string;
+          duty: string;
+          duty_date: string;
+          id: string;
+          kind: string;
+          person: string;
+          profile_id: string;
+          student_id: string;
+        }[];
+      };
       schedule_publish_auto_candidate: {
         Args: { p_candidate_id: string };
+        Returns: string;
+      };
+      schedule_publish_reviewed_import: {
+        Args: { p_document_id: string; p_extraction?: Json; p_rows: Json };
         Returns: string;
       };
       schedule_register_document: {
@@ -3956,12 +6487,25 @@ export type Database = {
         Args: { p_document_id: string; p_method?: string };
         Returns: string;
       };
-      schedule_retire_duplicate_document: {
-        Args: { p_document_id: string; p_reason: string };
-        Returns: string;
-      };
       schedule_reserve_notification_delivery: {
         Args: { p_channel: string; p_event_id: string; p_recipient_key: string };
+        Returns: string;
+      };
+      schedule_reserve_reminder: {
+        Args: {
+          p_channel: string;
+          p_duty_date: string;
+          p_profile_id: string;
+          p_recipient_key: string;
+          p_slot: string;
+        };
+        Returns: {
+          id: string;
+          lease_token: string;
+        }[];
+      };
+      schedule_retire_duplicate_document: {
+        Args: { p_document_id: string; p_reason: string };
         Returns: string;
       };
       schedule_same_active_class: {

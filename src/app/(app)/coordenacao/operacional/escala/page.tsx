@@ -1,27 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CalendarDays, Repeat2 } from "lucide-react";
+import { Repeat2 } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatStudentLabel } from "@/modules/operational-duty/infrastructure/queries";
 import {
-  generateDutyRosterAction,
   manuallyReplaceDutyAssignmentAction,
 } from "@/modules/operational-duty/presentation/actions";
 
 export const metadata = { title: "Escala Operacional - Coordenacao" };
 
-function dateKey(offset = 0) {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + offset);
-  return date.toISOString().slice(0, 10);
-}
-
-export default async function CoordenacaoEscalaPage() {
+export default async function CoordenacaoEscalaPage({searchParams}: {searchParams?: {resultado?: string}}) {
   await requireRole("coordenacao");
   const supabase = createSupabaseServerClient();
 
@@ -37,6 +29,7 @@ export default async function CoordenacaoEscalaPage() {
         .from("students")
         .select("id, war_name, student_number, situation")
         .eq("situation", "matriculado")
+        .eq("course_status", "matriculado")
         .is("deleted_at", null)
         .order("student_number"),
     ]);
@@ -57,7 +50,11 @@ export default async function CoordenacaoEscalaPage() {
         ? supabase.from("duty_roles").select("id, name, sort_order").in("id", roleIds)
         : Promise.resolve({ data: [] }),
       studentIds.length
-        ? supabase.from("students").select("id, war_name, student_number").in("id", studentIds)
+        ? supabase
+            .from("students")
+            .select("id, war_name, student_number")
+            .in("id", studentIds)
+            .eq("course_status", "matriculado")
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -69,6 +66,7 @@ export default async function CoordenacaoEscalaPage() {
         role: rolesById.get(assignment.role_id),
         student: studentsById.get(assignment.student_id),
       }))
+      .filter((assignment: any) => assignment.role && assignment.student)
       .sort((a: any, b: any) => a.duty_date.localeCompare(b.duty_date) || (a.role?.sort_order ?? 99) - (b.role?.sort_order ?? 99));
 
     return (
@@ -79,34 +77,20 @@ export default async function CoordenacaoEscalaPage() {
           </p>
           <h1 className="font-display text-3xl font-bold">Escala Operacional</h1>
           <p className="text-sm text-muted-foreground">
-            Gere a escala por periodo e ajuste trocas manuais com justificativa.
+            Consulte o histórico e ajuste trocas manuais com justificativa.
           </p>
         </header>
 
         <Card>
           <CardHeader>
-            <CardTitle>Gerar escala</CardTitle>
+            <CardTitle>Planejar serviço do Dia ao 1º Ano</CardTitle>
             <CardDescription>
-              O gerador usa alunos reais, impedimentos ativos e historico de atribuicoes.
+              Defina o período, o Dia ao 1º Ano e de um a quatro apoios por serviço de 24 horas.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={generateDutyRosterAction} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-              <div className="space-y-1.5">
-                <Label htmlFor="startDate">Inicio</Label>
-                <Input id="startDate" name="startDate" type="date" defaultValue={dateKey(0)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="endDate">Fim</Label>
-                <Input id="endDate" name="endDate" type="date" defaultValue={dateKey(6)} />
-              </div>
-              <div className="flex items-end">
-                <Button type="submit" className="w-full">
-                  <CalendarDays className="h-4 w-4" />
-                  Gerar
-                </Button>
-              </div>
-            </form>
+            <a href="/coordenacao/estagio/permanencia" className="inline-flex rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground">Planejar Dia ao 1º Ano e conferir rodízio</a>
+            {searchParams?.resultado==='conflito' && <p role="alert" className="mt-4">Substituição não realizada. Confira conflitos, impedimentos e se a participação ainda está ativa. A escala anterior foi preservada.</p>}
           </CardContent>
         </Card>
 

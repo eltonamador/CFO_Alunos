@@ -83,13 +83,25 @@ function closeGroup<T extends { y: number }>(groups: T[][], token: T, distance: 
   else group.push(token);
 }
 
+// Aceita "PERÍODO DE 21 A 27/09/2026", "PERÍODO DE 28/09 A 04/10/2026" e datas completas.
 function periodFromText(text: string) {
-  const match = text.match(/PER[ÍI]ODO\s+DE\s+(\d{1,2})\s+A\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i);
+  const match = text.match(
+    /PER[ÍI]ODO\s+DE\s+(\d{1,2})(?:\/(\d{1,2})(?:\/(\d{2,4}))?)?\s+(?:A|AT[ÉE])\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i,
+  );
   if (!match) throw new Error("Não encontrei o período de vigência no PDF do QTS.");
-  const [, firstDay, lastDay, month, year] = match;
+  const [, firstDay, firstMonth, firstYear, lastDay, lastMonth, lastYear] = match;
+  const end = isoDate(lastDay!.padStart(2, "0"), lastMonth!.padStart(2, "0"), lastYear!);
+  const endMonth = Number(lastMonth);
+  // Sem mês inicial, dia maior que o final indica o mês anterior ("28 A 04/10").
+  const startMonth = firstMonth
+    ? Number(firstMonth)
+    : Number(firstDay) > Number(lastDay)
+      ? endMonth - 1 || 12
+      : endMonth;
+  const startYear = firstYear ?? String(Number(end.slice(0, 4)) - (startMonth > endMonth ? 1 : 0));
   return {
-    start: isoDate(firstDay!.padStart(2, "0"), month!.padStart(2, "0"), year!),
-    end: isoDate(lastDay!.padStart(2, "0"), month!.padStart(2, "0"), year!),
+    start: isoDate(firstDay!.padStart(2, "0"), String(startMonth).padStart(2, "0"), startYear),
+    end,
   };
 }
 

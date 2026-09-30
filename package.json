@@ -5,6 +5,7 @@
   "description": "Sistema de gestão dos alunos do Curso de Formação de Oficiais — CBMAP",
   "scripts": {
     "dev": "node scripts/prepare-schedule-browser-assets.mjs && next dev",
+    "preview:schedules": "node --import tsx scripts/preview-schedule-pdf.ts",
     "build": "node scripts/prepare-schedule-browser-assets.mjs && next build",
     "start": "next start",
     "lint": "next lint",

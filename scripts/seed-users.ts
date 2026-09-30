@@ -51,7 +51,9 @@ if (isProd && hasConfirm) {
   console.log(`   URL: ${url}\n`);
 }
 
-const supa = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = createClient(url, serviceKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 
 type SeedUser = {
   email: string;
@@ -59,12 +61,79 @@ type SeedUser = {
   fullName: string;
   role: "coordenacao" | "secretaria" | "instrutor" | "aluno";
   studentNumber?: number;
+  active?: boolean;
+  registration?: string;
 };
 
 const ADMINS: SeedUser[] = [
-  { email: "coordenacao@abm.br", password: "ChangeMe!2026", fullName: "Coordenação CFO", role: "coordenacao" },
-  { email: "secretaria@abm.br",  password: "ChangeMe!2026", fullName: "Secretaria Acad.", role: "secretaria" },
-  { email: "instrutor@abm.br",   password: "ChangeMe!2026", fullName: "Instrutor Teste",  role: "instrutor" },
+  {
+    email: "coordenacao@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "Coordenação CFO",
+    role: "coordenacao",
+  },
+  {
+    email: "secretaria@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "Secretaria Acad.",
+    role: "secretaria",
+  },
+  {
+    email: "instrutor@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "Instrutor Teste",
+    role: "instrutor",
+  },
+];
+
+/**
+ * Contas individuais para desenvolvimento local. Em produção, use o script
+ * de provisionamento com senha individual; @abm.br é só identificador de login.
+ * Os sargentos de Apoio Administrativo não recebem acesso ao sistema.
+ */
+const COORDINATION_MEMBERS: SeedUser[] = [
+  {
+    email: "marcio@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "MÁRCIO FONSECA DA COSTA",
+    role: "coordenacao",
+    registration: "1175742",
+  },
+  {
+    email: "amador@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "FRANCIELTON ARAÚJO AMADOR",
+    role: "coordenacao",
+    registration: "1195506",
+  },
+  {
+    email: "josiane@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "JOSIANE OLIVEIRA DOS SANTOS",
+    role: "coordenacao",
+    registration: "1195867",
+  },
+  {
+    email: "trajano@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "MARLÚCIO ANDERSON DA CONCEIÇÃO TRAJANO",
+    role: "coordenacao",
+    registration: "1195549",
+  },
+  {
+    email: "nahum@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "ALDO NAHUM CARDOSO",
+    role: "coordenacao",
+    registration: "1195808",
+  },
+  {
+    email: "cecilia@abm.br",
+    password: "ChangeMe!2026",
+    fullName: "ANA CECÍLIA BARBOSA DE CANTUÁRIA",
+    role: "coordenacao",
+    registration: "943894",
+  },
 ];
 
 /** Normaliza o nome de guerra para uso em e-mail:
@@ -77,10 +146,10 @@ function warNameToEmail(warName: string): string {
   return warName
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")   // remove diacríticos
-    .replace(/[^a-z0-9]+/g, ".")       // não-alfanumérico → ponto
-    .replace(/^\.+|\.+$/g, "")         // remove pontos nas bordas
-    .replace(/\.{2,}/g, ".");           // pontos duplos → simples
+    .replace(/[̀-ͯ]/g, "") // remove diacríticos
+    .replace(/[^a-z0-9]+/g, ".") // não-alfanumérico → ponto
+    .replace(/^\.+|\.+$/g, "") // remove pontos nas bordas
+    .replace(/\.{2,}/g, "."); // pontos duplos → simples
 }
 
 async function upsertUser(u: SeedUser, studentId?: string) {
@@ -109,20 +178,36 @@ async function upsertUser(u: SeedUser, studentId?: string) {
     id: userId,
     role: u.role,
     full_name: u.fullName,
-    active: true,
+    active: u.active ?? true,
     student_id: studentId ?? null,
   });
   if (pe) throw new Error(`Falha no profile de ${u.email}: ${pe.message}`);
+
+  if (u.registration) {
+    const { error: coordinationError } = await supa
+      .from("cfo_coordination_members")
+      .update({ profile_id: userId })
+      .eq("registration", u.registration);
+    if (coordinationError)
+      throw new Error(
+        `Falha ao vincular integrante da Coordenação ${u.email}: ${coordinationError.message}`,
+      );
+  }
 }
 
 async function main() {
   // Admins
   for (const a of ADMINS) await upsertUser(a);
 
+  // Em produção, o acesso individual é criado pelo script de provisionamento.
+  if (!isProd) {
+    for (const member of COORDINATION_MEMBERS) await upsertUser(member);
+  }
+
   // 30 alunos — vinculando por student_number
   const { data: students } = await supa
     .from("students")
-    .select("id, student_number, full_name, war_name")
+    .select("id, student_number, full_name, war_name, course_status")
     .order("student_number");
 
   if (!students || students.length === 0) {
@@ -138,6 +223,7 @@ async function main() {
         password: "ChangeMe!2026",
         fullName: s.full_name,
         role: "aluno",
+        active: s.course_status === "matriculado",
       },
       s.id,
     );
@@ -145,6 +231,7 @@ async function main() {
 
   console.log("\n✅ Seed de usuários concluído.");
   console.log("    Login admin:  coordenacao@abm.br / ChangeMe!2026");
+  if (!isProd) console.log("    Coordenação local:  e-mails confirmados / ChangeMe!2026");
   console.log("    Login aluno:  <nomeguerra>@abm.br / ChangeMe!2026");
 }
 

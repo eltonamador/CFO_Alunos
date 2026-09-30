@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficerRosterItems, type OfficerTextItem } from "./officerRoster";
+import { officerDutyFunction, parseOfficerRosterItems, type OfficerTextItem } from "./officerRoster";
 
 const item = (text: string, x: number, y: number): OfficerTextItem => ({ text, x, y });
 
@@ -36,7 +36,7 @@ describe("tabela de serviço ODA", () => {
       profile_id: "amador-profile",
     });
     expect(rows.find((row) => row.display_name === "MAJ MÁRCIO COSTA")).toMatchObject({
-      duty_function: "SUPERIOR DE DIA À ACADEMIA",
+      duty_function: "Superior de dia",
       shift: "noite",
     });
     expect(rows.find((row) => row.display_name === "CAP JOSIANE")).toMatchObject({
@@ -48,5 +48,22 @@ describe("tabela de serviço ODA", () => {
 
   it("ignora páginas que não são a escala ODA", () => {
     expect(parseOfficerRosterItems([item("13/09/2026", 80, 162), item("CAP JOSIANE", 360, 166)], 842, [])).toEqual([]);
+  });
+});
+
+describe("função por posto", () => {
+  it.each([
+    ["MAJ MÁRCIO COSTA", "ODA", "Superior de dia"],
+    ["MAJ LUANA", "SUPERIOR DE DIA À ACADEMIA", "Superior de dia"],
+    ["CAP NAHUM", "SUPERIOR DE DIA À ACADEMIA", "Oficial de dia"],
+    ["TEN CECÍLIA", "ODA", "Oficial de dia"],
+    ["1º TEN HELLEN", "ODA", "Oficial de dia"],
+    ["2º TEN DIONÍSIO", "ODA", "Oficial de dia"],
+    ["CAPITÃO TRAJANO", "ODA", "Oficial de dia"],
+    ["TEN CEL SILVA", "Superior de dia", "Superior de dia"],
+    ["TENENTE-CORONEL SILVA", "Superior de dia", "Superior de dia"],
+    ["SGT SILVA", "Permanência", "Permanência"],
+  ])("%s: %s → %s", (name, source, expected) => {
+    expect(officerDutyFunction(name, source)).toBe(expected);
   });
 });

@@ -41,20 +41,29 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const studentIds = [...new Set((assignments ?? []).map((item: any) => item.student_id))];
   const [{ data: roles }, { data: students }] = await Promise.all([
     supabase.from("duty_roles").select("id, name, sort_order").in("id", roleIds),
-    supabase.from("students").select("id, war_name, student_number").in("id", studentIds),
+    supabase
+      .from("students")
+      .select("id, war_name, student_number")
+      .in("id", studentIds)
+      .eq("course_status", "matriculado"),
   ]);
 
   const rolesById = new Map((roles ?? []).map((role: any) => [role.id, role]));
   const studentsById = new Map((students ?? []).map((student: any) => [student.id, student]));
 
   const rows = (assignments ?? [])
-    .map((a: any) => ({
+    .map((a: any) => {
+      const student = studentsById.get(a.student_id);
+      if (!student) return null;
+      return {
       date: a.duty_date,
       role: rolesById.get(a.role_id)?.name ?? "—",
       order: rolesById.get(a.role_id)?.sort_order ?? 99,
-      student: formatStudentLabel(studentsById.get(a.student_id) ?? {}),
+      student: formatStudentLabel(student),
       status: (a.status ?? "").replace(/_/g, " "),
-    }))
+      };
+    })
+    .filter(Boolean)
     .sort(
       (a: any, b: any) => String(a.date).localeCompare(String(b.date)) || a.order - b.order,
     );

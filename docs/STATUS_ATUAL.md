@@ -103,3 +103,24 @@ Implantado em produção pelas migrations `0040`–`0045`, com cadastro de tipos
 O núcleo de disciplinas e notas para CFO I, II e III foi implantado em produção pelas migrations `0036`–`0039`. Inclui catálogo normativo, ofertas, responsáveis, matrículas, VCs/VF, frequência consolidada, cálculo parametrizado, situação acadêmica e auditoria. O RI revisado permanece identificado como fonte provisória até confirmação do ato de publicação; divergências de carga horária continuam visíveis e exigem decisão da Coordenação.
 
 Em 11 de setembro de 2026, o fluxo local completo aprovou 235 testes pgTAP, 216 testes Vitest e 11 cenários Playwright. O CI nº 51 do commit `987aa6b` passou, as migrations remotas ficaram sincronizadas até `0045` e o deploy da Vercel foi validado por smoke test autenticado da Coordenação. Nenhum dado acadêmico ou PDF fictício foi inserido em produção.
+
+## Atualização de 23/09/2026 — testes do estágio sem aguardar as datas
+
+Foi acrescentada a área `/coordenacao/estagio/teste`, restrita à administração do estágio, com três plantões fictícios (passado/presente/futuro), relógio simulado e exclusão integral dos dados de demonstração. Usa o formulário e as validações de avaliação compartilhados e as mesmas funções de cálculo da carga. Os dados permanecem somente no navegador, por conta, sem gravação no banco oficial. O fluxo permite simular avaliação, revisão, homologação e consulta do cadete; a sequência integral soma 12h, 36h e 48h, com saldo final de 202h para o mínimo de 250h. Essa demonstração permite conferir o comportamento enquanto as escalas reais ainda são futuras; não substitui os testes de integração e autorização do sistema.
+
+
+## Atualização de 23/09/2026 — estágio e permanência
+
+As cinco etapas foram implementadas: validação do fluxo, fila de pendências, relatórios individuais/termo de carga, permanência e equilíbrio conjunto. Detalhes e limites em [ESTAGIO_CINCO_ETAPAS.md](ESTAGIO_CINCO_ETAPAS.md). Em 24/09/2026, o horário inicial da Permanência foi definido como 06h–18h e a gestão foi estendida aos administradores ativos do módulo de estágio, preservando o perfil global de aluno do Ian.
+
+
+## 25/09/2026 — primeiras emissões e instruções
+
+A pedido da Coordenação, PDFs não distribuídos foram desconsiderados e a série válida reiniciou em 001. Os sete recortes vigentes foram emitidos como iniciais, de 001 a 007, mantendo o remanejamento de 65 participações. [Numeração e versões](ESTAGIO_RETIFICACOES_PDF.md).
+
+Publicado o cadastro simples de instruções, com edição, desativação, auditoria e revalidação dos serviços em andamento/futuros. A conferência online mostrou zero conflito com a instrução cadastrada de APH. [Escopo e testes](ESTAGIO_INSTRUCOES.md).
+
+
+## 25/09/2026 — sobreaviso e horários de praia
+
+Implementadas confirmação individual de participação em instrução em sobreaviso da permanência na ABM e alteração atômica da janela futura dos cinco postos de GV. Mantém cadetes e uniformes, preserva histórico e recusa conflitos/descanso insuficiente. Não modifica automaticamente escalas atuais. Migração 0111. [Funcionamento e limites](ESTAGIO_SOBREAVISO_E_HORARIOS_GV.md).

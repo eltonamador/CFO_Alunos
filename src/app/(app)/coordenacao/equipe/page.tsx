@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { CoordinationMemberProfileLinkForm } from "@/components/app/coordination/CoordinationMemberProfileLinkForm";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canLinkCoordinationLogin } from "@/modules/identity/domain/coordinationAccess";
 
 export const metadata = { title: "Equipe da Coordenação" };
 export const dynamic = "force-dynamic";
@@ -61,6 +62,7 @@ export default async function CoordenacaoEquipePage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {members.map((member) => {
+            const loginAllowed = canLinkCoordinationLogin(member.registration);
             const availableProfiles = (profilesResult.data ?? []).filter(
               (profile) => profile.id === member.profile_id || !linkedProfileIds.has(profile.id),
             );
@@ -73,9 +75,11 @@ export default async function CoordenacaoEquipePage() {
                     <p className="text-sm text-muted-foreground">{member.military_rank}</p>
                   </div>
                   <Badge variant={member.profile_id && member.active ? "success" : "warning"}>
-                    {member.profile_id && member.active
-                      ? "Conta individual vinculada"
-                      : "Conta pendente"}
+                    {!loginAllowed
+                      ? "Acesso não autorizado"
+                      : member.profile_id && member.active
+                        ? "Conta individual vinculada"
+                        : "Conta pendente"}
                   </Badge>
                 </div>
                 <p className="font-medium">{member.function_name}</p>
@@ -94,11 +98,13 @@ export default async function CoordenacaoEquipePage() {
                   </div>
                 </dl>
                 <p className="text-xs text-muted-foreground">{member.designation_ref}</p>
-                <CoordinationMemberProfileLinkForm
-                  memberId={member.id}
-                  currentProfileId={member.profile_id}
-                  profiles={availableProfiles}
-                />
+                {loginAllowed && (
+                  <CoordinationMemberProfileLinkForm
+                    memberId={member.id}
+                    currentProfileId={member.profile_id}
+                    profiles={availableProfiles}
+                  />
+                )}
                 {lastEvent && (
                   <p className="text-xs text-muted-foreground">
                     Última alteração: {lastEvent.action} em{" "}

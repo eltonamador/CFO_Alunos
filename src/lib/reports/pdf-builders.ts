@@ -1,8 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import PDFDocument from "pdfkit";
+import { PDFDocument as PDFLibDocument, StandardFonts, rgb } from "pdf-lib";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FICHA_FIELDS_BY_ID, type FichaField } from "./ficha-personalizada-catalog";
-import { buildWeightSummary, type WeightSummary } from "@/modules/student-profile/domain/weightHistory";
+import {
+  buildWeightSummary,
+  type WeightSummary,
+} from "@/modules/student-profile/domain/weightHistory";
+import { formatMinutes } from "@/modules/internship-management/domain/workload";
+import {
+  formatReportDate,
+  internshipCountingLabel,
+  formatReportDateTime,
+  internshipSourceLabel,
+  internshipStatusLabel,
+  loadInternshipReportData,
+} from "./internship-report-data";
 
 // =====================================================================
 // Layout institucional CBMAP · ABM · CFO 2026.1
@@ -58,14 +73,20 @@ interface RenderOptions {
   title: string;
   subtitle?: string;
   lgpdWarning?: string;
+  institutionalInternshipHeader?: boolean;
+  headerUnit?: string;
+  revisionNote?: string;
+  signatureBlock?: { name: string; role: string };
+  footerNote?: string;
+  compactFooter?: { title: string; lines: string[] };
 }
 
-function createDoc(): PDFKit.PDFDocument {
+function createDoc(marginTop = PAGE.marginTop): PDFKit.PDFDocument {
   return new PDFDocument({
     size: PAGE.size,
     layout: PAGE.layout,
     margins: {
-      top: PAGE.marginTop,
+      top: marginTop,
       bottom: PAGE.marginBottom,
       left: PAGE.marginX,
       right: PAGE.marginX,
@@ -107,12 +128,14 @@ function stampChrome(doc: PDFKit.PDFDocument, opts: RenderOptions) {
     const origBottom = doc.page.margins.bottom;
     doc.page.margins.top = 0;
     doc.page.margins.bottom = 0;
+    doc.x = 0;
+    doc.y = 0;
 
     const w = doc.page.width;
     const h = doc.page.height;
 
     // ─── Cabeçalho (faixa sóbria, 56px) ───
-    doc.save();
+    doc.save().opacity(1);
     doc.rect(0, 0, w, 56).fill(COLORS.primary);
 
     doc
@@ -215,12 +238,24 @@ function stampChrome(doc: PDFKit.PDFDocument, opts: RenderOptions) {
 }
 
 /** Espaço vertical disponível para conteúdo na página atual. */
-function contentBottom(doc: PDFKit.PDFDocument): number {
-  return doc.page.height - PAGE.marginBottom;
+function contentBottom(doc: PDFKit.PDFDocument, opts: RenderOptions): number {
+  return doc.page.height - (opts.signatureBlock ? signatureReserve(opts) : PAGE.marginBottom);
+}
+
+// O SIGDOC carimba a assinatura eletrônica na faixa inferior da página (até ~96 pt da borda).
+// Nome, função, nota e observações ficam acima dessa faixa para não serem cobertos.
+const SIGNATURE = { role: 110, name: 121, line: 134, note: 146, lineGap: 9.5 };
+function footerLinesBase(opts: RenderOptions): number {
+  return opts.footerNote ? SIGNATURE.note + 12 : SIGNATURE.note;
+}
+function signatureReserve(opts: RenderOptions): number {
+  if (opts.compactFooter) return footerLinesBase(opts) + 5 * SIGNATURE.lineGap + 11 + 14;
+  return opts.footerNote ? SIGNATURE.note + 16 : SIGNATURE.line + 16;
 }
 
 /** Topo da área de conteúdo (abaixo do cabeçalho + eventual LGPD). */
 function contentTop(opts: RenderOptions): number {
+  if (opts.institutionalInternshipHeader) return opts.revisionNote ? 190 : 176;
   return opts.lgpdWarning ? PAGE.marginTop + 6 : PAGE.marginTop;
 }
 
@@ -288,8 +323,7 @@ function renderTable(
   // Para cada linha: mede altura, decide página, desenha.
   rows.forEach((row, rowIdx) => {
     const cellStrings = row.map((cell) => {
-      const v =
-        cell === null || cell === undefined || cell === "" ? "—" : String(cell);
+      const v = cell === null || cell === undefined || cell === "" ? "—" : String(cell);
       return v;
     });
 
@@ -303,7 +337,7 @@ function renderTable(
     const rowH = Math.max(...cellHeights, 14) + cellPadY * 2;
 
     // Quebra de página: não cortar linha
-    if (doc.y + rowH > contentBottom(doc)) {
+    if (doc.y + rowH > contentBottom(doc, opts)) {
       doc.addPage();
       doc.y = contentTop(opts);
       drawTableHeader();
@@ -358,6 +392,200 @@ function pdfToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
   });
 }
 
+async function overlayReportChrome(buffer: Buffer, opts: RenderOptions): Promise<Buffer> {
+  const pdf = await PDFLibDocument.load(Uint8Array.from(buffer));
+  const regular = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const internshipHeader = opts.institutionalInternshipHeader
+    ? await pdf.embedPng(
+        readFileSync(join(process.cwd(), "src/lib/reports/assets/internship-gbm-header-reference.png")),
+      )
+    : null;
+  const pages = pdf.getPages();
+  const emitted = `Emitido em ${formatNow()}`;
+  const subtitle = (opts.subtitle ?? "CBMAP - ABM - Sistema CFO Alunos - Turma CFO 2026.1")
+    .replaceAll("·", "-")
+    .replaceAll("—", "-");
+
+  pages.forEach((page, index) => {
+    const { width, height } = page.getSize();
+    if (internshipHeader) {
+      const headerWidth = width - PAGE.marginX * 2;
+      const headerHeight = (headerWidth * internshipHeader.height) / internshipHeader.width;
+      const headerTop = 18;
+      page.drawImage(internshipHeader, {
+        x: PAGE.marginX,
+        y: height - headerTop - headerHeight,
+        width: headerWidth,
+        height: headerHeight,
+      });
+      // A referência inclui o título de outra escala abaixo da moldura.
+      // Cobrimos só essa faixa e imprimimos o título correto como texto pesquisável.
+      page.drawRectangle({
+        x: PAGE.marginX,
+        y: height - 104,
+        width: headerWidth,
+        height: 15,
+        color: rgb(1, 1, 1),
+      });
+      page.drawLine({
+        start: { x: PAGE.marginX, y: height - 90.5 },
+        end: { x: width - PAGE.marginX, y: height - 90.5 },
+        thickness: 0.6,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      const titleSize = 13.5;
+      page.drawText(opts.title, {
+        x: (width - bold.widthOfTextAtSize(opts.title, titleSize)) / 2,
+        y: height - 116,
+        size: titleSize,
+        font: bold,
+        color: rgb(0.07, 0.09, 0.13),
+      });
+      const unit = opts.headerUnit ?? "CFO1";
+      page.drawRectangle({
+        x: width / 2 - 170,
+        y: height - 148,
+        width: 340,
+        height: 23,
+        color: rgb(0.365, 0.067, 0.067),
+      });
+      page.drawText(unit.toUpperCase(), {
+        x: (width - bold.widthOfTextAtSize(unit.toUpperCase(), 14)) / 2,
+        y: height - 142,
+        size: 14,
+        font: bold,
+        color: rgb(1, 1, 1),
+      });
+      const line = opts.subtitle ?? "";
+      page.drawText(line, {
+        x: (width - regular.widthOfTextAtSize(line, 8)) / 2,
+        y: height - 162,
+        size: 8,
+        font: regular,
+        color: rgb(0.25, 0.29, 0.35),
+      });
+      if (opts.revisionNote) {
+        const size = Math.min(8, (width - 2 * PAGE.marginX) / bold.widthOfTextAtSize(opts.revisionNote, 1));
+        page.drawText(opts.revisionNote, {
+          x: (width - bold.widthOfTextAtSize(opts.revisionNote, size)) / 2,
+          y: height - 177, size, font: bold, color: rgb(0.365, 0.067, 0.067),
+        });
+      }
+    } else {
+    page.drawRectangle({
+      x: 0,
+      y: height - 56,
+      width,
+      height: 56,
+      color: rgb(0.482, 0.094, 0.094),
+    });
+    page.drawText(opts.title, {
+      x: PAGE.marginX,
+      y: height - 34,
+      size: FONT.titleSize,
+      font: bold,
+      color: rgb(1, 1, 1),
+    });
+    page.drawText(subtitle, {
+      x: PAGE.marginX,
+      y: height - 49,
+      size: FONT.subtitleSize,
+      font: regular,
+      color: rgb(0.973, 0.843, 0.843),
+    });
+    page.drawText(emitted, {
+      x: width - PAGE.marginX - regular.widthOfTextAtSize(emitted, FONT.subtitleSize),
+      y: height - 31,
+      size: FONT.subtitleSize,
+      font: regular,
+      color: rgb(1, 1, 1),
+    });
+    const pageLabel = `Página ${index + 1} de ${pages.length}`;
+    page.drawText(pageLabel, {
+      x: width - PAGE.marginX - regular.widthOfTextAtSize(pageLabel, FONT.subtitleSize),
+      y: height - 47,
+      size: FONT.subtitleSize,
+      font: regular,
+      color: rgb(1, 1, 1),
+    });
+    }
+    page.drawLine({
+      start: { x: PAGE.marginX, y: 22 },
+      end: { x: width - PAGE.marginX, y: 22 },
+      thickness: 0.5,
+      color: rgb(0.82, 0.84, 0.86),
+    });
+    page.drawText("Documento gerado pelo Sistema CFO Alunos - CBMAP - Uso interno", {
+      x: PAGE.marginX,
+      y: 10,
+      size: FONT.footerSize,
+      font: regular,
+      color: rgb(0.42, 0.45, 0.5),
+    });
+    const footerPage = `${index + 1}/${pages.length}`;
+    page.drawText(footerPage, {
+      x: width - PAGE.marginX - regular.widthOfTextAtSize(footerPage, FONT.footerSize),
+      y: 10,
+      size: FONT.footerSize,
+      font: regular,
+      color: rgb(0.42, 0.45, 0.5),
+    });
+    if (opts.signatureBlock && index === pages.length - 1) {
+      if (opts.compactFooter) {
+        // Área fixa de seis linhas acima da assinatura, reservada em signatureReserve.
+        const firstLine = footerLinesBase(opts) + 5 * SIGNATURE.lineGap;
+        page.drawText(opts.compactFooter.title, {
+          x: PAGE.marginX, y: firstLine + 11, size: 7.5, font: bold,
+          color: rgb(0.1, 0.12, 0.16),
+        });
+        opts.compactFooter.lines.forEach((line, lineIndex) => {
+          if (lineIndex >= 6 || regular.widthOfTextAtSize(line, 7.5) > width - PAGE.marginX * 2)
+            throw new Error("Observações da escala excedem o espaço reservado.");
+          page.drawText(line, {
+            x: PAGE.marginX, y: firstLine - lineIndex * SIGNATURE.lineGap, size: 7.5, font: regular,
+            color: rgb(0.18, 0.2, 0.24),
+          });
+        });
+      }
+      if (opts.footerNote) {
+        page.drawText(opts.footerNote, {
+          x: (width - regular.widthOfTextAtSize(opts.footerNote, 7)) / 2,
+          y: SIGNATURE.note,
+          size: 7,
+          font: regular,
+          color: rgb(0.3, 0.33, 0.38),
+        });
+      }
+      const { name, role } = opts.signatureBlock;
+      const lineWidth = 310;
+      const x = (width - lineWidth) / 2;
+      page.drawLine({
+        start: { x, y: SIGNATURE.line },
+        end: { x: x + lineWidth, y: SIGNATURE.line },
+        thickness: 0.7,
+        color: rgb(0.22, 0.24, 0.28),
+      });
+      page.drawText(name, {
+        x: x + (lineWidth - bold.widthOfTextAtSize(name, 8)) / 2,
+        y: SIGNATURE.name,
+        size: 8,
+        font: bold,
+        color: rgb(0.1, 0.12, 0.16),
+      });
+      page.drawText(role, {
+        x: x + (lineWidth - regular.widthOfTextAtSize(role, 7.5)) / 2,
+        y: SIGNATURE.role,
+        size: 7.5,
+        font: regular,
+        color: rgb(0.3, 0.33, 0.38),
+      });
+    }
+  });
+
+  return Buffer.from(await pdf.save());
+}
+
 /** Helper: renderiza tabela completa e estampa header/footer. */
 async function buildTableReport(
   opts: RenderOptions,
@@ -378,7 +606,10 @@ interface FichaColumn {
   id: string;
   header: string;
   width: number;
-  accessor: (s: any, ctx: { contact: any; addr: any; logistics: any }) => string | number | null | undefined;
+  accessor: (
+    s: any,
+    ctx: { contact: any; addr: any; logistics: any },
+  ) => string | number | null | undefined;
 }
 
 const FICHA_COLUMNS: FichaColumn[] = [
@@ -395,12 +626,32 @@ const FICHA_COLUMNS: FichaColumn[] = [
   },
   { id: "fc_fase", header: "Pelotão", width: 0.07, accessor: (s) => s.pelotao },
   { id: "fc_sexo", header: "Sexo", width: 0.04, accessor: (s) => s.sex },
-  { id: "fc_whatsapp", header: "WhatsApp", width: 0.1, accessor: (_s, ctx) => ctx.contact?.whatsapp },
-  { id: "fc_email", header: "E-mail", width: 0.14, accessor: (_s, ctx) => ctx.contact?.email_personal },
+  {
+    id: "fc_whatsapp",
+    header: "WhatsApp",
+    width: 0.1,
+    accessor: (_s, ctx) => ctx.contact?.whatsapp,
+  },
+  {
+    id: "fc_email",
+    header: "E-mail",
+    width: 0.14,
+    accessor: (_s, ctx) => ctx.contact?.email_personal,
+  },
   { id: "fc_cidade", header: "Cidade", width: 0.07, accessor: (_s, ctx) => ctx.addr?.city },
   { id: "fc_estado", header: "UF", width: 0.03, accessor: (_s, ctx) => ctx.addr?.state },
-  { id: "fc_gandola", header: "Gandola", width: 0.05, accessor: (_s, ctx) => ctx.logistics?.gandola_size },
-  { id: "fc_calca", header: "Calça", width: 0.05, accessor: (_s, ctx) => ctx.logistics?.pants_size },
+  {
+    id: "fc_gandola",
+    header: "Gandola",
+    width: 0.05,
+    accessor: (_s, ctx) => ctx.logistics?.gandola_size,
+  },
+  {
+    id: "fc_calca",
+    header: "Calça",
+    width: 0.05,
+    accessor: (_s, ctx) => ctx.logistics?.pants_size,
+  },
 ];
 
 export async function buildFichaCompletaPDF(
@@ -416,12 +667,12 @@ export async function buildFichaCompletaPDF(
        student_addresses(city, state),
        student_logistics(gandola_size, pants_size)`,
     )
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number");
 
   const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
-  const activeColumns = selected
-    ? FICHA_COLUMNS.filter((c) => selected.has(c.id))
-    : FICHA_COLUMNS;
+  const activeColumns = selected ? FICHA_COLUMNS.filter((c) => selected.has(c.id)) : FICHA_COLUMNS;
   const cols = activeColumns.length > 0 ? activeColumns : FICHA_COLUMNS;
   const totalWeight = cols.reduce((sum, c) => sum + c.width, 0);
   const widthFractions = cols.map((c) => c.width / totalWeight);
@@ -429,7 +680,9 @@ export async function buildFichaCompletaPDF(
   const rows = (students ?? []).map((s: any) => {
     const contact = Array.isArray(s.student_contacts) ? s.student_contacts[0] : s.student_contacts;
     const addr = Array.isArray(s.student_addresses) ? s.student_addresses[0] : s.student_addresses;
-    const logistics = Array.isArray(s.student_logistics) ? s.student_logistics[0] : s.student_logistics;
+    const logistics = Array.isArray(s.student_logistics)
+      ? s.student_logistics[0]
+      : s.student_logistics;
     return cols.map((col) => col.accessor(s, { contact, addr, logistics }));
   });
 
@@ -453,7 +706,12 @@ interface PendenciaColumn {
 
 const PENDENCIA_COLUMNS: PendenciaColumn[] = [
   { id: "pe_numero", header: "Nº", width: 0.05, accessor: (_r, ctx) => ctx.st?.student_number },
-  { id: "pe_nome_guerra", header: "Nome de Guerra", width: 0.16, accessor: (_r, ctx) => ctx.st?.war_name },
+  {
+    id: "pe_nome_guerra",
+    header: "Nome de Guerra",
+    width: 0.16,
+    accessor: (_r, ctx) => ctx.st?.war_name,
+  },
   { id: "pe_sexo", header: "Sexo", width: 0.05, accessor: (_r, ctx) => ctx.st?.sex },
   { id: "pe_item", header: "Item", width: 0.34, accessor: (_r, ctx) => ctx.req?.name },
   {
@@ -462,7 +720,12 @@ const PENDENCIA_COLUMNS: PendenciaColumn[] = [
     width: 0.07,
     accessor: (_r, ctx) => (ctx.req ? `${ctx.req.quantity} ${ctx.req.unit ?? ""}`.trim() : null),
   },
-  { id: "pe_status", header: "Status", width: 0.16, accessor: (r) => (r.status ?? "").replace(/_/g, " ") },
+  {
+    id: "pe_status",
+    header: "Status",
+    width: 0.16,
+    accessor: (r) => (r.status ?? "").replace(/_/g, " "),
+  },
   {
     id: "pe_validacao",
     header: "Validação",
@@ -479,9 +742,10 @@ export async function buildPendenciasEnxovalPDF(
     .from("equipment_checklist")
     .select(
       `status, validation_status, student_notes,
-       student:students!inner(student_number, war_name, sex),
+       student:students!inner(student_number, war_name, sex, course_status),
        requirement:equipment_requirements!inner(name, quantity, unit, phase)`,
     )
+    .eq("student.course_status", "matriculado")
     .neq("validation_status", "validado")
     .order("student(student_number)" as any, { ascending: true });
 
@@ -596,10 +860,14 @@ export async function buildSaudePDF(
          has_physical_restriction, has_dietary_restriction, has_eye_surgery
        )`,
     )
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number");
 
   const filtered = (data ?? []).filter((s: any) => {
-    const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
+    const h = Array.isArray(s.health_restrictions)
+      ? s.health_restrictions[0]
+      : s.health_restrictions;
     return (
       h &&
       (h.has_allergies ||
@@ -621,7 +889,9 @@ export async function buildSaudePDF(
   const widthFractions = cols.map((c) => c.width / totalWeight);
 
   const rows = filtered.map((s: any) => {
-    const h = Array.isArray(s.health_restrictions) ? s.health_restrictions[0] : s.health_restrictions;
+    const h = Array.isArray(s.health_restrictions)
+      ? s.health_restrictions[0]
+      : s.health_restrictions;
     return cols.map((col) => col.accessor(s, h));
   });
 
@@ -658,7 +928,12 @@ const EMERGENCIA_COLUMNS: EmergenciaColumn[] = [
     accessor: (_s, ctx) => ctx.c1?.relationship,
   },
   { id: "em_c1_telefone", header: "Telefone 1", width: 0.09, accessor: (_s, ctx) => ctx.c1?.phone },
-  { id: "em_c1_endereco", header: "Endereço 1", width: 0.14, accessor: (_s, ctx) => ctx.c1?.address },
+  {
+    id: "em_c1_endereco",
+    header: "Endereço 1",
+    width: 0.14,
+    accessor: (_s, ctx) => ctx.c1?.address,
+  },
   { id: "em_c2_nome", header: "Contato 2", width: 0.12, accessor: (_s, ctx) => ctx.c2?.full_name },
   {
     id: "em_c2_parentesco",
@@ -667,7 +942,12 @@ const EMERGENCIA_COLUMNS: EmergenciaColumn[] = [
     accessor: (_s, ctx) => ctx.c2?.relationship,
   },
   { id: "em_c2_telefone", header: "Telefone 2", width: 0.09, accessor: (_s, ctx) => ctx.c2?.phone },
-  { id: "em_c2_endereco", header: "Endereço 2", width: 0.13, accessor: (_s, ctx) => ctx.c2?.address },
+  {
+    id: "em_c2_endereco",
+    header: "Endereço 2",
+    width: 0.13,
+    accessor: (_s, ctx) => ctx.c2?.address,
+  },
 ];
 
 export async function buildEmergenciaPDF(
@@ -680,6 +960,8 @@ export async function buildEmergenciaPDF(
       `student_number, war_name,
        emergency_contacts(priority, full_name, relationship, phone, address)`,
     )
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number");
 
   const selected = selectedFields && selectedFields.length > 0 ? new Set(selectedFields) : null;
@@ -774,7 +1056,11 @@ const FICHA_ACCESSORS: Record<string, Accessor> = {
   fp_id_mother: (s) => s.mother_name,
   fp_id_pis: (s) => s.pis,
   fp_id_voter: (s) => {
-    const parts = [s.voter_id, s.voter_zone && `Z${s.voter_zone}`, s.voter_section && `S${s.voter_section}`].filter(Boolean);
+    const parts = [
+      s.voter_id,
+      s.voter_zone && `Z${s.voter_zone}`,
+      s.voter_section && `S${s.voter_section}`,
+    ].filter(Boolean);
     return parts.length ? parts.join(" · ") : null;
   },
   fp_id_presentation: (s) => formatDateBR(s.presentation_date),
@@ -902,7 +1188,12 @@ export async function buildFichaPersonalizadaPDF(
   // ainda não criada), a query não quebra — o accessor apenas devolve `null`.
   // Query separada por tabela: uma falha de RLS/schema numa relação não
   // derruba o relatório inteiro — a coluna correspondente vira "—".
-  const studentsResp = await supabase.from("students").select("*").order("student_number");
+  const studentsResp = await supabase
+    .from("students")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado")
+    .order("student_number");
 
   if (studentsResp.error) {
     // Falha audível: a route.ts captura e devolve 500 com detalhe.
@@ -945,7 +1236,10 @@ export async function buildFichaPersonalizadaPDF(
 
   const [contactsMap, addressMap, logisticsMap, vehicleMap, healthMap] = await Promise.all([
     needsContact
-      ? loadById("student_contacts", "student_id, whatsapp, phone_secondary, email_personal, email_institutional")
+      ? loadById(
+          "student_contacts",
+          "student_id, whatsapp, phone_secondary, email_personal, email_institutional",
+        )
       : Promise.resolve(new Map<string, any>()),
     needsAddress
       ? loadById(
@@ -1019,7 +1313,10 @@ export async function buildFichaPersonalizadaPDF(
   }
 
   // Documentos e materiais (agregados)
-  const docsByStudent = new Map<string, { enviados: number; pendentes: number; rejeitados: number }>();
+  const docsByStudent = new Map<
+    string,
+    { enviados: number; pendentes: number; rejeitados: number }
+  >();
   const matsByStudent = new Map<string, { pendentes: number; validados: number }>();
 
   if (needsDocs && studentIds.length > 0) {
@@ -1102,6 +1399,101 @@ export async function buildFichaPersonalizadaPDF(
 }
 
 // =====================================================================
+// 6. Controle do Estágio Supervisionado
+// =====================================================================
+export async function buildInternshipPDF(supabase: SupabaseClient<any, any, any>): Promise<Buffer> {
+  const { program, workload, schedule } = await loadInternshipReportData(supabase);
+  const opts: RenderOptions = {
+    title: "Relatório de Estágio Supervisionado",
+    subtitle: `${program.name} · ${formatReportDate(program.starts_on)} a ${formatReportDate(program.ends_on)} · carga oficial pela homologação vigente`,
+  };
+  const doc = createDoc();
+  const totals = workload.reduce(
+    (sum, row) => ({
+      planned: sum.planned + Number(row.planned_minutes),
+      performed: sum.performed + Number(row.performed_minutes),
+      validated: sum.validated + Number(row.validated_minutes),
+      missing: sum.missing + Number(row.missing_required_minutes),
+      pending: sum.pending + Number(row.awaiting_homologation),
+      occurrences: sum.occurrences + Number(row.open_occurrences),
+    }),
+    { planned: 0, performed: 0, validated: 0, missing: 0, pending: 0, occurrences: 0 },
+  );
+  const workloadRows: (string | number | null | undefined)[][] = workload.map((row) => [
+    row.student_number ?? "",
+    row.war_name,
+    formatMinutes(Number(row.planned_minutes)),
+    formatMinutes(Number(row.performed_minutes)),
+    formatMinutes(Number(row.validated_minutes)),
+    formatMinutes(Number(row.missing_required_minutes)),
+    Number(row.awaiting_homologation),
+    Number(row.open_occurrences),
+    row.concluded ? "Integralizado" : "Em formação",
+  ]);
+  workloadRows.unshift([
+    "",
+    "TOTAL DA TURMA",
+    formatMinutes(totals.planned),
+    formatMinutes(totals.performed),
+    formatMinutes(totals.validated),
+    formatMinutes(totals.missing),
+    totals.pending,
+    totals.occurrences,
+    `${workload.filter((row) => row.concluded).length}/${workload.length} integralizados`,
+  ]);
+  renderTable(
+    doc,
+    opts,
+    [
+      "Nº",
+      "Cadete",
+      "Prevista",
+      "Realizada",
+      "Homologada",
+      "Falta p/ mínimo",
+      "Fichas",
+      "Ocorr.",
+      "Situação",
+    ],
+    workloadRows,
+    [0.04, 0.18, 0.1, 0.1, 0.11, 0.11, 0.07, 0.07, 0.22],
+  );
+
+  doc.addPage();
+  const scheduleRows = schedule.map((row) => [
+    formatReportDate(row.shift_date),
+    row.template_code ?? "Excepcional",
+    `${row.activity_name}\n${row.site_name} · ${row.resource_name}`,
+    row.student_id
+      ? `${String(row.student_number ?? "").padStart(2, "0")} · ${row.war_name}`
+      : "Sem cadete",
+    `${formatReportDateTime(row.starts_at)}\n${formatReportDateTime(row.ends_at)}`,
+    `${formatMinutes(Number(row.planned_minutes))}\nHomol.: ${row.approved_minutes === null ? "—" : formatMinutes(Number(row.approved_minutes))}`,
+    `${internshipStatusLabel(row)}\n${internshipSourceLabel(row.assignment_source)}\n${internshipCountingLabel(row)}`,
+    [row.supervisor_name, row.document_reference].filter(Boolean).join("\n") || "A confirmar",
+    row.movement_reason ?? "",
+  ]);
+  renderTable(
+    doc,
+    opts,
+    [
+      "Data",
+      "Padrão",
+      "Modalidade / local",
+      "Cadete",
+      "Início / fim",
+      "Carga",
+      "Situação / origem",
+      "Supervisor / ficha",
+      "Motivo",
+    ],
+    scheduleRows,
+    [0.07, 0.09, 0.17, 0.12, 0.13, 0.1, 0.12, 0.12, 0.08],
+  );
+  return overlayReportChrome(await pdfToBuffer(doc), opts);
+}
+
+// =====================================================================
 // Reuso externo (escala operacional, etc.)
 // =====================================================================
 export const __internals = {
@@ -1109,6 +1501,7 @@ export const __internals = {
   stampChrome,
   renderTable,
   pdfToBuffer,
+  overlayReportChrome,
   COLORS,
   PAGE,
   FONT,

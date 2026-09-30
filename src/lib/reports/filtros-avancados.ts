@@ -92,6 +92,7 @@ export interface AlunoFiltravel {
   full_name: string;
   pelotao: string | null;
   situation: string;
+  course_status?: string | null;
   sex: "M" | "F" | null;
   enrollment_status: "pendente" | "confirmada" | null;
   cpf: string | null;
@@ -145,7 +146,7 @@ export interface AlunoFiltravel {
 // SELECT compartilhado para o Supabase
 // ──────────────────────────────────────────────────────────────────────
 export const STUDENT_SELECT_COLUMNS = `
-  id, student_number, war_name, full_name, pelotao, situation, sex, enrollment_status,
+  id, student_number, war_name, full_name, pelotao, situation, course_status, sex, enrollment_status,
   cpf, birth_date, naturality_city, naturality_state, mother_name,
   had_prior_military_service, prior_military_branch, prior_military_institution,
   religion, has_religious_restriction,

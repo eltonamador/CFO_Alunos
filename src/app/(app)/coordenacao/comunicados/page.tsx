@@ -22,6 +22,7 @@ export default async function CoordenacaoComunicadosPage() {
         .from("students")
         .select("id, war_name, student_number")
         .eq("situation", "matriculado")
+        .eq("course_status", "matriculado")
         .is("deleted_at", null)
         .order("student_number"),
       supabase

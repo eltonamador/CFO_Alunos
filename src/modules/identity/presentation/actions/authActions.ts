@@ -9,7 +9,7 @@ import { homePathForRole } from "@/modules/identity/presentation/session";
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 const loginSchema = z.object({
-  email: z.string().email("E-mail inválido"),
+  email: z.string().email("Usuário inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
 });
 
@@ -28,7 +28,7 @@ export async function loginAction(
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data.user) {
-    return { ok: false, error: "E-mail ou senha incorretos" };
+    return { ok: false, error: "Usuário ou senha incorretos" };
   }
 
   const profile = await fetchProfile(supabase, data.user.id);

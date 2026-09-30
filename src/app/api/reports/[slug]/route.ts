@@ -1,3 +1,4 @@
+import { canManageInternship } from "@/modules/internship-management/domain/access";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import {
   buildPendenciasEnxovalWorkbook,
   buildSaudeWorkbook,
   buildEmergenciaWorkbook,
+  buildInternshipWorkbook,
 } from "@/lib/reports/builders";
 import {
   buildFichaCompletaPDF,
@@ -14,9 +16,13 @@ import {
   buildSaudePDF,
   buildEmergenciaPDF,
   buildFichaPersonalizadaPDF,
+  buildInternshipPDF,
 } from "@/lib/reports/pdf-builders";
 
-type Builder = (supabase: ReturnType<typeof createSupabaseServerClient>, selectedFields?: string[]) => Promise<any>;
+type Builder = (
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  selectedFields?: string[],
+) => Promise<any>;
 
 interface ReportSpec {
   label: string;
@@ -49,13 +55,14 @@ const REPORTS: Record<string, ReportSpec> = {
     xlsx: buildEmergenciaWorkbook as Builder,
     pdf: buildEmergenciaPDF as Builder,
   },
+  estagio: {
+    label: "Controle_Estagio_CFO2026.1",
+    xlsx: buildInternshipWorkbook as Builder,
+    pdf: buildInternshipPDF as Builder,
+  },
 };
 
-async function handleReportRequest(
-  req: NextRequest,
-  slug: string,
-  selectedFields?: string[]
-) {
+async function handleReportRequest(req: NextRequest, slug: string, selectedFields?: string[]) {
   // 1. Autenticação
   const session = await getSession();
   if (!session) {
@@ -63,7 +70,12 @@ async function handleReportRequest(
   }
 
   // 2. Autorização — apenas Coordenação e Secretaria
-  if (session.role !== "coordenacao" && session.role !== "secretaria") {
+  if (
+    !session.active ||
+    (session.role !== "coordenacao" &&
+      session.role !== "secretaria" &&
+      !(slug === "estagio" && canManageInternship(session)))
+  ) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
 
@@ -73,8 +85,11 @@ async function handleReportRequest(
     return NextResponse.json({ error: "Relatório não encontrado" }, { status: 404 });
   }
 
-  // 4. Saúde é restrito à Coordenação (LGPD)
-  if (slug === "saude" && session.role !== "coordenacao") {
+  // 4. Saúde e estágio são restritos à Coordenação.
+  if (
+    (slug === "saude" && session.role !== "coordenacao") ||
+    (slug === "estagio" && !canManageInternship(session))
+  ) {
     return NextResponse.json({ error: "Acesso restrito à Coordenação" }, { status: 403 });
   }
 
@@ -126,17 +141,11 @@ async function handleReportRequest(
   }
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { slug: string } },
-) {
+export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   return handleReportRequest(req, params.slug);
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { slug: string } },
-) {
+export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
     const body = await req.json();
     const selectedFields = Array.isArray(body?.selectedFields) ? body.selectedFields : undefined;

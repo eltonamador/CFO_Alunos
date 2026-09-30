@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { officerDutyFunction } from "../domain/officerRoster";
 import { dutyWindow } from "../domain/dutyWindow";
 import type { DutyOverview } from "../domain/roster";
 export type { DutyOverview, DutyRosterEntry } from "../domain/roster";
@@ -87,9 +88,9 @@ export async function getDutyOverview(): Promise<DutyOverview> {
         kind: "officer" as const,
         date: entry.duty_date,
         person: entry.display_name,
-        duty: `${entry.duty_function} · ${shiftLabel[entry.shift] ?? entry.shift} ${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`,
+        duty: `${officerDutyFunction(entry.display_name, entry.duty_function)} · ${shiftLabel[entry.shift] ?? entry.shift} ${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`,
         mine: entry.profile_id === session.userId,
       })),
-    ].sort((a, b) => a.date.localeCompare(b.date) || a.person.localeCompare(b.person)),
+    ].sort((a, b) => a.date.localeCompare(b.date)),
   };
 }

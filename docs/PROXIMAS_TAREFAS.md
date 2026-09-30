@@ -4,6 +4,39 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 
 ---
 
+## Entrega de 25/09/2026 — rodízio, etapa 1
+
+- [x] Elevar o descanso na prioridade, com teto comparativo de 72h.
+- [x] Equilibrar fins de semana comprometidos, consecutivos e horas nesses dias.
+- [x] Limitar a três ocorrências de descanso de 24h em qualquer janela móvel de 28 dias, também no banco.
+- [x] Mostrar os critérios nas sugestões de estágio e permanência.
+- [x] Etapa 2: procurar combinações alternativas antes de deixar vagas vazias na montagem diária/semanal, preservando escolhas manuais.
+- [x] Etapa 3: substituição durante o plantão com períodos individualizados, validação e auditoria.
+- [x] Etapa 4: versões e identificação de retificações dos PDFs — [detalhes](ESTAGIO_RETIFICACOES_PDF.md).
+- [x] Etapa 5: cadastro simples de instruções e revalidação após mudanças — [detalhes](ESTAGIO_INSTRUCOES.md).
+- [x] Etapa 6: permanência em sobreaviso de instrução e ajuste de horários de GV, preservando uniforme e descanso — [detalhes](ESTAGIO_SOBREAVISO_E_HORARIOS_GV.md).
+
+Regras, escopo e sequência das melhorias: [Rodízio e descanso](ESTAGIO_RODIZIO_DESCANSO.md).
+
+## Entrega de 23/09/2026 — cinco etapas do estágio
+
+Implementados fluxo validado, fila de pendências, relatórios individuais e termo de carga, permanência de 2 a 4 cadetes e rodízio conjunto. Consulte [funcionalidades, permissões e verificações](ESTAGIO_CINCO_ETAPAS.md).
+
+Decisões de 24/09/2026: Permanência inicia com horário padrão de 06h–18h, ajustável para exceções; Ian Lima, como administrador ativo do estágio, também pode publicar, alterar e cancelar Permanência. QTS, saúde e calendário ficam para depois.
+
+## Prioridades registradas em 23/09/2026 — estágio e permanência
+
+**Registro original: requisitos atendidos pela entrega das cinco etapas acima.** Detalhamento e critérios de aceite na [próxima etapa do plano de estágio](PLANO_MODULO_CONTROLE_ESTAGIO.md#próxima-etapa-registrada-em-23092026--escala-operacional-e-permanência).
+
+1. [x] **PDF operacional da escala:** número e nome do cadete, data/hora de início e término, local, tipo de serviço, uniforme e carga de estágio já cumprida/homologada. Disponível em `/coordenacao/estagio/agenda` e `/api/estagio/escala`.
+2. [x] **Escalas na tela inicial:** serviços publicados dos próximos sete dias, lidos diretamente dos registros de estágio nos painéis de cadete, Coordenação, Instrutor e Secretaria, sem importar PDF.
+3. [x] **Planejamento da permanência:** Aluno de Dia e Apoios 1, 2 e 3, com composição configurável de 2 a 4 cadetes no total por serviço, conforme interpretação registrada no plano.
+4. [x] **Balanceamento conjunto:** cruzar estágio e permanência nos dois sentidos; considerar horários, dias de serviço, carga comprometida e descanso nas sugestões e na publicação. Manter a carga curricular de estágio separada das horas de permanência.
+
+Planejamento da permanência implementado com uniforme e horários preenchidos inicialmente como 06h–18h. Novos pesos ou regras de descanso adicionais dependem de decisão posterior. QTS, saúde e calendário permanecem para uma etapa posterior.
+
+---
+
 ## Estado do Backlog
 
 - `[x]` **Tarefa 1: Validar/Concluir Pré-Cadastro Oficial dos 30 Alunos** (CONCLUÍDO)

@@ -1,3 +1,5 @@
+import { isInternshipManagementPath } from "@/modules/internship-management/domain/access";
+import { isSchedulePublishingPath } from "@/modules/schedule-repository/domain/access";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
@@ -39,6 +41,14 @@ function isPublicPath(pathname: string): boolean {
  * Refresh de sessão + guard de rotas + redirect por role.
  */
 export async function updateSession(request: NextRequest) {
+  // Convite de avaliação tem autorização própria por token; não depende do login do aparelho.
+  if (/^\/avaliar-estagio\/[a-f0-9]{64}$/.test(request.nextUrl.pathname)) {
+    const publicResponse = NextResponse.next({ request });
+    publicResponse.headers.set("Cache-Control", "private, no-store");
+    publicResponse.headers.set("Referrer-Policy", "no-referrer");
+    publicResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return publicResponse;
+  }
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(
@@ -104,7 +114,17 @@ export async function updateSession(request: NextRequest) {
     const [expectedRole] = sectionMatch;
     const profile = await fetchProfile(supabase, user.id);
     const actualRole: UserRole = profile?.role ?? "aluno";
-    if (actualRole !== expectedRole) {
+    let internshipAccess = false;
+    let schedulePublishingAccess = false;
+    if (actualRole === "aluno" && profile?.active && isInternshipManagementPath(pathname)) {
+      const { data } = await supabase.rpc("internship_can_manage");
+      internshipAccess = data === true;
+    }
+    if (actualRole === "aluno" && profile?.active && isSchedulePublishingPath(pathname)) {
+      const { data } = await supabase.rpc("schedule_can_publish");
+      schedulePublishingAccess = data === true;
+    }
+    if (actualRole !== expectedRole && !internshipAccess && !schedulePublishingAccess) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = ROLE_HOME[actualRole];
       return NextResponse.redirect(redirectUrl);

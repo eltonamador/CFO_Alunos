@@ -12,6 +12,10 @@ export interface SessionProfile {
   studentId: string | null;
   active: boolean;
   isFirstAccess: boolean;
+  /** Permission resolved from the database, scoped to internship only. */
+  canManageInternship?: boolean;
+  /** Delegação limitada ao repositório de escalas. */
+  canPublishSchedules?: boolean;
   /** Apenas para role="aluno": nome de guerra do aluno vinculado */
   warName: string | null;
   /** Apenas para role="aluno": número do aluno vinculado */
@@ -48,7 +52,19 @@ export const getSession = cache(async (): Promise<SessionProfile | null> => {
     studentNumber = (studentData as any)?.student_number ?? null;
   }
 
+  const { data: internshipManager } =
+    profile.role === "aluno" && profile.active
+      ? await supabase.rpc("internship_can_manage")
+      : { data: profile.active && profile.role === "coordenacao" };
+
+  const { data: schedulePublisher } =
+    profile.role === "aluno" && profile.active
+      ? await supabase.rpc("schedule_can_publish")
+      : { data: profile.active && profile.role === "coordenacao" };
+
   return {
+    canManageInternship: internshipManager === true,
+    canPublishSchedules: schedulePublisher === true,
     userId: user.id,
     email: user.email ?? "",
     role: profile.role,

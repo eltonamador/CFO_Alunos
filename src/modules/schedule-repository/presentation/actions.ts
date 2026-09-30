@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { canPublishSchedules } from "../domain/access";
 import { processScheduleDocumentNow } from "../infrastructure/processor";
 
 export type ScheduleActionResult = { ok: boolean; message: string };
 
 async function activeCoordination() {
   const session = await getSession();
-  return session?.active && !session.isFirstAccess && session.role === "coordenacao"
+  return session?.active && !session.isFirstAccess && canPublishSchedules(session)
     ? session
     : null;
 }
@@ -55,7 +56,8 @@ export async function createScheduleTypeAction(
 }
 
 export async function toggleScheduleTypeAction(formData: FormData): Promise<void> {
-  if (!(await activeCoordination())) return;
+  const session = await getSession();
+  if (!session?.active || session.role !== "coordenacao") return;
   const parsed = z
     .object({ id: z.string().uuid(), active: z.enum(["true", "false"]) })
     .safeParse({ id: formData.get("id"), active: formData.get("active") });

@@ -1,3 +1,4 @@
+import { UpcomingInternshipSchedule } from "@/components/app/internship/UpcomingInternshipSchedule";
 import { Suspense } from "react";
 import { requireRole } from "@/components/app/RoleGuard";
 import { PendingFollowUpAlert } from "@/components/app/followup/PendingFollowUpAlert";
@@ -34,6 +35,7 @@ async function StudentOperationalSections({ studentId }: { studentId: string | n
   return (
     <>
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/aluno/escalas" />
+      <UpcomingInternshipSchedule studentId={studentId} detailsHref="/aluno/estagio" />
       <QtsDashboardCard overview={qtsOverview} />
       <AcademicInstructionDashboardAlert role="aluno" />
       <PendingFollowUpAlert studentId={studentId} />

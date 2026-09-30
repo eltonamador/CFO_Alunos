@@ -62,5 +62,6 @@ describe("consulta compartilhada do painel", () => {
       kind: "cadet", person: "GIOVANNA — 13", mine: role === "aluno", duty: "Dia ao 1º Ano · 1º turno",
     });
     expect(result.entries.find((entry) => entry.id === "peer")?.mine).toBe(false);
+    expect(result.entries.find((entry) => entry.id === "current")?.duty).toBe("Oficial de dia · Tarde 13:00–19:00");
   });
 });

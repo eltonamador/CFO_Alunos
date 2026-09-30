@@ -19,6 +19,7 @@ interface Report {
   icon: string;
   roles: string[];
   sensitive?: boolean;
+  pdfConfigurable?: boolean;
   statLabel: string;
 }
 
@@ -51,6 +52,16 @@ const REPORTS: Report[] = [
     statLabel: "itens de enxoval cadastrados",
   },
   {
+    slug: "estagio",
+    title: "Controle de Estágio Supervisionado",
+    description:
+      "Resumo oficial por cadete e agenda detalhada, com cargas prevista, realizada e homologada, saldos, pendências e histórico.",
+    icon: "🚒",
+    roles: ["coordenacao"],
+    pdfConfigurable: false,
+    statLabel: "cadetes no controle",
+  },
+  {
     slug: "saude",
     title: "Restrições de Saúde",
     description:
@@ -76,13 +87,26 @@ export default async function RelatoriosPage() {
   const academic = createAcademicClient();
 
   const available = REPORTS.filter((r) => r.roles.includes(session.role));
-  const [students, requirements, health, emergency, courses, classes, years, disciplines, instructors] = await Promise.all([
+  const [
+    students,
+    requirements,
+    health,
+    emergency,
+    courses,
+    classes,
+    years,
+    disciplines,
+    instructors,
+  ] = await Promise.all([
     supabase
       .from("students")
       .select("*", { count: "exact", head: true })
       .is("deleted_at", null)
       .eq("course_status", "matriculado"),
-    supabase.from("equipment_requirements").select("*", { count: "exact", head: true }).eq("active", true),
+    supabase
+      .from("equipment_requirements")
+      .select("*", { count: "exact", head: true })
+      .eq("active", true),
     supabase
       .from("health_restrictions")
       .select("student:students!inner(course_status)", { count: "exact", head: true })
@@ -94,15 +118,33 @@ export default async function RelatoriosPage() {
     supabase.from("courses").select("id,name,year").order("year", { ascending: false }),
     supabase.from("classes").select("id,name").order("name"),
     academic.from("academic_years").select("id,year,course_id").order("year", { ascending: false }),
-    academic.from("academic_disciplines").select("id,name,code,phase").eq("active", true).order("name"),
-    supabase.from("profiles").select("id,full_name,role").eq("active", true).in("role", ["instrutor", "coordenacao"]).order("full_name"),
+    academic
+      .from("academic_disciplines")
+      .select("id,name,code,phase")
+      .eq("active", true)
+      .order("name"),
+    supabase
+      .from("profiles")
+      .select("id,full_name,role")
+      .eq("active", true)
+      .in("role", ["instrutor", "coordenacao"])
+      .order("full_name"),
   ]);
 
   const reportOptions = {
-    courses: (courses.data ?? []).map((item) => ({ id: item.id, label: `${item.name} · ${item.year}` })),
-    academicYears: (years.data ?? []).map((item) => ({ id: item.id, label: `Ano letivo ${item.year}` })),
+    courses: (courses.data ?? []).map((item) => ({
+      id: item.id,
+      label: `${item.name} · ${item.year}`,
+    })),
+    academicYears: (years.data ?? []).map((item) => ({
+      id: item.id,
+      label: `Ano letivo ${item.year}`,
+    })),
     classes: (classes.data ?? []).map((item) => ({ id: item.id, label: item.name })),
-    disciplines: (disciplines.data ?? []).map((item) => ({ id: item.id, label: `${item.code} · ${item.name}` })),
+    disciplines: (disciplines.data ?? []).map((item) => ({
+      id: item.id,
+      label: `${item.code} · ${item.name}`,
+    })),
     instructors: (instructors.data ?? []).map((item) => ({ id: item.id, label: item.full_name })),
   };
 
@@ -112,6 +154,7 @@ export default async function RelatoriosPage() {
     "pendencias-enxoval": String(requirements.count ?? 0).padStart(2, "0"),
     saude: String(health.count ?? 0).padStart(2, "0"),
     emergencia: String(emergency.count ?? 0).padStart(2, "0"),
+    estagio: String(students.count ?? 0).padStart(2, "0"),
   };
 
   return (
@@ -132,8 +175,8 @@ export default async function RelatoriosPage() {
         <div className="flex gap-2">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            O relatório de Saúde contém dados sensíveis e é exclusivo da Coordenação.
-            Mantenha o arquivo sob controle interno conforme a LGPD.
+            O relatório de Saúde contém dados sensíveis e é exclusivo da Coordenação. Mantenha o
+            arquivo sob controle interno conforme a LGPD.
           </p>
         </div>
       </div>
@@ -148,8 +191,8 @@ export default async function RelatoriosPage() {
         <div className="space-y-1">
           <p className="font-semibold leading-none text-foreground">Filtros Avançados</p>
           <p className="text-sm text-muted-foreground">
-            Combine critérios da ficha (sexo, status da matrícula, situação) e gere
-            contagens, listas e relatórios em PDF/XLSX.
+            Combine critérios da ficha (sexo, status da matrícula, situação) e gere contagens,
+            listas e relatórios em PDF/XLSX.
           </p>
         </div>
       </Link>
@@ -164,6 +207,7 @@ export default async function RelatoriosPage() {
             description={report.description}
             icon={report.icon}
             sensitive={report.sensitive}
+            pdfConfigurable={report.pdfConfigurable}
             statValue={stats[report.slug] ?? "00"}
             statLabel={report.statLabel}
             xlsxAvailable={report.slug !== "ficha-personalizada"}

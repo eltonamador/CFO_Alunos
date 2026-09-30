@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireRole } from "@/components/app/RoleGuard";
+import { requireSchedulePublisher } from "@/modules/schedule-repository/presentation/access";
 import { Badge } from "@/components/ui/Badge";
 import { buttonVariants, Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,7 +11,7 @@ import { toggleScheduleTypeAction } from "@/modules/schedule-repository/presenta
 import { CreateScheduleTypeForm } from "./ScheduleTypeForms";
 
 export async function ScheduleTypesPage() {
-  await requireRole("coordenacao");
+  const session = await requireSchedulePublisher();
   const types = await getScheduleTypes();
   return (
     <div className="space-y-6">
@@ -26,7 +26,7 @@ export async function ScheduleTypesPage() {
         <SectionEyebrow>Configuração</SectionEyebrow>
         <h1 className="font-display text-2xl font-bold">Tipos de escala</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cadastre novos tipos ou inative os que não devem aparecer em novas publicações.
+          Cadastre novos tipos de escala para publicar os documentos recebidos.
         </p>
       </header>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
@@ -44,13 +44,15 @@ export async function ScheduleTypesPage() {
                   <p className="mt-1 text-sm text-muted-foreground">{type.description}</p>
                 )}
               </div>
-              <form action={toggleScheduleTypeAction}>
-                <input type="hidden" name="id" value={type.id} />
-                <input type="hidden" name="active" value={String(!type.active)} />
-                <Button type="submit" variant="secondary" size="sm">
-                  {type.active ? "Inativar" : "Reativar"}
-                </Button>
-              </form>
+              {session.role === "coordenacao" && (
+                <form action={toggleScheduleTypeAction}>
+                  <input type="hidden" name="id" value={type.id} />
+                  <input type="hidden" name="active" value={String(!type.active)} />
+                  <Button type="submit" variant="secondary" size="sm">
+                    {type.active ? "Inativar" : "Reativar"}
+                  </Button>
+                </form>
+              )}
             </Card>
           ))}
         </section>

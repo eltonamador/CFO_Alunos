@@ -1,0 +1,85 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+select set_config('request.jwt.claims','{}',true);
+create function pg_temp.hid(label text) returns uuid language sql immutable as $$select md5('pdf-revision-'||label)::uuid$$;
+create function pg_temp.ht() returns timestamptz language sql stable as $$select date_trunc('minute',now())-interval '4 hours'$$;
+insert into auth.users(id,email) values(pg_temp.hid('coord'),'pdf-revision@test.invalid'),(pg_temp.hid('cadet-user'),'pdf-revision-cadet@test.invalid');
+insert into public.profiles(id,role,full_name,active) values(pg_temp.hid('coord'),'coordenacao','Teste passagem',true);
+insert into public.courses(id,code,name,year) values(pg_temp.hid('course'),'PDF-REVISION-TEST','Teste passagem',2026);
+insert into public.classes(id,course_id,name) values(pg_temp.hid('class'),pg_temp.hid('course'),'Teste passagem');
+insert into public.students(id,class_id,student_number,war_name,full_name,pelotao)
+select pg_temp.hid('student'||n),pg_temp.hid('class'),n,'TESTE '||n,'Cadete teste '||n,'CFO I' from generate_series(1,30)n;
+insert into public.profiles(id,role,full_name,active,student_id) values(pg_temp.hid('cadet-user'),'aluno','Cadete',true,pg_temp.hid('student30'));
+insert into public.internship_programs(id,class_id,course_phase,name,starts_on,ends_on,required_minutes,target_minutes,status,published_by,published_at)
+values(pg_temp.hid('program'),pg_temp.hid('class'),'CFO I','Passagem',(now()-interval '1 year')::date,(now()+interval '1 year')::date,15000,15120,'publicado',pg_temp.hid('coord'),now());
+insert into public.internship_activity_types(id,program_id,code,name,training_axis,default_minutes,requires_operation_plan)
+values(pg_temp.hid('usb'),pg_temp.hid('program'),'usb','USB','aph',720,false);
+insert into public.internship_sites(id,program_id,site_type,code,name,gbm_number)
+values(pg_temp.hid('gbm'),pg_temp.hid('program'),'gbm','gbm1','GBM teste',1);
+select set_config('request.jwt.claims',json_build_object('sub',pg_temp.hid('coord'))::text,true);
+select public.internship_issue_scale_number(pg_temp.hid('program'),'gbm','2026-09-26','2026-09-27',pg_temp.hid('gbm'));
+create function pg_temp.nid() returns uuid language sql stable as $$select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') limit 1$$;
+create function pg_temp.snapshot(n integer default 1) returns jsonb language sql stable as $$select jsonb_build_object('programId',pg_temp.hid('program'),'service','gbm','periodStart','2026-09-26','periodEnd','2026-09-27','signatory','coordenador','rows',jsonb_build_array(jsonb_build_object('cadet',n)))$$;
+create function pg_temp.issue(expected integer,n integer default 1,rect integer default null,mode text default 'automatica',summary text default 'Alterações de teste') returns uuid language sql as $$select public.internship_archive_scale_version(pg_temp.nid(),expected,pg_temp.snapshot(n),summary,'JVBERi0xLjQK',now(),mode,rect)$$;
+select lives_ok($$select pg_temp.issue(-1)$$,'Emite primeira versão');
+select is((select revision from public.internship_scale_revisions where scale_number_id=pg_temp.nid()),0,'Primeira emissão é zero');
+select lives_ok($$select pg_temp.issue(-1)$$,'Requisição repetida/concomitante não duplica');
+select is((select count(*)::integer from public.internship_scale_revisions where scale_number_id=pg_temp.nid()),1,'Uma única emissão para conteúdo idêntico');
+select lives_ok($$select pg_temp.issue(0,2,1)$$,'Mudança cria retificação');
+select is((select max(revision) from public.internship_scale_revisions where scale_number_id=pg_temp.nid()),1,'Retificação sequencial 01');
+select is((select snapshot from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=0),pg_temp.snapshot(),'Preserva conteúdo original');
+select is((select pdf_base64 from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=0),'JVBERi0xLjQK','Preserva bytes originais');
+select throws_ok($$select pg_temp.issue(0,3)$$,'40001','A escala foi atualizada durante a emissão. Tente novamente.','Emissão concorrente desatualizada recusada');
+select lives_ok($$select pg_temp.issue(1,1,2)$$,'Voltar ao conteúdo antigo gera nova retificação');
+select is((select max(revision) from public.internship_scale_revisions where scale_number_id=pg_temp.nid()),2,'Reversão tem versão 02 e não apaga a 01');
+select is((select public.internship_issue_scale_number(pg_temp.hid('program'),'gbm','2026-09-26','2026-09-27',pg_temp.hid('gbm'))),1,'Número da escala permanece');
+select throws_ok($$select public.internship_archive_scale_version(pg_temp.nid(),2,pg_temp.snapshot(4)||'{"service":"praia"}'::jsonb,'Mudança','JVBERi0xLjQK',now(),'automatica',3)$$,'23514','Versão da escala inválida.','Recusa conteúdo de outro recorte');
+select throws_ok($$select public.internship_archive_scale_version(pg_temp.nid(),2,pg_temp.snapshot(4),'Mudança','html invalido',now(),'automatica',3)$$,'23514','Versão da escala inválida.','Recusa arquivo sem cabeçalho PDF');
+select ok(not has_table_privilege('authenticated','public.internship_scale_revisions','UPDATE'),'Cliente não sobrescreve PDF');
+select ok(not has_table_privilege('authenticated','public.internship_scale_revisions','DELETE'),'Cliente não apaga histórico');
+select ok(not has_table_privilege('authenticated','public.internship_scale_revisions','INSERT'),'Gravação somente por função controlada');
+set local role authenticated;
+select is((select count(*)::integer from public.internship_scale_revisions),3,'Coordenação lê histórico via RLS');
+select set_config('request.jwt.claims',json_build_object('sub',pg_temp.hid('cadet-user'))::text,true);
+select is((select count(*)::integer from public.internship_scale_revisions),0,'Cadete comum não lê histórico administrativo');
+select throws_ok($$select public.internship_archive_scale_version(pg_temp.nid(),2,pg_temp.snapshot(4),'Mudança','JVBERi0xLjQK',now(),'automatica',3)$$,'42501','Acesso restrito à administração do estágio.','Cadete não emite versão');
+select throws_ok($$select public.internship_void_scale_number(pg_temp.nid(),'Tentativa do cadete')$$,'42501','Acesso restrito à administração do estágio.','Cadete não descarta escala');
+reset role;
+select set_config('request.jwt.claims',json_build_object('sub',pg_temp.hid('coord'))::text,true);
+update public.internship_scale_numbers set voided_at=now(),void_reason='Emissões de teste não distribuídas' where id=pg_temp.nid();
+select throws_ok($$select pg_temp.issue(2,5)$$,'23514','Emissão desconsiderada. Gere o PDF atual.','Emissão desconsiderada não recebe novas versões');
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'gbm','2026-09-26','2026-09-27',pg_temp.hid('gbm')),1,'Reinicia em 01 após desconsiderar testes');
+select is((select count(*)::integer from public.internship_scale_revisions where scale_number_id in(select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is not null)),3,'Mantém arquivos de teste apenas no histórico interno');
+select is((select count(*)::integer from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is null),1,'Um único número válido para o recorte');
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'praia','2026-09-27','2026-09-27'),2,'Próximo recorte recebe 02');
+-- Correção de escala emitida.
+create or replace function pg_temp.nid() returns uuid language sql stable as $$select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is null and service='gbm' and period_start='2026-09-26'$$;
+select throws_ok($$select pg_temp.issue(-1,1,null,'correcao','Correção sem emissão')$$,'23514','Emita a escala antes de corrigi-la.','Correção exige escala emitida');
+select lives_ok($$select pg_temp.issue(-1)$$,'Nova escala oficial emitida');
+select is((select rectification from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=0),null,'Emissão oficial sai sem marca de retificação');
+select throws_ok($$select pg_temp.issue(0,1,null,'correcao','abc')$$,'23514','Versão da escala inválida.','Correção exige motivo');
+select lives_ok($$select pg_temp.issue(0,1,null,'correcao','Ajuste antes da divulgação')$$,'Corrige escala emitida mesmo sem mudança de dados');
+select is((select count(*)::integer from public.internship_scale_revisions where scale_number_id=pg_temp.nid()),2,'Correção cria nova versão com o mesmo conteúdo');
+select is((select rectification from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=1),null,'Correção antes da divulgação não registra retificação');
+select is((select change_summary from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=1),'Ajuste antes da divulgação','Motivo da correção fica registrado');
+select throws_ok($$select pg_temp.issue(1,2,2,'retificacao','Troca de cadete')$$,'40001','A escala foi atualizada durante a emissão. Tente novamente.','Numeração de retificação desatualizada é recusada');
+select lives_ok($$select pg_temp.issue(1,2,1,'retificacao','Troca de cadete')$$,'Retificação de escala divulgada');
+select is((select rectification from public.internship_scale_revisions where scale_number_id=pg_temp.nid() and revision=2),1,'Primeira retificação após emissão oficial é 01');
+select lives_ok($$select pg_temp.issue(2,3,2)$$,'Download após nova mudança gera retificação 02');
+select lives_ok($$select pg_temp.issue(3,3,null,'correcao','Escala ainda não divulgada')$$,'Correção sem retificação volta à emissão limpa');
+select lives_ok($$select pg_temp.issue(4,3,1,'retificacao','Horário ajustado')$$,'Depois da emissão limpa a retificação recomeça em 01');
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'gbm','2026-09-26','2026-09-27',pg_temp.hid('gbm')),1,'Correções mantêm o número da escala');
+
+-- Descarte e reaproveitamento do número.
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'gbm','2026-09-28','2026-10-04',pg_temp.hid('gbm')),3,'Terceira escala recebe 03');
+select throws_ok($$select public.internship_void_scale_number((select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is null and sequence_number=2),'abc')$$,'23514','Informe o motivo do descarte.','Descarte exige motivo');
+select lives_ok($$select public.internship_void_scale_number((select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is null and sequence_number=2),'Emitida por engano')$$,'Descarta escala emitida por engano');
+select throws_ok($$select public.internship_void_scale_number((select id from public.internship_scale_numbers where program_id=pg_temp.hid('program') and voided_at is not null and sequence_number=2 order by voided_at desc limit 1),'Emitida por engano')$$,'23514','Escala indisponível para descarte.','Escala descartada não é descartada novamente');
+select is((select void_reason from public.internship_scale_numbers where program_id=pg_temp.hid('program') and sequence_number=2 order by voided_at desc limit 1),'Emitida por engano','Motivo do descarte preservado');
+select ok(exists(select 1 from public.audit_logs where entity='internship_scale_numbers' and after_data->>'void_reason'='Emitida por engano'),'Descarte fica auditado');
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'praia','2026-10-04','2026-10-04'),2,'Número descartado volta a ficar disponível');
+select is(public.internship_issue_scale_number(pg_temp.hid('program'),'praia','2026-10-11','2026-10-11'),4,'Sem lacunas, a sequência continua');
+select ok(not has_table_privilege('authenticated','public.internship_scale_numbers','UPDATE'),'Cliente só descarta pela função controlada');
+select * from finish();
+rollback;

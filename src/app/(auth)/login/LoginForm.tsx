@@ -1,7 +1,10 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { loginAction, type ActionResult } from "@/modules/identity/presentation/actions/authActions";
+import {
+  loginAction,
+  type ActionResult,
+} from "@/modules/identity/presentation/actions/authActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -22,19 +25,23 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-white/70">E-mail</Label>
+        <Label htmlFor="email" className="text-white/70">
+          Usuário
+        </Label>
         <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          placeholder="seu.email@cbmap.local"
+          placeholder="seu.usuario@abm.br"
           className="input-on-dark"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-white/70">Senha</Label>
+        <Label htmlFor="password" className="text-white/70">
+          Senha
+        </Label>
         <Input
           id="password"
           name="password"
@@ -51,9 +58,8 @@ export function LoginForm() {
       <SubmitButton />
 
       <p className="text-center text-xs text-white/30">
-        Acesso restrito aos alunos e equipe do CFO.
+        Use o login informado pela Coordenação. Não é necessária uma caixa de e-mail.
       </p>
     </form>
   );
 }
-

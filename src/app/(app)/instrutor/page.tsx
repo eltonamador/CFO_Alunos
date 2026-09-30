@@ -1,3 +1,4 @@
+import { UpcomingInternshipSchedule } from "@/components/app/internship/UpcomingInternshipSchedule";
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchInstructorCards, signedPhotoUrl } from "@/lib/supabase/queries/students";
@@ -35,6 +36,7 @@ export default async function InstrutorHome({ searchParams }: PageProps) {
   return (
     <div className="space-y-4">
       <TodayTomorrowDuty overview={dutyOverview} schedulesHref="/instrutor/escalas" />
+      <UpcomingInternshipSchedule />
       <QtsDashboardCard overview={qtsOverview} />
       <AcademicInstructionDashboardAlert role="instrutor" />
       <header>

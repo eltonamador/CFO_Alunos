@@ -19,6 +19,12 @@ const nextConfig = {
       "/api/jobs/schedule-processing": [
         "./src/modules/schedule-repository/infrastructure/pdf.worker.min.mjs",
       ],
+      "/api/estagio/escala": [
+        "./src/lib/reports/assets/internship-gbm-header-reference.png",
+      ],
+      "/api/estagio/permanencia": [
+        "./src/lib/reports/assets/internship-gbm-header-reference.png",
+      ],
     },
     serverActions: {
       bodySizeLimit: "11mb", // documentos até 10 MB + overhead multipart

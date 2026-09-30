@@ -33,6 +33,7 @@ export default async function FiltrosAvancadosPage() {
     .from("students")
     .select(STUDENT_SELECT_COLUMNS)
     .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number", { ascending: true });
 
   if (studentsRes.error) {

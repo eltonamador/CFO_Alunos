@@ -439,7 +439,8 @@ export async function POST(req: NextRequest) {
   let query = supabase
     .from("students")
     .select(STUDENT_SELECT_COLUMNS)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado");
   if (ids.length > 0) query = query.in("id", ids);
   const { data, error } = await query.order("student_number", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

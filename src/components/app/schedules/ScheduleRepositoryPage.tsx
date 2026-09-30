@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Download, FileText, Settings } from "lucide-react";
 import { requireRole } from "@/components/app/RoleGuard";
+import { requireSchedulePublisher } from "@/modules/schedule-repository/presentation/access";
+import { canPublishSchedules } from "@/modules/schedule-repository/domain/access";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { buttonVariants } from "@/components/ui/Button";
@@ -60,7 +62,7 @@ export async function ScheduleRepositoryPage({
   role: Extract<UserRoleValue, "coordenacao" | "instrutor" | "aluno">;
   searchParams: ScheduleFilters;
 }) {
-  await requireRole(role);
+  const session = role === "coordenacao" ? await requireSchedulePublisher() : await requireRole(role);
   let data;
   try {
     data = await getScheduleRepository(searchParams);
@@ -73,38 +75,28 @@ export async function ScheduleRepositoryPage({
       </Alert>
     );
   }
-  const canManage = role === "coordenacao";
+  const canManage = role === "coordenacao" && canPublishSchedules(session);
   let importStudents: ImportStudent[] = [],
     importOfficers: ImportOfficer[] = [];
   if (canManage) {
     const client = createSupabaseServerClient();
-    const [students, officers] = await Promise.all([
-      client
-        .from("students")
-        .select("id,class_id,student_number,war_name,full_name,enrollment_id")
-        .is("deleted_at", null)
-        .eq("course_status", "matriculado")
-        .order("student_number"),
-      client
-        .from("cfo_coordination_members")
-        .select("service_alias,profile_id,registration")
-        .eq("active", true),
-    ]);
-    importStudents = (students.data ?? []).map((student) => ({
+    const { data: people, error: peopleError } = await client.rpc("schedule_publishing_people");
+    if (peopleError) throw new ScheduleRepositoryError("Não foi possível carregar os nomes para conferência.");
+    importStudents = (people ?? []).filter((person) => person.kind === "cadet").map((student) => ({
       id: student.id,
-      classId: student.class_id,
+      classId: student.class_id ?? "",
       studentNumber: student.student_number,
-      warName: student.war_name,
-      fullName: student.full_name,
+      warName: student.war_name ?? "",
+      fullName: student.full_name ?? "",
       registration: student.enrollment_id,
     }));
-    importOfficers = (officers.data ?? []).flatMap((officer) =>
+    importOfficers = (people ?? []).filter((person) => person.kind === "officer").flatMap((officer) =>
       officer.service_alias
         ? [
             {
               person: officer.service_alias,
               profileId: officer.profile_id,
-              registration: officer.registration,
+              registration: officer.registration ?? "",
             },
           ]
         : [],

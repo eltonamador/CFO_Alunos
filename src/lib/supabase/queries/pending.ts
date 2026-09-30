@@ -27,7 +27,8 @@ export async function listPendingChanges(
 ): Promise<PendingChangeWithStudent[]> {
   let q = supabase
     .from("pending_changes")
-    .select("*, student:students!inner(id, war_name, student_number, sex)")
+    .select("*, student:students!inner(id, war_name, student_number, sex, course_status)")
+    .eq("student.course_status", "matriculado")
     .order("created_at", { ascending: false });
 
   if (filter.status) q = q.eq("status", filter.status);

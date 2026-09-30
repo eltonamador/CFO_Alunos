@@ -133,7 +133,7 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
     expect(screen.getByLabelText(/Quantidade de verificações/)).toHaveValue(4);
   });
 
-  it("usa a carga da Portaria 550 para Legislação no CFO I de 2026", () => {
+  it("usa a carga da Portaria 550 anexada para Legislação no CFO I de 2026", () => {
     render(
       <NewOfferingForm
         disciplines={[
@@ -155,7 +155,7 @@ describe("Gestão acadêmica: decisões e lançamento", () => {
     fireEvent.change(screen.getByLabelText("Disciplina"), {
       target: { value: "legislation" },
     });
-    expect(screen.getByLabelText(/Carga horária adotada/)).toHaveValue(38);
+    expect(screen.getByLabelText(/Carga horária adotada/)).toHaveValue(30);
     expect(screen.getByLabelText(/Quantidade de verificações/)).toHaveValue(2);
     expect(screen.getByText(/Portaria nº 550/)).toBeVisible();
   });

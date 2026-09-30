@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { AlertCircle, CheckCircle2, Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Loader2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { PdfConfigModal, type ReportSlug } from "./PdfConfigModal";
@@ -18,6 +25,8 @@ interface ReportDownloadCardProps {
   statValue: string;
   /** Se false, esconde o botão XLSX (ex.: ficha personalizada só tem PDF). */
   xlsxAvailable?: boolean;
+  /** Se false, gera o PDF direto, sem seleção de campos. */
+  pdfConfigurable?: boolean;
 }
 
 const EXPECTED_CONTENT_TYPE: Record<Format, string> = {
@@ -39,9 +48,12 @@ export function ReportDownloadCard({
   statLabel,
   statValue,
   xlsxAvailable = true,
+  pdfConfigurable = true,
 }: ReportDownloadCardProps) {
   const [loading, setLoading] = React.useState<Format | null>(null);
-  const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(
+    null,
+  );
   const [modalOpen, setModalOpen] = React.useState(false);
 
   async function downloadReport(format: Format, selectedFields?: string[]) {
@@ -80,7 +92,10 @@ export function ReportDownloadCard({
 
       const blob = await response.blob();
       const fallbackName = `${slug}-CFO2026.1.${format}`;
-      const filename = filenameFromDisposition(response.headers.get("content-disposition"), fallbackName);
+      const filename = filenameFromDisposition(
+        response.headers.get("content-disposition"),
+        fallbackName,
+      );
       const blobUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
@@ -141,18 +156,26 @@ export function ReportDownloadCard({
             disabled={loading !== null}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-xs font-semibold uppercase tracking-[0.06em] text-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading === "xlsx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+            {loading === "xlsx" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
             Baixar XLSX
           </button>
         )}
         <button
           type="button"
           data-testid={`download-${slug}-pdf`}
-          onClick={() => setModalOpen(true)}
+          onClick={() => (pdfConfigurable ? setModalOpen(true) : downloadReport("pdf"))}
           disabled={loading !== null}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <FileText className="h-4 w-4" />
+          {loading === "pdf" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
           {xlsxAvailable ? "Baixar PDF" : "Configurar e baixar PDF"}
         </button>
       </div>
@@ -167,7 +190,11 @@ export function ReportDownloadCard({
           )}
           role={message.type === "error" ? "alert" : "status"}
         >
-          {message.type === "success" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+          {message.type === "success" ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : (
+            <AlertCircle className="h-3.5 w-3.5" />
+          )}
           {message.text}
         </p>
       )}
@@ -177,15 +204,17 @@ export function ReportDownloadCard({
         Gerado em tempo real pelo Supabase Cloud.
       </p>
 
-      <PdfConfigModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        slug={slug as ReportSlug}
-        title={title}
-        sensitive={sensitive}
-        isGenerating={loading === "pdf"}
-        onGenerate={(fields) => downloadReport("pdf", fields)}
-      />
+      {pdfConfigurable ? (
+        <PdfConfigModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          slug={slug as ReportSlug}
+          title={title}
+          sensitive={sensitive}
+          isGenerating={loading === "pdf"}
+          onGenerate={(fields) => downloadReport("pdf", fields)}
+        />
+      ) : null}
     </article>
   );
 }

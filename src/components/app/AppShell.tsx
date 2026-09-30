@@ -1,3 +1,4 @@
+import { canManageInternship } from "@/modules/internship-management/domain/access";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -54,6 +55,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
       icon: ClipboardCheck,
     },
     { href: "/coordenacao/operacional", label: "Operacional", icon: CalendarDays },
+    { href: "/coordenacao/estagio", label: "Estágio", icon: ClipboardList },
     { href: "/coordenacao/comunicados", label: "Comunicados", icon: Megaphone },
     { href: "/coordenacao/pendencias", label: "Pendências", icon: AlertTriangle },
     { href: "/coordenacao/relatorios", label: "Relatórios", icon: FileText },
@@ -92,6 +94,7 @@ const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
     },
     { href: "/aluno/escalas", label: "Escalas PDF", shortLabel: "Escalas", icon: Folder },
     { href: "/aluno/operacional", label: "Operacional", icon: CalendarDays },
+    { href: "/aluno/estagio", label: "Meu Estágio", icon: ClipboardList },
     { href: "/aluno/comunicados", label: "Comunicados", icon: Megaphone },
     {
       href: "/aluno/acompanhamento",
@@ -146,7 +149,23 @@ export function AppShell({
   pendingFollowUps?: number;
   children: React.ReactNode;
 }) {
-  const baseNav = NAV_BY_ROLE[session.role];
+  const baseNav = [...NAV_BY_ROLE[session.role]];
+  if (session.role === "aluno" && session.canPublishSchedules) {
+    baseNav.splice(3, 0, {
+      href: "/coordenacao/escalas",
+      label: "Publicar escalas",
+      shortLabel: "Publicar",
+      icon: Folder,
+    });
+  }
+  if (session.role === "aluno" && canManageInternship(session)) {
+    baseNav.splice(5, 0, {
+      href: "/coordenacao/estagio",
+      label: "Administrar estágio",
+      shortLabel: "Gestão estágio",
+      icon: ClipboardList,
+    });
+  }
   const nav: NavItem[] = baseNav.map((item) => {
     if (item.href === "/aluno/comunicados" && unreadAnnouncements > 0) {
       return { ...item, badge: unreadAnnouncements };

@@ -86,6 +86,7 @@ export async function getEligibleStudents(
     .select("id, war_name, student_number, situation")
     .eq("class_id", classId)
     .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number");
 
   if (error) throw new Error(error.message);
@@ -152,7 +153,11 @@ export async function getDutyAssignmentsForDate(
 
   const [{ data: roles }, { data: students }] = await Promise.all([
     supabase.from("duty_roles").select("id, code, name, sort_order").in("id", roleIds),
-    supabase.from("students").select("id, war_name, student_number, situation").in("id", studentIds),
+    supabase
+      .from("students")
+      .select("id, war_name, student_number, situation")
+      .in("id", studentIds)
+      .eq("course_status", "matriculado"),
   ]);
 
   const rolesById = new Map((roles ?? []).map((role: any) => [role.id, role]));
@@ -210,7 +215,8 @@ export async function getActiveImpedimentViews(
   const { data: students } = await supabase
     .from("students")
     .select("id, war_name, student_number")
-    .in("id", studentIds);
+    .in("id", studentIds)
+    .eq("course_status", "matriculado");
   const studentsById = new Map((students ?? []).map((student: any) => [student.id, student]));
 
   return data.map((item: any) => ({

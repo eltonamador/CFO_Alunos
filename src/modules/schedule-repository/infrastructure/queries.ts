@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
+import { canPublishSchedules } from "../domain/access";
 import type {
   ScheduleClass,
   ScheduleAssignmentView,
@@ -69,7 +70,7 @@ export async function getScheduleRepository(
   let reviewCounts = new Map<string, number>();
   let reviewCandidates: ScheduleReviewCandidateView[] = [];
   let managedAssignments: ScheduleManagedAssignmentView[] = [];
-  if (session.role === "coordenacao" && documentIds.length) {
+  if (canPublishSchedules(session) && documentIds.length) {
     const [runsResponse, candidatesResponse] = await Promise.all([
       supabase
         .from("schedule_processing_runs")
@@ -132,15 +133,17 @@ export async function getScheduleRepository(
     const classIds = [...new Set(rawDocuments.map((document) => document.class_id))];
     let students: ScheduleStudentOption[] = [];
     if (classIds.length) {
-      const response = await supabase
-        .from("students")
-        .select("id,class_id,student_number,war_name,full_name")
-        .in("class_id", classIds)
-        .is("deleted_at", null)
-        .eq("course_status", "matriculado")
-        .order("student_number");
+      const response = await supabase.rpc("schedule_publishing_people");
       if (response.error) throw scheduleError(response.error);
-      students = response.data ?? [];
+      students = (response.data ?? [])
+        .filter((person) => person.kind === "cadet" && person.class_id && classIds.includes(person.class_id))
+        .map((person) => ({
+          id: person.id,
+          class_id: person.class_id!,
+          student_number: person.student_number,
+          war_name: person.war_name ?? "",
+          full_name: person.full_name ?? "",
+        }));
     }
     reviewCandidates = (pending.data ?? []).flatMap((candidate) => {
       const document = rawDocuments.find((item) => item.id === candidate.document_id);

@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { designationReferenceFor, PORTARIA_550_CFO1_DESIGNATIONS } from "./designations";
 
 describe("Portaria 550 do CFO I 2026", () => {
-  it("preserva as 24 linhas formalmente designadas", () => {
-    expect(PORTARIA_550_CFO1_DESIGNATIONS).toHaveLength(24);
+  it("preserva as 25 linhas formalmente designadas", () => {
+    expect(PORTARIA_550_CFO1_DESIGNATIONS).toHaveLength(25);
     expect(new Set(PORTARIA_550_CFO1_DESIGNATIONS.map((item) => item.disciplineCode)).size).toBe(
-      24,
+      25,
     );
   });
 
-  it("adota 38 h/a para Legislação Bombeiro Militar em 2026", () => {
-    expect(designationReferenceFor("CFO1-09", 2026)?.workloadHours).toBe(38);
+  it("adota 30 h/a para Legislação Bombeiro Militar em 2026", () => {
+    expect(designationReferenceFor("CFO1-09", 2026)?.workloadHours).toBe(30);
     expect(designationReferenceFor("CFO1-09", 2025)).toBeUndefined();
   });
 

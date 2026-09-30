@@ -27,11 +27,16 @@ function form(profileId = id) {
   return data;
 }
 
-function fakeClient({ activeProfile = true, updated = true } = {}) {
+function fakeClient({ activeProfile = true, updated = true, registration = "1175742" } = {}) {
   const profileChain = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: activeProfile ? { id } : null, error: null }),
+  };
+  const memberLookup = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { registration }, error: null }),
   };
   const memberChain = {
     update: vi.fn().mockReturnThis(),
@@ -39,10 +44,16 @@ function fakeClient({ activeProfile = true, updated = true } = {}) {
     select: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: updated ? { id } : null, error: null }),
   };
+  let memberCalls = 0;
   return {
-    from: vi.fn((table: string) => (table === "profiles" ? profileChain : memberChain)),
+    from: vi.fn((table: string) => {
+      if (table === "profiles") return profileChain;
+      memberCalls += 1;
+      return memberCalls === 1 ? memberLookup : memberChain;
+    }),
     profileChain,
     memberChain,
+    memberLookup,
   };
 }
 
@@ -70,6 +81,18 @@ describe("vínculo de conta individual da Coordenação", () => {
     expect(result.ok).toBe(false);
     expect(client.memberChain.update).not.toHaveBeenCalled();
   });
+
+  it.each(["1160680", "1113666"])(
+    "recusa vínculo de login para a matrícula %s",
+    async (registration) => {
+      const client = fakeClient({ registration });
+      mocks.client.mockReturnValue(client);
+      const result = await linkCoordinationMemberProfileAction(null, form());
+      expect(result.ok).toBe(false);
+      expect(client.profileChain.select).not.toHaveBeenCalled();
+      expect(client.memberChain.update).not.toHaveBeenCalled();
+    },
+  );
 
   it("vincula a conta e revalida as consultas dependentes", async () => {
     const client = fakeClient();

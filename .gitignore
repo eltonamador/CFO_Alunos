@@ -64,3 +64,13 @@ backups/
 scripts/import-t1-cfo/data/
 scripts/import-t1-cfo/out/
 .vercel
+.env*
+
+# Saídas locais e dados operacionais privados
+artifacts/
+output/
+tmp/
+lista.txt
+scripts/maintenance/
+docs/RELATORIO_*.md
+docs/ESCALA_065_REVISAO_20260929.md

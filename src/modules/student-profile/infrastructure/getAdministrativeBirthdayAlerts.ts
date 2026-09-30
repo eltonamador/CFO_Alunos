@@ -21,7 +21,8 @@ export const getAdministrativeBirthdayAlerts = cache(async (): Promise<BirthdayA
   const { data, error } = await supabase
     .from("students")
     .select("id, full_name, birth_date")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("course_status", "matriculado");
 
   if (error) {
     console.error("Error fetching birthday alerts:", error);

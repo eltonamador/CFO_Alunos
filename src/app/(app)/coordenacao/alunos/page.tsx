@@ -1,5 +1,6 @@
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { listStudentsWithAggregates } from "@/lib/supabase/queries/students";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { StudentListCard } from "@/components/app/StudentListCard";
@@ -54,6 +55,12 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
     query: searchParams.q,
     pelotao: searchParams.pelotao,
   });
+  const { data: historicalStudents } = await supabase
+    .from("students")
+    .select("id, student_number, war_name, course_status")
+    .is("deleted_at", null)
+    .neq("course_status", "matriculado")
+    .order("student_number", { ascending: true, nullsFirst: false });
 
   const enriched = bundles.map((b) => ({
     bundle: b,
@@ -137,6 +144,26 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
           <SearchInput placeholder="Buscar por número, nome de guerra ou nome completo" />
         </div>
       </header>
+
+      {(historicalStudents ?? []).length > 0 && (
+        <section className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3 text-sm">
+          <p className="font-semibold text-foreground">Histórico preservado</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Registros fora da operação corrente não entram nos painéis, pendências ou relatórios da turma.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {(historicalStudents ?? []).map((student) => (
+              <Link
+                key={student.id}
+                href={`/coordenacao/alunos/${student.id}`}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                {student.war_name} — {String(student.student_number ?? "—").padStart(2, "0")}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <StudentProgressFilters status={statusFilter} sort={sortBy} counts={counts} />
 

@@ -1,0 +1,37 @@
+import { fireEvent, render, screen, waitFor, within, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation",()=>({useRouter:()=>({refresh:vi.fn()})}));
+const officialSave=vi.hoisted(()=>vi.fn(()=>{throw Error("O teste não pode gravar avaliação oficial");}));
+vi.mock("./evaluationActions",()=>({saveEvaluation:officialSave}));
+import { InternshipDemo } from "./InternshipDemo";
+afterEach(()=>{cleanup();localStorage.clear();vi.clearAllMocks();});
+describe("Área de testes",()=>{
+  it("permite avaliar, revisar, homologar, recuperar e excluir sem chamar ações oficiais",async()=>{
+    localStorage.setItem("outro-dado","preservar");
+    const view=render(<InternshipDemo userId="gestor-demo"/>);
+    fireEvent.click(await screen.findByRole("button",{name:"Criar teste com 3 plantões"}));
+    const ids=Array.from(document.querySelectorAll("[id]")).map(e=>e.id);expect(new Set(ids).size).toBe(ids.length);
+    const past=within(screen.getByRole("article",{name:"Cenário passado"}));
+    const future=within(screen.getByRole("article",{name:"Cenário futuro"}));
+    expect(future.getByRole("button",{name:"Homologar 12 horas no teste"})).toBeDisabled();
+    fireEvent.click(past.getByText("Abrir avaliação como oficial (teste)"));
+    fireEvent.click(past.getByRole("button",{name:"Preencher respostas de exemplo"}));
+    fireEvent.click(past.getByRole("checkbox",{name:/Confirmo que acompanhei/}));
+    fireEvent.submit(past.getByRole("button",{name:"Enviar avaliação"}).closest("form")!);
+    await waitFor(()=>expect(past.getByText("Avaliação recebida — aguardando revisão")).toBeInTheDocument());
+    expect(officialSave).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Carga homologada: 0 h 00 min")).toBeInTheDocument();
+    fireEvent.click(past.getByRole("button",{name:"Simular conferência e liberar avaliação"}));
+    fireEvent.click(past.getByRole("button",{name:"Homologar 12 horas no teste"}));
+    expect(screen.getByLabelText("Carga homologada: 12 h 00 min")).toBeInTheDocument();
+    view.unmount();render(<InternshipDemo userId="gestor-demo"/>);
+    expect(await screen.findByLabelText("Carga homologada: 12 h 00 min")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button",{name:"Excluir todos os dados deste teste"}));
+    expect(localStorage.getItem("cfo:internship-demo:v1:gestor-demo")).toBeNull();
+    expect(localStorage.getItem("outro-dado")).toBe("preservar");
+    expect(screen.getByRole("button",{name:"Criar teste com 3 plantões"})).toBeInTheDocument();
+    cleanup();render(<InternshipDemo userId="gestor-demo"/>);
+    expect(await screen.findByRole("button",{name:"Criar teste com 3 plantões"})).toBeInTheDocument();
+    expect(screen.queryByRole("article",{name:"Cenário passado"})).not.toBeInTheDocument();
+  });
+});

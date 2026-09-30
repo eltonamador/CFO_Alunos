@@ -177,6 +177,7 @@ export async function listStudents(
     .from("students")
     .select("id, student_number, war_name, full_name, pelotao, photo_path, situation")
     .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number", { ascending: true, nullsFirst: false });
 
   if (options.classId) q = q.eq("class_id", options.classId);
@@ -219,6 +220,7 @@ export async function listStudentsWithAggregates(
     .from("students")
     .select("*")
     .is("deleted_at", null)
+    .eq("course_status", "matriculado")
     .order("student_number", { ascending: true, nullsFirst: false });
 
   if (options.classId) q = q.eq("class_id", options.classId);
@@ -615,5 +617,4 @@ export async function fetchStudentAuditLogs(
     actor_name: l.actor_id ? (profileMap[l.actor_id] || "Usuário do Sistema") : "Sistema (Gatilho)",
   }));
 }
-
 

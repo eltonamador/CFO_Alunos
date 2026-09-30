@@ -68,7 +68,8 @@ export async function listDocumentsPendingValidation(
 ): Promise<DocumentWithStudent[]> {
   let q = supabase
     .from("documents")
-    .select("*, student:students!inner(id, war_name, student_number, sex)")
+    .select("*, student:students!inner(id, war_name, student_number, sex, course_status)")
+    .eq("student.course_status", "matriculado")
     .order("created_at", { ascending: false });
   if (filter.status) q = q.eq("status", filter.status);
   else q = q.in("status", ["enviado", "em_analise"]);
@@ -87,7 +88,10 @@ export async function countDocumentsByStatus(
     validado: 0,
     recusado: 0,
   };
-  const { data } = await supabase.from("documents").select("status");
+  const { data } = await supabase
+    .from("documents")
+    .select("status, student:students!inner(course_status)")
+    .eq("student.course_status", "matriculado");
   for (const row of (data ?? []) as { status: DocumentStatus }[]) {
     counts[row.status] = (counts[row.status] ?? 0) + 1;
   }

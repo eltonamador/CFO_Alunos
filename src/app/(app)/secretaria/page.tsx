@@ -1,3 +1,4 @@
+import { UpcomingInternshipSchedule } from "@/components/app/internship/UpcomingInternshipSchedule";
 import { requireRole } from "@/components/app/RoleGuard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { countDocumentsByStatus } from "@/lib/supabase/queries/documents";
@@ -61,6 +62,7 @@ export default async function SecretariaHome() {
       </header>
 
       <TodayTomorrowDuty overview={dutyOverview} />
+      <UpcomingInternshipSchedule />
       <QtsDashboardCard overview={qtsOverview} />
 
       {/* Seção de KPIs */}
@@ -74,10 +76,10 @@ export default async function SecretariaHome() {
               <k.icon className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {k.label}
               </p>
-              <p className="font-display text-2xl font-bold text-foreground tracking-tight mt-0.5">
+              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-foreground">
                 {k.value}
               </p>
             </div>
@@ -89,7 +91,7 @@ export default async function SecretariaHome() {
       <PushNotificationControl />
 
       {/* Seção de Fila de Validação */}
-      <section className="rounded-xl border bg-card p-5 space-y-4 shadow-card-sm">
+      <section className="space-y-4 rounded-xl border bg-card p-5 shadow-card-sm">
         <div className="space-y-1">
           <h2 className="font-display text-lg font-bold text-foreground">Ações Rápidas</h2>
           <p className="text-xs text-muted-foreground">
@@ -100,15 +102,18 @@ export default async function SecretariaHome() {
         <div className="pt-2">
           {pendingCount > 0 ? (
             <div className="flex items-start gap-3 rounded-lg border border-orange-200/60 bg-orange-50/20 p-4 dark:border-orange-950/40 dark:bg-orange-950/5">
-              <FileText className="h-6 w-6 text-orange-500 shrink-0 mt-0.5" />
+              <FileText className="mt-0.5 h-6 w-6 shrink-0 text-orange-500" />
               <div className="flex-1 space-y-1.5">
-                <p className="text-sm font-semibold text-foreground">Documentos aguardando validação</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Documentos aguardando validação
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Há {pendingCount} documento{pendingCount > 1 ? "s" : ""} na fila aguardando conferência acadêmica para homologação.
+                  Há {pendingCount} documento{pendingCount > 1 ? "s" : ""} na fila aguardando
+                  conferência acadêmica para homologação.
                 </p>
                 <Link
                   href="/secretaria/documentos"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline pt-1"
+                  className="inline-flex items-center gap-1.5 pt-1 text-xs font-semibold text-primary hover:underline"
                 >
                   Ir para fila de documentos <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -116,7 +121,7 @@ export default async function SecretariaHome() {
             </div>
           ) : (
             <div className="flex items-start gap-3 rounded-lg border border-green-200/60 bg-green-50/10 p-4 dark:border-green-950/40 dark:bg-green-950/5">
-              <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0 mt-0.5" />
+              <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-500" />
               <div className="flex-1 space-y-1">
                 <p className="text-sm font-semibold text-foreground">Tudo em dia!</p>
                 <p className="text-xs text-muted-foreground">

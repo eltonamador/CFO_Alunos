@@ -1,3 +1,4 @@
+import { UpcomingInternshipSchedule } from "@/components/app/internship/UpcomingInternshipSchedule";
 import {
   AlertCircle,
   AlertTriangle,
@@ -88,7 +89,12 @@ function AlertBox({
 
 async function DutySection() {
   const overview = await getDutyOverview();
-  return <TodayTomorrowDuty overview={overview} schedulesHref="/coordenacao/escalas" />;
+  return (
+    <>
+      <TodayTomorrowDuty overview={overview} schedulesHref="/coordenacao/escalas" />
+      <UpcomingInternshipSchedule detailsHref="/coordenacao/estagio/agenda" />
+    </>
+  );
 }
 
 async function QtsSection() {
