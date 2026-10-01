@@ -12,7 +12,7 @@ interface NavLinkProps {
   icon?: React.ReactNode;
   variant?: "sidebar" | "bottom";
   exact?: boolean;
-  badge?: number;
+  badge?: React.ReactNode;
 }
 
 function isActive(pathname: string, href: string, exact?: boolean) {
@@ -21,7 +21,7 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function UnreadDot({ count }: { count: number }) {
+export function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   const label = count > 9 ? "9+" : String(count);
   return (
@@ -39,7 +39,7 @@ function UnreadDot({ count }: { count: number }) {
   );
 }
 
-export function NavLink({ href, label, shortLabel, icon, variant = "sidebar", exact, badge = 0 }: NavLinkProps) {
+export function NavLink({ href, label, shortLabel, icon, variant = "sidebar", exact, badge }: NavLinkProps) {
   const pathname = usePathname();
   const active = isActive(pathname, href, exact);
 
@@ -62,7 +62,7 @@ export function NavLink({ href, label, shortLabel, icon, variant = "sidebar", ex
         )}
         <span className="relative">
           {icon}
-          <UnreadDot count={badge} />
+          {badge}
         </span>
         <span className="w-full truncate text-center">{shortLabel ?? label}</span>
       </Link>
@@ -84,7 +84,7 @@ export function NavLink({ href, label, shortLabel, icon, variant = "sidebar", ex
       {icon && (
         <span className={cn("relative transition-transform", active ? "text-white" : "text-white/70 group-hover:text-white")}>
           {icon}
-          <UnreadDot count={badge} />
+          {badge}
         </span>
       )}
       <span>{label}</span>

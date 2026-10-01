@@ -64,18 +64,18 @@ export default async function AlunoFichaPage({ searchParams }: PageProps) {
   const student = await fetchStudent(supabase, session.studentId);
   if (!student) redirect("/aluno");
 
-  const tab = searchParams.tab ?? "resumo";
+  const tab = TABS.some((item) => item.value === searchParams.tab) ? searchParams.tab! : "resumo";
 
   const [contact, address, emergency, health, weightHistory, canga, logistics, vehicle, checklist, photoUrl] = await Promise.all([
-    fetchStudentContact(supabase, session.studentId),
-    fetchStudentAddress(supabase, session.studentId),
-    fetchEmergencyContacts(supabase, session.studentId),
-    fetchHealthRestriction(supabase, session.studentId),
-    fetchStudentWeightHistory(supabase, session.studentId),
-    fetchStudentCanga(supabase, session.studentId),
-    fetchStudentLogistics(supabase, session.studentId),
-    fetchStudentVehicle(supabase, session.studentId),
-    fetchEquipmentChecklist(supabase, session.studentId),
+    ["resumo", "identificacao", "contato"].includes(tab) ? fetchStudentContact(supabase, session.studentId) : Promise.resolve(null),
+    ["resumo", "endereco"].includes(tab) ? fetchStudentAddress(supabase, session.studentId) : Promise.resolve(null),
+    tab === "emergencia" ? fetchEmergencyContacts(supabase, session.studentId) : Promise.resolve([]),
+    tab === "saude" ? fetchHealthRestriction(supabase, session.studentId) : Promise.resolve(null),
+    tab === "saude" ? fetchStudentWeightHistory(supabase, session.studentId) : Promise.resolve([]),
+    tab === "resumo" ? fetchStudentCanga(supabase, session.studentId) : Promise.resolve(null),
+    tab === "logistica" ? fetchStudentLogistics(supabase, session.studentId) : Promise.resolve(null),
+    tab === "veiculo" ? fetchStudentVehicle(supabase, session.studentId) : Promise.resolve(null),
+    tab === "materiais" ? fetchEquipmentChecklist(supabase, session.studentId) : Promise.resolve([]),
     signedPhotoUrl(supabase, student.photo_path),
   ]);
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#8b1a1f" />
+    <title>Sem conexão — CFO Alunos</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; color: #251f21; background: #f7f5f2; color-scheme: light dark; }
+      body { margin: 0; } header { padding: 20px; background: #8b1a1f; color: white; font-weight: 700; }
+      main { max-width: 520px; margin: 48px auto; padding: 24px; } p { line-height: 1.6; }
+      a, button { display: block; box-sizing: border-box; margin: 12px 0; border: 1px solid #8b1a1f; border-radius: 8px; padding: 14px; background: transparent; color: inherit; font: inherit; text-align: center; cursor: pointer; }
+      button { width: 100%; background: #8b1a1f; color: white; }
+      @media (prefers-color-scheme: dark) { :root { background: #181315; color: #faf7f8; } }
+    </style>
+  </head>
+  <body>
+    <header>CFO Alunos · CBMAP</header>
+    <main>
+      <h1>Sem conexão com o sistema</h1>
+      <p>As consultas de escalas e QTS salvas neste aparelho continuam disponíveis. As demais telas precisam de conexão para consultar seus dados.</p>
+      <button type="button" onclick="location.reload()">Tentar novamente</button>
+      <a href="/escala-offline.html">Consultar escalas salvas</a>
+      <a href="/qts-offline.html">Consultar QTS salvo</a>
+      <p id="status" role="status"></p>
+    </main>
+    <script>
+      window.addEventListener('online', () => {
+        document.getElementById('status').textContent = 'Conexão disponível. Toque em Tentar novamente para voltar à sua tela.';
+      });
+    </script>
+  </body>
+</html>

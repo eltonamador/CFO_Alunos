@@ -4,6 +4,16 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 
 ---
 
+## Entrega de 01/10/2026 — experiência mobile
+
+- [x] Retirar recarga automática ao reconectar; restaurar rota/aba/rolagem com isolamento por conta.
+- [x] Reduzir precache, usar fallback offline estático e restringir cache a assets públicos.
+- [x] Paralelizar consultas de sessão, transmitir contadores por Suspense e consultar fichas por aba.
+- [x] Acrescentar testes de ciclo de vida e Playwright em build de produção.
+- [ ] Homologar retomada/descarte em Android/iPhone reais após publicação; medir LCP/INP/TTFB.
+
+Diagnóstico, comparação PWA/APK, código e roteiro: [Otimização mobile](OTIMIZACAO_MOBILE_PWA.md).
+
 ## Entrega de 25/09/2026 — rodízio, etapa 1
 
 - [x] Elevar o descanso na prioridade, com teto comparativo de 72h.

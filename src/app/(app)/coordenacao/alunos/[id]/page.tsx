@@ -73,23 +73,23 @@ export default async function StudentDetailPage({ params, searchParams }: PagePr
   const student = await fetchStudent(supabase, params.id);
   if (!student) notFound();
 
-  const tab = searchParams.tab ?? "resumo";
+  const tab = TABS.some((item) => item.value === searchParams.tab) ? searchParams.tab! : "resumo";
 
   const [contact, address, emergency, health, weightHistory, photoUrl, canga, allStudents, logistics, vehicle, checklist, logs, followUps] =
     await Promise.all([
-      fetchStudentContact(supabase, params.id),
-      fetchStudentAddress(supabase, params.id),
-      fetchEmergencyContacts(supabase, params.id),
+      ["resumo", "identificacao", "contato"].includes(tab) ? fetchStudentContact(supabase, params.id) : Promise.resolve(null),
+      ["resumo", "endereco"].includes(tab) ? fetchStudentAddress(supabase, params.id) : Promise.resolve(null),
+      tab === "emergencia" ? fetchEmergencyContacts(supabase, params.id) : Promise.resolve([]),
       fetchHealthRestriction(supabase, params.id),
-      fetchStudentWeightHistory(supabase, params.id),
+      tab === "saude" ? fetchStudentWeightHistory(supabase, params.id) : Promise.resolve([]),
       signedPhotoUrl(supabase, student.photo_path),
-      fetchStudentCanga(supabase, params.id),
-      listStudents(supabase),
-      fetchStudentLogistics(supabase, params.id),
-      fetchStudentVehicle(supabase, params.id),
-      fetchEquipmentChecklist(supabase, params.id),
-      fetchStudentAuditLogs(supabase, params.id),
-      listFollowUps(supabase, { studentId: params.id }),
+      tab === "resumo" ? fetchStudentCanga(supabase, params.id) : Promise.resolve(null),
+      ["resumo", "historico"].includes(tab) ? listStudents(supabase) : Promise.resolve([]),
+      tab === "logistica" ? fetchStudentLogistics(supabase, params.id) : Promise.resolve(null),
+      tab === "veiculo" ? fetchStudentVehicle(supabase, params.id) : Promise.resolve(null),
+      tab === "materiais" ? fetchEquipmentChecklist(supabase, params.id) : Promise.resolve([]),
+      tab === "historico" ? fetchStudentAuditLogs(supabase, params.id) : Promise.resolve([]),
+      tab === "acompanhamento" ? listFollowUps(supabase, { studentId: params.id }) : Promise.resolve([]),
     ]);
 
   const studentMap = (allStudents ?? []).reduce((acc: Record<string, string>, curr) => {

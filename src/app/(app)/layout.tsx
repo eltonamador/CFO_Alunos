@@ -1,3 +1,6 @@
+import { AppLoading } from "@/components/app/AppLoading";
+import { MobileSession } from "@/components/app/MobileSession";
+import { NavBadge } from "@/components/app/NavLink";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "@/components/app/AppShell";
@@ -59,25 +62,37 @@ async function BirthdayBannerLoader() {
   return <BirthdayBanner alerts={alerts} />;
 }
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+async function UnreadAnnouncementsBadge({ studentId }: { studentId: string }) {
+  return <NavBadge count={await getUnreadAnnouncementsCount(studentId)} />;
+}
+
+async function FollowUpsBadge({ role, studentId }: { role: string; studentId: string | null }) {
+  return <NavBadge count={await getPendingFollowUpsCount(role, studentId)} />;
+}
+
+async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.isFirstAccess) redirect("/primeiro-acesso");
   if (!session.active) redirect("/login");
 
   const canSeeBirthdayAlerts = session.role === "coordenacao" || session.role === "secretaria";
-  const [unreadAnnouncements, pendingFollowUps] = await Promise.all([
-    session.role === "aluno" && session.studentId
-      ? getUnreadAnnouncementsCount(session.studentId)
-      : Promise.resolve(0),
-    getPendingFollowUpsCount(session.role, session.studentId),
-  ]);
 
   return (
     <AppShell
       session={session}
-      unreadAnnouncements={unreadAnnouncements}
-      pendingFollowUps={pendingFollowUps}
+      unreadAnnouncements={
+        session.role === "aluno" && session.studentId ? (
+          <Suspense fallback={null}>
+            <UnreadAnnouncementsBadge studentId={session.studentId} />
+          </Suspense>
+        ) : null
+      }
+      pendingFollowUps={
+        <Suspense fallback={null}>
+          <FollowUpsBadge role={session.role} studentId={session.studentId} />
+        </Suspense>
+      }
     >
       {canSeeBirthdayAlerts && (
         <Suspense fallback={null}>
@@ -86,7 +101,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       <OfflineRosterSession userId={session.userId} />
       <OfflineQtsSession userId={session.userId} />
+      <MobileSession
+        identity={{
+          userId: session.userId,
+          role: session.role,
+          canManageInternship: session.canManageInternship,
+          canPublishSchedules: session.canPublishSchedules,
+        }}
+      />
       {children}
     </AppShell>
+  );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<AppLoading boot />}>
+      <AuthenticatedApp>{children}</AuthenticatedApp>
+    </Suspense>
   );
 }

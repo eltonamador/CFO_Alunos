@@ -33,7 +33,7 @@ interface NavItem {
   shortLabel?: string;
   icon: LucideIcon;
   exact?: boolean;
-  badge?: number;
+  badge?: React.ReactNode;
 }
 
 const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
@@ -139,14 +139,14 @@ function getUserDisplayName(session: SessionProfile): string {
 
 export function AppShell({
   session,
-  unreadAnnouncements = 0,
-  pendingFollowUps = 0,
+  unreadAnnouncements,
+  pendingFollowUps,
   children,
 }: {
   session: SessionProfile;
-  unreadAnnouncements?: number;
+  unreadAnnouncements?: React.ReactNode;
   /** FO− aguardando manifestação (aluno) ou decisão (coordenação). */
-  pendingFollowUps?: number;
+  pendingFollowUps?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const baseNav = [...NAV_BY_ROLE[session.role]];
@@ -167,10 +167,10 @@ export function AppShell({
     });
   }
   const nav: NavItem[] = baseNav.map((item) => {
-    if (item.href === "/aluno/comunicados" && unreadAnnouncements > 0) {
+    if (item.href === "/aluno/comunicados") {
       return { ...item, badge: unreadAnnouncements };
     }
-    if (item.href.endsWith("/acompanhamento") && pendingFollowUps > 0) {
+    if (item.href.endsWith("/acompanhamento")) {
       return { ...item, badge: pendingFollowUps };
     }
     return item;
@@ -264,7 +264,7 @@ export function AppShell({
       {/* ===== Coluna direita ===== */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar (apenas mobile — desktop usa sidebar) */}
-        <header className="sticky top-0 z-20 border-b border-border bg-card md:hidden">
+        <header className="sticky top-0 z-20 border-b border-border bg-card pt-[env(safe-area-inset-top)] md:hidden">
           <div className="flex h-14 items-center justify-between gap-3 px-4">
             <Link
               href={`/${session.role === "coordenacao" ? "coordenacao" : session.role}`}
@@ -299,11 +299,11 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">{children}</main>
+        <main className="flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-8">{children}</main>
       </div>
 
       {/* ===== Bottom nav (mobile) ===== */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
         <div
           className="grid h-16 min-w-full items-center overflow-x-auto"
           // Colunas de 74px: alvo de toque confortavel. Com muitos itens a

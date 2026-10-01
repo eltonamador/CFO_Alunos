@@ -39,28 +39,17 @@ export const getSession = cache(async (): Promise<SessionProfile | null> => {
 
   const isFirstAccess = !user.user_metadata?.password_changed_at;
 
-  // Para o papel de aluno, busca war_name e student_number para exibição na UI
-  let warName: string | null = null;
-  let studentNumber: number | null = null;
-  if (profile.role === "aluno" && profile.student_id) {
-    const { data: studentData } = await supabase
-      .from("students")
-      .select("war_name, student_number")
-      .eq("id", profile.student_id)
-      .maybeSingle();
-    warName = (studentData as any)?.war_name ?? null;
-    studentNumber = (studentData as any)?.student_number ?? null;
-  }
-
-  const { data: internshipManager } =
-    profile.role === "aluno" && profile.active
-      ? await supabase.rpc("internship_can_manage")
-      : { data: profile.active && profile.role === "coordenacao" };
-
-  const { data: schedulePublisher } =
-    profile.role === "aluno" && profile.active
-      ? await supabase.rpc("schedule_can_publish")
-      : { data: profile.active && profile.role === "coordenacao" };
+  // Independent lookups run together, after authentication and profile validation.
+  const isStudent = profile.role === "aluno" && profile.active;
+  const [studentResult, { data: internshipManager }, { data: schedulePublisher }] = await Promise.all([
+    isStudent && profile.student_id
+      ? supabase.from("students").select("war_name, student_number").eq("id", profile.student_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    isStudent ? supabase.rpc("internship_can_manage") : Promise.resolve({ data: profile.active && profile.role === "coordenacao" }),
+    isStudent ? supabase.rpc("schedule_can_publish") : Promise.resolve({ data: profile.active && profile.role === "coordenacao" }),
+  ]);
+  const warName = (studentResult.data as any)?.war_name ?? null;
+  const studentNumber = (studentResult.data as any)?.student_number ?? null;
 
   return {
     canManageInternship: internshipManager === true,

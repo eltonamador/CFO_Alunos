@@ -28,7 +28,7 @@
         try {
           const snapshot = JSON.parse(localStorage.getItem('cfo:qts:v1') || 'null');
           const maximumAge = 7 * 86400000;
-          if (!snapshot || snapshot.version !== 1 || !Array.isArray(snapshot.entries) || !Date.parse(snapshot.savedAt) || Date.now() - Date.parse(snapshot.savedAt) > maximumAge) {
+          if (!snapshot || snapshot.version !== 1 || snapshot.userId !== localStorage.getItem('cfo:qts:owner') || !Array.isArray(snapshot.entries) || !Date.parse(snapshot.savedAt) || Date.now() - Date.parse(snapshot.savedAt) > maximumAge || Date.parse(snapshot.savedAt) > Date.now() + 60000) {
             root.textContent = 'Não há um QTS válido salvo neste aparelho. Conecte-se e consulte o QTS novamente.';
             return;
           }

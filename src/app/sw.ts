@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { NetworkOnly, Serwist } from "serwist";
+import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist } from "serwist";
+import { isPublicAsset } from "@/modules/mobile-session/domain/cachePolicy";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -79,7 +79,8 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
+  // An update takes over after the old app closes, never during a form edit.
+  skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
@@ -95,12 +96,14 @@ const serwist = new Serwist({
       handler: new NetworkOnly({ networkTimeoutSeconds: 8 }),
     },
     {
-      matcher: ({ url }) =>
-        url.origin === self.location.origin &&
-        /\/(?:coordenacao|secretaria|instrutor|aluno)\/academico(?:\/|$)/.test(url.pathname),
-      handler: new NetworkOnly(),
+      matcher: ({ url }) => isPublicAsset(url, self.location.origin),
+      handler: new CacheFirst({
+        cacheName: "cfo-public-assets-v1",
+        plugins: [new ExpirationPlugin({ maxEntries: 160, maxAgeSeconds: 30 * 86400 })],
+      }),
     },
-    ...defaultCache,
+    // No generic image/data cache: signed photos and Supabase responses are private.
+    { matcher: () => true, handler: new NetworkOnly() },
   ],
   fallbacks: {
     entries: [
@@ -108,7 +111,10 @@ const serwist = new Serwist({
         url: "/qts-offline.html",
         matcher: ({ request }) => {
           const pathname = new URL(request.url).pathname;
-          return request.destination === "document" && (pathname === "/qts" || pathname.startsWith("/qts/"));
+          return (
+            request.destination === "document" &&
+            (pathname === "/qts" || pathname.startsWith("/qts/"))
+          );
         },
       },
       {
@@ -120,7 +126,7 @@ const serwist = new Serwist({
           ),
       },
       {
-        url: "/offline",
+        url: "/offline.html",
         matcher: ({ request }) => request.destination === "document",
       },
     ],
@@ -131,9 +137,19 @@ const serwist = new Serwist({
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all(
-      ["pages", "pages-rsc", "pages-rsc-prefetch", "start-url", "others", "apis", "next-data"].map(
-        (name) => caches.delete(name),
-      ),
+      [
+        "pages",
+        "pages-rsc",
+        "pages-rsc-prefetch",
+        "start-url",
+        "others",
+        "apis",
+        "next-data",
+        "static-image-assets",
+        "next-image",
+        "static-data-assets",
+        "cross-origin",
+      ].map((name) => caches.delete(name)),
     ),
   );
 });
