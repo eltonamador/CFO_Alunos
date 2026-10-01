@@ -4,6 +4,15 @@ Este documento descreve o progresso do backlog técnico do **CFO Alunos** em **2
 
 ---
 
+## Entrega de 01/10/2026 — diário, mural e insígnias
+
+- [x] Disponibilizar Mural da turma e Quadro da turma para todas as contas ativas de Coordenação, com as mesmas visualizações usadas pelos cadetes.
+- [x] Preservar filtros de registros salvos, moderação e restrições de acesso; mural/quadro contam somente relatos compartilhados e visíveis.
+- [x] Acrescentar dez insígnias: trem de socorro, incêndio em residência, salvamento veicular, altura, espaço confinado, inundação, busca e salvamento, resgate de animal, incêndio em vegetação e em veículo.
+- [x] Disponibilizar seis categorias específicas novas no formulário; insígnias são calculadas a partir de relatos salvos, sem rascunhos, pontos ou efeito na carga de estágio. Tipos antigos genéricos não presumem residência ou resgate veicular.
+
+A migration `0131_internship_diary_rescue_badges.sql` amplia apenas a lista permitida de categorias, mantendo o máximo de seis por relato. Deve ser aplicada antes da publicação do formulário atualizado. As insígnias também entram no PDF pessoal existente.
+
 ## Entrega de 01/10/2026 — experiência mobile
 
 - [x] Retirar recarga automática ao reconectar; restaurar rota/aba/rolagem com isolamento por conta.

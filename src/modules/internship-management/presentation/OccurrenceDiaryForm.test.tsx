@@ -173,3 +173,34 @@ it("registro já compartilhado não usa rascunho automático e pode sair do mura
     { autosave: false },
   );
 });
+
+it("permite registrar as seis novas categorias que concedem insígnias", async () => {
+  render(<OccurrenceDiaryForm {...props} />);
+  fireEvent.change(summary(), { target: { value: "Participação no trem de socorro" } });
+  for (const label of [
+    "Trem de socorro",
+    "Incêndio em residência",
+    "Salvamento veicular",
+    "Salvamento em altura",
+    "Salvamento em espaço confinado",
+    "Salvamento em inundação ou enchente",
+  ])
+    fireEvent.click(screen.getByRole("checkbox", { name: label }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar no meu diário" }));
+  await waitFor(() =>
+    expect(saveDiaryEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: "pessoal",
+        occurrenceTypes: [
+          "trem_socorro",
+          "incendio_residencial",
+          "salvamento_veicular",
+          "salvamento_altura",
+          "salvamento_confinado",
+          "salvamento_inundacao",
+        ],
+      }),
+      { autosave: false },
+    ),
+  );
+});

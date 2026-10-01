@@ -7,7 +7,7 @@ create function pg_temp.act(label text) returns text language sql as $$
   select set_config('request.jwt.claims',json_build_object('sub',pg_temp.did(label))::text,true)$$;
 -- Turma A: cadetes 1, 2 e 4 (o 4 administra o estágio por delegação). Turma B: cadete 3.
 insert into auth.users(id,email)
-select pg_temp.did(u),u||'@diary.test.invalid' from unnest(array['coord','cad1','cad2','cad3','cad4','boris']) u;
+select pg_temp.did(u),u||'@diary.test.invalid' from unnest(array['coord','coord2','cad1','cad2','cad3','cad4','boris']) u;
 insert into public.courses(id,code,name,year) values(pg_temp.did('course'),'DIARY-TEST','Curso diário',2099);
 insert into public.classes(id,course_id,name)
 values(pg_temp.did('classA'),pg_temp.did('course'),'Turma A'),(pg_temp.did('classB'),pg_temp.did('course'),'Turma B');
@@ -20,6 +20,7 @@ insert into public.students(id,class_id,war_name,full_name,pelotao,course_status
 values(pg_temp.did('student_boris'),pg_temp.did('classA'),'BORIS','Boris — aluno de teste','CFO I','outro',true);
 insert into public.profiles(id,role,full_name,active,student_id) values
  (pg_temp.did('coord'),'coordenacao','Coordenação diário',true,null),
+ (pg_temp.did('coord2'),'coordenacao','Outra Coordenação diário',true,null),
  (pg_temp.did('cad1'),'aluno','Cadete 1',true,pg_temp.did('student1')),
  (pg_temp.did('cad2'),'aluno','Cadete 2',true,pg_temp.did('student2')),
  (pg_temp.did('cad3'),'aluno','Cadete 3',true,pg_temp.did('student3')),
@@ -193,6 +194,37 @@ select is((select count(*)::integer from public.students where id=pg_temp.did('s
  'Painel da Coordenação não recebe a ficha de Boris');
 select is((select count(*)::integer from public.internship_diary_entries where id=pg_temp.did('boris_entry')),0,
  'Painel de ocorrências não recebe o relato de Boris');
+reset role;
+
+-- Todas as contas de Coordenação acessam o mural/quadro, sem delegação ou student_id.
+select pg_temp.act('coord2');
+set local role authenticated;
+select is((select count(*)::integer from public.internship_diary_entries
+ where id=pg_temp.did('shared1') and status='compartilhado' and hidden_at is null),1,
+ 'Outra conta de Coordenação vê o relato compartilhado no mural e quadro');
+select is((select count(*)::integer from public.internship_diary_reactions where entry_id=pg_temp.did('shared1')),1,
+ 'Outra conta de Coordenação lê as reações para o quadro');
+select lives_ok(format('select public.internship_diary_moderate(%L,%L)',pg_temp.did('shared1'),'destacar'),
+ 'Outra conta de Coordenação também pode destacar no mural');
+reset role;
+
+-- Categorias precisas para as novas insígnias; mantém limites e validações anteriores.
+select pg_temp.act('cad1');
+set local role authenticated;
+select lives_ok($$update public.internship_diary_entries set occurrence_types=array[
+ 'trem_socorro','incendio_residencial','salvamento_veicular',
+ 'salvamento_altura','salvamento_confinado','salvamento_inundacao']
+ where id=pg_temp.did('shared1')$$,'Cadete salva as seis novas etiquetas das insígnias');
+select is((select occurrence_type from public.internship_diary_entries where id=pg_temp.did('shared1')),
+ 'trem_socorro','Nova etiqueta continua compatível com a coluna legada');
+select throws_ok($$update public.internship_diary_entries set occurrence_types=array['tipo_inexistente']
+ where id=pg_temp.did('shared1')$$,'23514',null,'Banco rejeita etiqueta desconhecida');
+select throws_ok($$update public.internship_diary_entries set occurrence_types=array['trem_socorro',null]
+ where id=pg_temp.did('shared1')$$,'23514',null,'Banco rejeita etiqueta nula');
+select throws_ok($$update public.internship_diary_entries set occurrence_types=array[
+ 'aph','trem_socorro','incendio_residencial','salvamento_veicular',
+ 'salvamento_altura','salvamento_confinado','salvamento_inundacao']
+ where id=pg_temp.did('shared1')$$,'23514',null,'Banco mantém máximo de seis etiquetas');
 reset role;
 
 select ok(not has_table_privilege('anon','public.internship_diary_entries','SELECT'),'Visitante anônimo não lê o diário');

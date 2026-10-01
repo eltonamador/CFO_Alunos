@@ -137,7 +137,9 @@ describe("incentivo simbólico", () => {
 
   it("conta registros salvos e tipos vividos, sem rascunhos", () => {
     expect(diaryStats(entries)).toEqual({ saved: 2, drafts: 1, shared: 1, types: 2 });
-    expect(diaryStats([{ ...entries[0]!, occurrence_types: ["aph", "acidente_transito"] }])).toMatchObject({ types: 2 });
+    expect(
+      diaryStats([{ ...entries[0]!, occurrence_types: ["aph", "acidente_transito"] }]),
+    ).toMatchObject({ types: 2 });
   });
 
   it("concede insígnias por marcos, não por pontos", () => {
@@ -149,6 +151,53 @@ describe("incentivo simbólico", () => {
     expect(earned(new Map([["1", 5]]))).toContain("relato_inspirador");
     expect(diaryBadges(entries).find((badge) => badge.code === "cinco_tipos")?.hint).toBe(
       "2 de 5 tipos vividos.",
+    );
+  });
+
+  it.each([
+    ["trem_socorro", "primeiro_trem_socorro"],
+    ["incendio_residencial", "primeiro_incendio_residencial"],
+    ["salvamento_veicular", "primeiro_salvamento_veicular"],
+    ["salvamento_altura", "primeiro_salvamento_altura"],
+    ["salvamento_confinado", "primeiro_salvamento_confinado"],
+    ["salvamento_inundacao", "primeiro_salvamento_inundacao"],
+    ["busca_salvamento", "primeira_busca_salvamento"],
+    ["animal", "primeiro_resgate_animal"],
+    ["incendio_vegetacao", "primeiro_incendio_vegetacao"],
+    ["incendio_veiculo", "primeiro_incendio_veiculo"],
+  ])("salvar %s concede a insígnia; rascunhar não", (type, badgeCode) => {
+    const input = { summary: "Relato do estágio", occurrenceTypes: ["aph", type] };
+    const result = prepareDiaryEntry({ ...input, intent: "pessoal" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.row.occurrence_types).toContain(type);
+    const entry = { ...result.row, id: "new" };
+    expect(diaryBadges([entry]).find((badge) => badge.code === badgeCode)?.earned).toBe(true);
+    expect(
+      diaryBadges([{ ...entry, status: "compartilhado" }]).find((badge) => badge.code === badgeCode)
+        ?.earned,
+    ).toBe(true);
+    expect(diaryBadges([{ ...entry, status: "rascunho" }]).every((badge) => !badge.earned)).toBe(
+      true,
+    );
+  });
+
+  it("não presume residência, salvamento veicular ou trem de socorro pelas etiquetas genéricas", () => {
+    const badges = diaryBadges([
+      { id: "1", status: "pessoal", occurrence_type: "incendio_urbano" },
+      { id: "2", status: "compartilhado", occurrence_type: "acidente_transito" },
+    ]);
+    for (const code of [
+      "primeiro_incendio_residencial",
+      "primeiro_salvamento_veicular",
+      "primeiro_trem_socorro",
+    ])
+      expect(badges.find((badge) => badge.code === code)?.earned).toBe(false);
+  });
+
+  it("não concede relato inspirador a um rascunho", () => {
+    expect(diaryBadges([entries[2]!], new Map([["3", 5]])).every((badge) => !badge.earned)).toBe(
+      true,
     );
   });
 

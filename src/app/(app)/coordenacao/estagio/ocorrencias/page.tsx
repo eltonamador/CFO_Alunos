@@ -1,3 +1,12 @@
+import {
+  DiaryBoard,
+  DiaryMural,
+} from "@/modules/internship-management/presentation/DiaryClassViews";
+import {
+  DiaryTabs,
+  diaryViewOptions,
+  type DiaryViewSearchParams,
+} from "@/modules/internship-management/presentation/DiaryTabs";
 import Link from "next/link";
 import { z } from "zod";
 import { requireRole } from "@/components/app/RoleGuard";
@@ -30,14 +39,64 @@ const views = {
 } as const;
 const selectClass = "h-11 rounded-md border border-input bg-card px-3 text-sm";
 
+const basePath = "/coordenacao/estagio/ocorrencias";
+type SearchParams = DiaryViewSearchParams & { ver?: string; cadete?: string };
+
 export default async function CoordinationDiaryPage({
   searchParams,
 }: {
-  searchParams?: { ver?: string; cadete?: string };
+  searchParams?: SearchParams;
 }) {
   const session = await requireRole("coordenacao");
+  const { tab, order, limit } = diaryViewOptions(searchParams);
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <header className="space-y-2">
+        <Link href="/coordenacao/estagio" className="text-sm text-primary underline">
+          Estágio
+        </Link>
+        <h1 className="font-display text-3xl font-bold">Diário de ocorrências</h1>
+        <p className="text-sm text-muted-foreground">
+          Registro extraoficial e narrativo dos cadetes, fora do PPC e sem valor avaliativo. Não há
+          aprovação: destaque relatos inspiradores ou oculte do mural algum inadequado. Rascunhos
+          não aparecem aqui.
+        </p>
+      </header>
+      <DiaryTabs basePath={basePath} active={tab} firstLabel="Registros salvos" />
+      {tab === "quadro" ? (
+        <DiaryBoard
+          basePath={basePath}
+          studentId={null}
+          wholePeriod={searchParams?.periodo === "tudo"}
+          order={order}
+        />
+      ) : tab === "mural" ? (
+        <DiaryMural
+          basePath={basePath}
+          studentId={null}
+          userId={session.userId}
+          limit={limit}
+          canModerate
+        />
+      ) : (
+        <SavedEntriesTab searchParams={searchParams} userId={session.userId} />
+      )}
+    </div>
+  );
+}
+
+async function SavedEntriesTab({
+  searchParams,
+  userId,
+}: {
+  searchParams?: SearchParams;
+  userId: string;
+}) {
   const db = createSupabaseServerClient();
-  const view = (searchParams?.ver ?? "") in views ? (searchParams!.ver as keyof typeof views) : "compartilhado";
+  const view =
+    (searchParams?.ver ?? "") in views
+      ? (searchParams!.ver as keyof typeof views)
+      : "compartilhado";
   const cadet = z.string().uuid().safeParse(searchParams?.cadete).success
     ? searchParams!.cadete!
     : "";
@@ -65,23 +124,12 @@ export default async function CoordinationDiaryPage({
       entries.flatMap((entry) => [entry.student_id, ...entry.companion_ids]),
     ),
   ]);
-  const reactions = summarizeReactions(reactionRows, session.userId);
+  const reactions = summarizeReactions(reactionRows, userId);
   const authors = new Set(entries.map((entry) => entry.student_id)).size;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <header className="space-y-2">
-        <Link href="/coordenacao/estagio" className="text-sm text-primary underline">
-          Estágio
-        </Link>
-        <h1 className="font-display text-3xl font-bold">Diário de ocorrências</h1>
-        <p className="text-sm text-muted-foreground">
-          Registro extraoficial e narrativo dos cadetes, fora do PPC e sem valor avaliativo. Não há
-          aprovação: destaque relatos inspiradores ou oculte do mural algum inadequado. Rascunhos
-          não aparecem aqui.
-        </p>
-      </header>
-      <form className="flex flex-wrap items-end gap-2 text-sm">
+    <>
+      <form action={basePath} className="flex flex-wrap items-end gap-2 text-sm">
         <label className="space-y-1">
           <span className="block">Mostrar</span>
           <select name="ver" defaultValue={view} className={selectClass}>
@@ -113,7 +161,7 @@ export default async function CoordinationDiaryPage({
       </form>
       {error ? (
         <p className="rounded-lg border p-4 text-sm">
-          Não foi possível carregar o diário. Confira se a migration 0118 foi aplicada.
+          Não foi possível carregar o diário. Tente novamente mais tarde.
         </p>
       ) : (
         <>
@@ -154,6 +202,6 @@ export default async function CoordinationDiaryPage({
           )}
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -9,11 +9,17 @@ export const COMPETENCE_NOTICE =
 export const PRIVACY_HINT = "Evite nome, endereço ou dados de saúde da vítima.";
 
 export const OCCURRENCE_TYPES = [
+  { code: "trem_socorro", label: "Trem de socorro" },
   { code: "aph", label: "APH (atendimento pré-hospitalar)" },
   { code: "acidente_transito", label: "Acidente de trânsito" },
+  { code: "incendio_residencial", label: "Incêndio em residência" },
   { code: "incendio_urbano", label: "Incêndio urbano" },
   { code: "incendio_vegetacao", label: "Incêndio em vegetação" },
   { code: "incendio_veiculo", label: "Incêndio em veículo" },
+  { code: "salvamento_veicular", label: "Salvamento veicular" },
+  { code: "salvamento_altura", label: "Salvamento em altura" },
+  { code: "salvamento_confinado", label: "Salvamento em espaço confinado" },
+  { code: "salvamento_inundacao", label: "Salvamento em inundação ou enchente" },
   { code: "salvamento_aquatico", label: "Salvamento aquático" },
   { code: "busca_salvamento", label: "Busca e salvamento" },
   { code: "animal", label: "Captura ou resgate de animal" },
@@ -378,6 +384,58 @@ export function diaryStats(entries: CountedEntry[]) {
 
 export type DiaryBadge = { code: string; label: string; hint: string; earned: boolean };
 
+// Cada marco usa uma categoria explícita; tipos genéricos antigos não presumem um resgate específico.
+const FIRST_OCCURRENCE_BADGES = [
+  { type: "aph", code: "primeiro_aph", label: "Primeiro APH" },
+  { type: "trem_socorro", code: "primeiro_trem_socorro", label: "Meu primeiro trem de socorro" },
+  {
+    type: "incendio_residencial",
+    code: "primeiro_incendio_residencial",
+    label: "Meu primeiro incêndio em residência",
+  },
+  {
+    type: "salvamento_veicular",
+    code: "primeiro_salvamento_veicular",
+    label: "Meu primeiro salvamento veicular",
+  },
+  {
+    type: "salvamento_aquatico",
+    code: "primeiro_salvamento_aquatico",
+    label: "Primeiro salvamento aquático",
+  },
+  {
+    type: "salvamento_altura",
+    code: "primeiro_salvamento_altura",
+    label: "Meu primeiro salvamento em altura",
+  },
+  {
+    type: "salvamento_confinado",
+    code: "primeiro_salvamento_confinado",
+    label: "Meu primeiro salvamento em espaço confinado",
+  },
+  {
+    type: "salvamento_inundacao",
+    code: "primeiro_salvamento_inundacao",
+    label: "Meu primeiro salvamento em inundação",
+  },
+  {
+    type: "busca_salvamento",
+    code: "primeira_busca_salvamento",
+    label: "Minha primeira busca e salvamento",
+  },
+  { type: "animal", code: "primeiro_resgate_animal", label: "Meu primeiro resgate de animal" },
+  {
+    type: "incendio_vegetacao",
+    code: "primeiro_incendio_vegetacao",
+    label: "Meu primeiro incêndio em vegetação",
+  },
+  {
+    type: "incendio_veiculo",
+    code: "primeiro_incendio_veiculo",
+    label: "Meu primeiro incêndio em veículo",
+  },
+] satisfies { type: (typeof OCCURRENCE_TYPES)[number]["code"]; code: string; label: string }[];
+
 /** Marcos simbólicos, sem pontos: servem só de incentivo. */
 export function diaryBadges(
   entries: CountedEntry[],
@@ -400,18 +458,12 @@ export function diaryBadges(
       hint: "Salve seu primeiro relato.",
       earned: saved.length >= 1,
     },
-    {
-      code: "primeiro_aph",
-      label: "Primeiro APH",
-      hint: "Registre um atendimento pré-hospitalar.",
-      earned: types.has("aph"),
-    },
-    {
-      code: "primeiro_salvamento_aquatico",
-      label: "Primeiro salvamento aquático",
-      hint: "Registre um salvamento aquático.",
-      earned: types.has("salvamento_aquatico"),
-    },
+    ...FIRST_OCCURRENCE_BADGES.map((badge) => ({
+      code: badge.code,
+      label: badge.label,
+      hint: `Salve um relato com o tipo “${occurrenceTypeLabel(badge.type)}”.`,
+      earned: types.has(badge.type),
+    })),
     {
       code: "cinco_tipos",
       label: "5 tipos diferentes",
@@ -428,7 +480,7 @@ export function diaryBadges(
       code: "relato_inspirador",
       label: "Relato inspirador",
       hint: "Um relato seu com 5 reações dos colegas.",
-      earned: entries.some((entry) => (reactionTotals.get(entry.id) ?? 0) >= 5),
+      earned: saved.some((entry) => (reactionTotals.get(entry.id) ?? 0) >= 5),
     },
   ];
 }
