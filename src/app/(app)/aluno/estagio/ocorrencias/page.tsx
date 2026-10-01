@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/components/app/RoleGuard";
 import { buttonVariants } from "@/components/ui/Button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { diaryPhotosConfigured } from "@/modules/internship-management/infrastructure/diaryPhotosDrive";
 import {
   BOARD_ORDERS,
   COMPETENCE_NOTICE,
@@ -269,6 +270,7 @@ async function DiaryTab({
               shift={entry.assignment_id ? shiftLabels.get(entry.assignment_id) : undefined}
               companions={entry.companion_ids.map((id) => cadetLabel(cadets.get(id)))}
               showStatus
+              photosEnabled={diaryPhotosConfigured()}
             >
               <DiaryReactions
                 key={`${entry.id}:${reactions.get(entry.id)?.total ?? 0}`}
@@ -333,6 +335,7 @@ async function MuralTab({
               entry={entry}
               author={cadetLabel(cadets.get(entry.student_id))}
               companions={entry.companion_ids.map((id) => cadetLabel(cadets.get(id)))}
+              photosEnabled={diaryPhotosConfigured()}
             >
               <DiaryReactions
                 key={`${entry.id}:${summary?.total ?? 0}:${summary?.mine.join(",") ?? ""}`}

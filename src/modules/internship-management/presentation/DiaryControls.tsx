@@ -15,6 +15,7 @@ import {
   setDiaryEntryVisibility,
   toggleDiaryReaction,
 } from "./occurrenceDiaryActions";
+import { DIARY_PHOTO_RULE } from "../domain/diaryPhoto";
 
 /** Reações dos colegas: incentivo simbólico, sem pontuação. */
 export function DiaryReactions({
@@ -121,7 +122,10 @@ export function DiaryEntryActions({ id, status }: { id: string; status: DiarySta
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => void run(() => setDiaryEntryVisibility(id, "compartilhado"))}
+          onClick={() => {
+            if (window.confirm(`Ao compartilhar, as fotos do relato também aparecem para a turma. ${DIARY_PHOTO_RULE} Deseja continuar?`))
+              void run(() => setDiaryEntryVisibility(id, "compartilhado"));
+          }}
         >
           Compartilhar com a turma
         </Button>

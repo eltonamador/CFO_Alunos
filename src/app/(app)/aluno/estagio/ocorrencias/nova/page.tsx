@@ -12,6 +12,7 @@ import {
   loadMyVehicles,
 } from "@/modules/internship-management/infrastructure/occurrenceDiary";
 import { OccurrenceDiaryForm } from "@/modules/internship-management/presentation/OccurrenceDiaryForm";
+import { diaryPhotosConfigured } from "@/modules/internship-management/infrastructure/diaryPhotosDrive";
 
 export const metadata = { title: "Registrar ocorrência" };
 export const dynamic = "force-dynamic";
@@ -45,6 +46,7 @@ export default async function NewDiaryEntryPage({
         shifts={started}
         classmates={classmates}
         vehicles={vehicles}
+        photosEnabled={diaryPhotosConfigured()}
       />
     </div>
   );

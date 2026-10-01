@@ -15,6 +15,7 @@ import {
   loadMyVehicles,
 } from "@/modules/internship-management/infrastructure/occurrenceDiary";
 import { OccurrenceDiaryForm } from "@/modules/internship-management/presentation/OccurrenceDiaryForm";
+import { diaryPhotosConfigured } from "@/modules/internship-management/infrastructure/diaryPhotosDrive";
 
 export const metadata = { title: "Editar registro do diário" };
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export default async function EditDiaryEntryPage({ params }: { params: { id: str
         shifts={startedShifts(shifts, Date.now())}
         classmates={classmates}
         vehicles={vehicles}
+        photosEnabled={diaryPhotosConfigured()}
       />
     </div>
   );

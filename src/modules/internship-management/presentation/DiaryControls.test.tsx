@@ -55,13 +55,17 @@ it("no próprio relato mostra só as reações recebidas", () => {
 it("cadete compartilha, tira do mural e só exclui após confirmar", async () => {
   vi.mocked(setDiaryEntryVisibility).mockResolvedValue({});
   vi.mocked(deleteDiaryEntry).mockResolvedValue({});
-  const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+  const confirm = vi.spyOn(window, "confirm")
+    .mockReturnValueOnce(true)
+    .mockReturnValueOnce(false)
+    .mockReturnValueOnce(true);
   const { rerender } = render(<DiaryEntryActions id={id} status="pessoal" />);
   expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
     "href",
     `/aluno/estagio/ocorrencias/${id}`,
   );
   fireEvent.click(screen.getByRole("button", { name: "Compartilhar com a turma" }));
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining("as fotos do relato"));
   await waitFor(() => expect(setDiaryEntryVisibility).toHaveBeenCalledWith(id, "compartilhado"));
 
   rerender(<DiaryEntryActions id={id} status="rascunho" />);

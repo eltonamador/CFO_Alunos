@@ -19,6 +19,8 @@ import {
   type DiaryStatus,
 } from "../domain/occurrenceDiary";
 import { saveDiaryEntry } from "./occurrenceDiaryActions";
+import { DiaryPhotos } from "./DiaryPhotos";
+import { DIARY_PHOTO_RULE } from "../domain/diaryPhoto";
 
 type Props = {
   entryId?: string;
@@ -30,6 +32,7 @@ type Props = {
   shifts: DiaryShift[];
   classmates: { id: string; war_name: string; student_number: number | null }[];
   vehicles?: string[];
+  photosEnabled?: boolean;
 };
 
 const DIARY_PATH = "/aluno/estagio/ocorrencias";
@@ -69,6 +72,7 @@ export function OccurrenceDiaryForm({
   shifts,
   classmates,
   vehicles = [],
+  photosEnabled = false,
 }: Props) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
@@ -195,6 +199,9 @@ export function OccurrenceDiaryForm({
       router.push(DIARY_PATH);
       return;
     }
+    if (intent === "compartilhado" && photosEnabled &&
+      !window.confirm(`Ao compartilhar, as fotos também ficam visíveis para a turma. ${DIARY_PHOTO_RULE} Deseja continuar?`))
+      return;
     finishing.current = true;
     setBusy(true);
     setError("");
@@ -444,6 +451,14 @@ export function OccurrenceDiaryForm({
           </details>
         ) : null}
       </fieldset>
+
+      {photosEnabled ? (
+        id.current ? <DiaryPhotos entryId={id.current} allowUpload /> : (
+          <p className="rounded-lg border p-3 text-sm text-muted-foreground">
+            Salve o relato primeiro; depois abra em Editar para anexar até três fotos. {DIARY_PHOTO_RULE}
+          </p>
+        )
+      ) : null}
 
       {error ? (
         <p role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">

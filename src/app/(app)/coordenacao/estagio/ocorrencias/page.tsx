@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireRole } from "@/components/app/RoleGuard";
 import { buttonVariants } from "@/components/ui/Button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { diaryPhotosConfigured } from "@/modules/internship-management/infrastructure/diaryPhotosDrive";
 import {
   DIARY_ENTRY_COLUMNS,
   summarizeReactions,
@@ -132,6 +133,7 @@ export default async function CoordinationDiaryPage({
                 author={cadetLabel(cadets.get(entry.student_id))}
                 companions={entry.companion_ids.map((id) => cadetLabel(cadets.get(id)))}
                 showStatus
+                photosEnabled={diaryPhotosConfigured()}
               >
                 <DiaryReactions
                   key={`${entry.id}:${reactions.get(entry.id)?.total ?? 0}:${reactions.get(entry.id)?.mine.join(",") ?? ""}`}

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { prepareDiaryEntry, REACTION_KINDS } from "../domain/occurrenceDiary";
+import { deleteDiaryPhotoFolder, diaryPhotosConfigured } from "../infrastructure/diaryPhotosDrive";
 
 type Result = { error?: string };
 
@@ -73,6 +74,17 @@ export async function deleteDiaryEntry(id: string): Promise<Result> {
   const context = await cadet();
   if (!context) return { error: "Acesso restrito ao cadete." };
   if (!entryId.safeParse(id).success) return { error: "Registro não encontrado." };
+  const { data: existing } = await context.db
+    .from("internship_diary_entries")
+    .select("id")
+    .eq("id", id)
+    .eq("student_id", context.studentId)
+    .maybeSingle();
+  if (!existing) return { error: "Registro não encontrado." };
+  if (diaryPhotosConfigured()) {
+    try { await deleteDiaryPhotoFolder(id); }
+    catch { return { error: "Não foi possível remover as fotos do Drive. Tente novamente." }; }
+  }
   const { error } = await context.db
     .from("internship_diary_entries")
     .delete()

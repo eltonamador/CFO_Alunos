@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Award } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { DiaryPhotos } from "./DiaryPhotos";
 import {
   PARTICIPATIONS,
   SEVERITIES,
@@ -28,6 +29,7 @@ export function DiaryEntryCard({
   companions = [],
   shift,
   showStatus = false,
+  photosEnabled = false,
   children,
 }: {
   entry: DiaryEntry;
@@ -35,6 +37,7 @@ export function DiaryEntryCard({
   companions?: string[];
   shift?: string;
   showStatus?: boolean;
+  photosEnabled?: boolean;
   children?: ReactNode;
 }) {
   const types = entryTypes(entry)
@@ -105,6 +108,7 @@ export function DiaryEntryCard({
           Oculto do mural pela Coordenação{entry.hidden_reason ? `: ${entry.hidden_reason}` : "."}
         </p>
       ) : null}
+      {photosEnabled ? <DiaryPhotos entryId={entry.id} collapsed /> : null}
       {children}
     </article>
   );
