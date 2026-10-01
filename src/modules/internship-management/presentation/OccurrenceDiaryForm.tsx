@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import {
   COMPETENCE_NOTICE,
   DIARY_NOTICE,
+  DIARY_VEHICLES,
   OCCURRENCE_TYPES,
   PARTICIPATIONS,
   PRIVACY_HINT,
@@ -39,15 +40,15 @@ const area = "min-h-24 w-full rounded-md border border-input bg-card px-3 py-2 t
 function hasContent(values: DiaryFormValues) {
   return Boolean(
     values.summary.trim() ||
-      values.occurrenceType ||
-      values.otherType.trim() ||
-      values.severity ||
-      values.participation ||
-      values.vehicle.trim() ||
-      values.perception.trim() ||
-      values.description.trim() ||
-      values.companionIds.length ||
-      values.protocolNumber.trim(),
+    values.occurrenceTypes.length ||
+    values.otherType.trim() ||
+    values.severity ||
+    values.participation ||
+    values.vehicles.length ||
+    values.perception.trim() ||
+    values.description.trim() ||
+    values.companionIds.length ||
+    values.protocolNumber.trim(),
   );
 }
 
@@ -71,6 +72,10 @@ export function OccurrenceDiaryForm({
 }: Props) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
+  const [customVehicle, setCustomVehicle] = useState(
+    initial.vehicles.find((vehicle) => !(DIARY_VEHICLES as readonly string[]).includes(vehicle)) ??
+      "",
+  );
   const [draft, setDraft] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>(
     { state: "idle" },
   );
@@ -125,12 +130,17 @@ export function OccurrenceDiaryForm({
     setValues((current) => {
       const previous = shifts.find((shift) => shift.assignment_id === current.assignmentId);
       const next = shifts.find((shift) => shift.assignment_id === assignmentId);
-      const suggestedVehicle = !current.vehicle.trim() || current.vehicle === shiftVehicle(previous);
+      const previousVehicle = shiftVehicle(previous);
+      const suggestedVehicle =
+        !current.vehicles.length ||
+        (current.vehicles.length === 1 && current.vehicles[0] === previousVehicle);
+      const nextVehicle = next ? shiftVehicle(next) : "";
       return {
         ...current,
         assignmentId,
         occurredOn: next ? belemDay(next.starts_at) : current.occurredOn,
-        vehicle: next && suggestedVehicle ? shiftVehicle(next) : current.vehicle,
+        vehicle: next && suggestedVehicle ? nextVehicle : current.vehicle,
+        vehicles: next && suggestedVehicle ? (nextVehicle ? [nextVehicle] : []) : current.vehicles,
       };
     });
   }
@@ -142,6 +152,36 @@ export function OccurrenceDiaryForm({
         ? [...current.companionIds, studentId]
         : current.companionIds.filter((item) => item !== studentId),
     }));
+  }
+
+  function toggleType(type: string, checked: boolean) {
+    setValues((current) => ({
+      ...current,
+      occurrenceTypes: checked
+        ? [...new Set([...current.occurrenceTypes, type])].slice(0, 6)
+        : current.occurrenceTypes.filter((item) => item !== type),
+    }));
+  }
+
+  function toggleVehicle(vehicle: string, checked: boolean) {
+    setValues((current) => ({
+      ...current,
+      vehicles: checked
+        ? [...new Set([...current.vehicles, vehicle])].slice(0, 6)
+        : current.vehicles.filter((item) => item !== vehicle),
+    }));
+  }
+
+  function changeCustomVehicle(vehicle: string) {
+    const next = vehicle.slice(0, 60);
+    setValues((current) => ({
+      ...current,
+      vehicles: [
+        ...current.vehicles.filter((item) => item !== customVehicle),
+        ...(next.trim() ? [next.trim()] : []),
+      ].slice(0, 6),
+    }));
+    setCustomVehicle(next);
   }
 
   async function finish(intent: DiaryStatus) {
@@ -225,7 +265,9 @@ export function OccurrenceDiaryForm({
             className={field}
           >
             <option value="">Sem plantão vinculado</option>
-            {linkedMissing ? <option value={values.assignmentId}>Plantão já vinculado</option> : null}
+            {linkedMissing ? (
+              <option value={values.assignmentId}>Plantão já vinculado</option>
+            ) : null}
             {shifts.map((shift) => (
               <option key={shift.assignment_id} value={shift.assignment_id}>
                 {shiftLabel(shift)}
@@ -247,21 +289,25 @@ export function OccurrenceDiaryForm({
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="px-1 font-semibold">Detalhes opcionais</legend>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block space-y-1">
-            <span>Tipo</span>
-            <select
-              value={values.occurrenceType}
-              onChange={(event) => set("occurrenceType", event.target.value)}
-              className={field}
-            >
-              <option value="">Não informar</option>
+          <fieldset className="space-y-2 sm:col-span-3">
+            <legend className="font-medium">Tipos de ocorrência (pode marcar mais de um)</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
               {OCCURRENCE_TYPES.map((type) => (
-                <option key={type.code} value={type.code}>
-                  {type.label}
-                </option>
+                <label key={type.code} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={values.occurrenceTypes.includes(type.code)}
+                    disabled={
+                      !values.occurrenceTypes.includes(type.code) &&
+                      values.occurrenceTypes.length >= 6
+                    }
+                    onChange={(event) => toggleType(type.code, event.target.checked)}
+                  />
+                  <span>{type.label}</span>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           <label className="block space-y-1">
             <span>Gravidade</span>
             <select
@@ -293,7 +339,7 @@ export function OccurrenceDiaryForm({
             </select>
           </label>
         </div>
-        {values.occurrenceType === "outro" ? (
+        {values.occurrenceTypes.includes("outro") ? (
           <label className="block space-y-1">
             <span>Qual tipo?</span>
             <input
@@ -305,17 +351,33 @@ export function OccurrenceDiaryForm({
           </label>
         ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block space-y-1">
-            <span>Viatura</span>
-            <input
-              value={values.vehicle}
-              onChange={(event) => set("vehicle", event.target.value)}
-              list="diary-vehicles"
-              maxLength={60}
-              placeholder="Ex.: USB-12"
-              className={field}
-            />
-          </label>
+          <fieldset className="space-y-2">
+            <legend className="font-medium">Viaturas (pode marcar mais de uma)</legend>
+            <div className="flex flex-wrap gap-3">
+              {DIARY_VEHICLES.map((vehicle) => (
+                <label key={vehicle} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={values.vehicles.includes(vehicle)}
+                    disabled={!values.vehicles.includes(vehicle) && values.vehicles.length >= 6}
+                    onChange={(event) => toggleVehicle(vehicle, event.target.checked)}
+                  />
+                  <span>{vehicle}</span>
+                </label>
+              ))}
+            </div>
+            <label className="block space-y-1">
+              <span>Outra viatura (opcional)</span>
+              <input
+                value={customVehicle}
+                onChange={(event) => changeCustomVehicle(event.target.value)}
+                list="diary-vehicles"
+                maxLength={60}
+                placeholder="Ex.: SB-12"
+                className={field}
+              />
+            </label>
+          </fieldset>
           <label className="block space-y-1">
             <span>Nº da ocorrência, se souber</span>
             <input
@@ -327,9 +389,11 @@ export function OccurrenceDiaryForm({
           </label>
         </div>
         <datalist id="diary-vehicles">
-          {vehicles.map((vehicle) => (
-            <option key={vehicle} value={vehicle} />
-          ))}
+          {vehicles
+            .filter((vehicle) => !(DIARY_VEHICLES as readonly string[]).includes(vehicle))
+            .map((vehicle) => (
+              <option key={vehicle} value={vehicle} />
+            ))}
         </datalist>
         <label className="block space-y-1">
           <span>O que você percebeu ou aprendeu</span>

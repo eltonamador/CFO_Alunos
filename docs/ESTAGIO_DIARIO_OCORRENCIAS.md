@@ -9,6 +9,8 @@ Registro pessoal, extraoficial e narrativo do que o cadete viveu nos plantões. 
   - **Mural da turma:** relatos compartilhados e reações 👏 e 💡.
   - **Quadro da turma:** ver abaixo.
 - **Aluno — `/nova` e `/[id]`:** formulário com um único campo obrigatório (**O que aconteceu**, só ao sair do rascunho). O rascunho é salvo automaticamente. Plantão (últimos sete dias), data e viatura (USB/AR) vêm sugeridos.
+- Tipos de ocorrência e viaturas aceitam várias etiquetas por relato (até seis de cada). As viaturas rápidas incluem SB, AR, BT e USB; há campo para outra viatura. O histórico de registros com uma etiqueta é preservado. O PDF e os filtros consideram todas as etiquetas.
+- Fotos externas: [plano de implantação e regra de uso de imagem](PLANO_FOTOS_DIARIO.md). O envio depende de acesso autenticado à pasta Google Drive e não está ativo neste estágio.
 - **Coordenação — `/coordenacao/estagio/ocorrencias`:** leitura dos registros salvos, filtro por visibilidade e cadete, **Destacar**, **Ocultar do mural** (motivo opcional, visível ao cadete) e **Voltar a exibir**. Acesso só do papel Coordenação; cadetes com delegação de administração do estágio não entram.
 
 ## Quem vê o quê

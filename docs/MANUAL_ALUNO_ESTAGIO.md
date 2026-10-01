@@ -61,13 +61,13 @@ O oficial abre **Avaliação do cadete** sem login e pode enviar a ficha **após
 Espaço para contar o que você viveu nos plantões. **Não faz parte do PPC, não conta horas e não é avaliação.**
 
 1. Em **Meu Estágio**, abra **Diário de ocorrências** ou toque em **Registrar ocorrência no diário** no card do plantão.
-2. Só **O que aconteceu** é obrigatório. Plantão, data e viatura vêm sugeridos; tipo, gravidade, participação, percepção, relato, colegas e número da ocorrência são opcionais.
+2. Só **O que aconteceu** é obrigatório. Plantão, data e viatura vêm sugeridos; você pode marcar mais de um tipo de ocorrência e mais de uma viatura (SB, AR, BT, USB ou outra). Gravidade, participação, percepção, relato, colegas e número da ocorrência são opcionais.
 3. O rascunho é salvo sozinho enquanto você escreve. Para terminar, toque em **Salvar no meu diário** ou **Compartilhar com a turma**. Dá para editar, tirar do mural ou excluir depois.
 4. No **Mural da turma**, reaja aos relatos dos colegas com 👏 ou 💡. As insígnias são marcos simbólicos, sem pontuação.
 5. O **Quadro da turma** mostra quem mais compartilhou no mês ou em todo o estágio, e os destaques do mês. É só incentivo, sem valor avaliativo, e conta apenas o que foi compartilhado.
 6. Em **Meu diário**, use **Baixar meu diário em PDF** para guardar uma lembrança com os registros salvos.
 
-> **Privacidade:** evite nome, endereço ou dados de saúde da vítima. Rascunhos ficam só com você; registros salvos também podem ser lidos pela Coordenação, que pode ocultar do mural um relato inadequado. Atue sempre dentro da sua competência e sob orientação da guarnição.
+> **Privacidade:** não identifique vítimas, pacientes ou terceiros no texto. O envio de fotos está em planejamento: quando disponível, não envie rostos, placas, documentos, endereços, dados de saúde ou cenas íntimas. Rascunhos ficam só com você; registros salvos também podem ser lidos pela Coordenação, que pode ocultar do mural um relato inadequado. Atue sempre dentro da sua competência e sob orientação da guarnição.
 
 ## Se algo não funcionar
 

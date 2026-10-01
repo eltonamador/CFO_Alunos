@@ -19,7 +19,9 @@ const shift: DiaryShift = {
 const props = {
   initial: newDiaryForm(null, Date.parse("2026-09-26T10:00:00-03:00")),
   shifts: [shift],
-  classmates: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", war_name: "COLEGA", student_number: 2 }],
+  classmates: [
+    { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", war_name: "COLEGA", student_number: 2 },
+  ],
 };
 const summary = () => screen.getByLabelText("O que aconteceu");
 
@@ -39,7 +41,9 @@ it("exige só a frase do que aconteceu e salva no diário com um toque", async (
 
   fireEvent.change(summary(), { target: { value: "Queda de moto, vítima consciente" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar no meu diário" }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith("/aluno/estagio/ocorrencias?resultado=pessoal"));
+  await waitFor(() =>
+    expect(push).toHaveBeenCalledWith("/aluno/estagio/ocorrencias?resultado=pessoal"),
+  );
   expect(saveDiaryEntry).toHaveBeenCalledWith(
     expect.objectContaining({
       id: null,
@@ -87,7 +91,10 @@ it("salva o rascunho sozinho e continua no mesmo registro", async () => {
   });
   expect(saveDiaryEntry).toHaveBeenCalledTimes(2);
   expect(saveDiaryEntry).toHaveBeenLastCalledWith(
-    expect.objectContaining({ id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", summary: "Queda de moto" }),
+    expect.objectContaining({
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      summary: "Queda de moto",
+    }),
     { autosave: true },
   );
   expect(push).not.toHaveBeenCalled();
@@ -112,9 +119,24 @@ it("ao escolher o plantão sugere a data e a viatura", () => {
     target: { value: shift.assignment_id },
   });
   expect(screen.getByLabelText("Data")).toHaveValue("2026-09-25");
-  expect(screen.getByLabelText("Viatura")).toHaveValue("USB");
-  fireEvent.change(screen.getByLabelText("Tipo"), { target: { value: "outro" } });
+  expect(screen.getByLabelText("USB")).toBeChecked();
+  fireEvent.click(screen.getByLabelText("Outro"));
   expect(screen.getByLabelText("Qual tipo?")).toBeInTheDocument();
+});
+
+it("permite combinar dois tipos e duas viaturas no mesmo relato", async () => {
+  render(<OccurrenceDiaryForm {...props} />);
+  fireEvent.change(summary(), { target: { value: "Fogo em residência e vegetação" } });
+  fireEvent.click(screen.getByLabelText("Incêndio urbano"));
+  fireEvent.click(screen.getByLabelText("Incêndio em vegetação"));
+  fireEvent.click(screen.getByLabelText("SB"));
+  fireEvent.click(screen.getByLabelText("AR"));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar no meu diário" }));
+  await waitFor(() => expect(saveDiaryEntry).toHaveBeenCalled());
+  expect(vi.mocked(saveDiaryEntry).mock.calls.at(-1)?.[0]).toMatchObject({
+    occurrenceTypes: ["incendio_urbano", "incendio_vegetacao"],
+    vehicles: ["SB", "AR"],
+  });
 });
 
 it("registro já compartilhado não usa rascunho automático e pode sair do mural", async () => {

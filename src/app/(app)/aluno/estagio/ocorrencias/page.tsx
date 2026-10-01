@@ -6,6 +6,8 @@ import {
   BOARD_ORDERS,
   COMPETENCE_NOTICE,
   DIARY_ENTRY_COLUMNS,
+  entryTypes,
+  entryVehicles,
   DIARY_NOTICE,
   diaryBadges,
   diaryBoard,
@@ -48,7 +50,11 @@ const tabs = [
   { value: "mural", label: "Mural da turma", href: "/aluno/estagio/ocorrencias?aba=mural" },
   { value: "quadro", label: "Quadro da turma", href: "/aluno/estagio/ocorrencias?aba=quadro" },
 ] as const;
-const medals = { 1: ["🥇", "Medalha de ouro"], 2: ["🥈", "Medalha de prata"], 3: ["🥉", "Medalha de bronze"] };
+const medals = {
+  1: ["🥇", "Medalha de ouro"],
+  2: ["🥈", "Medalha de prata"],
+  3: ["🥉", "Medalha de bronze"],
+};
 const selectClass = "h-11 rounded-md border border-input bg-card px-3 text-sm";
 const unavailable = (
   <p className="rounded-lg border p-4 text-sm">
@@ -66,7 +72,11 @@ type SearchParams = {
   ordem?: string;
 };
 
-export default async function OccurrenceDiaryPage({ searchParams }: { searchParams?: SearchParams }) {
+export default async function OccurrenceDiaryPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const session = await requireRole("aluno");
   if (!session.studentId) return <p>Conta sem vínculo de cadete. Procure a Coordenação.</p>;
   const tab = tabs.find((item) => item.value === searchParams?.aba)?.value ?? "diario";
@@ -177,12 +187,12 @@ async function DiaryTab({
     entries,
     new Map([...reactions].map(([id, summary]) => [id, summary.total])),
   );
-  const types = [...new Set(entries.map((entry) => entry.occurrence_type).filter(Boolean))];
-  const vehicles = [...new Set(entries.map((entry) => entry.vehicle).filter(Boolean))];
+  const types = [...new Set(entries.flatMap(entryTypes))];
+  const vehicles = [...new Set(entries.flatMap(entryVehicles))];
   const visible = entries.filter(
     (entry) =>
-      (!filters.type || entry.occurrence_type === filters.type) &&
-      (!filters.vehicle || entry.vehicle === filters.vehicle),
+      (!filters.type || entryTypes(entry).includes(filters.type)) &&
+      (!filters.vehicle || entryVehicles(entry).includes(filters.vehicle)),
   );
   return (
     <>
@@ -191,10 +201,15 @@ async function DiaryTab({
           <strong>{stats.saved}</strong> {stats.saved === 1 ? "registro" : "registros"} ·{" "}
           <strong>{stats.shared}</strong> no mural · <strong>{stats.types}</strong>{" "}
           {stats.types === 1 ? "tipo vivido" : "tipos diferentes"}
-          {stats.drafts ? ` · ${stats.drafts} ${stats.drafts === 1 ? "rascunho" : "rascunhos"}` : ""}
+          {stats.drafts
+            ? ` · ${stats.drafts} ${stats.drafts === 1 ? "rascunho" : "rascunhos"}`
+            : ""}
         </p>
         {stats.saved ? (
-          <a href="/api/estagio/diario" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <a
+            href="/api/estagio/diario"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Baixar meu diário em PDF
           </a>
         ) : null}
@@ -375,12 +390,15 @@ async function BoardTab({
   const name = (id: string) => cadetLabel(cadets.get(id));
   const inPeriod = wholePeriod
     ? entries
-    : entries.filter((entry) => entry.shared_at && Date.parse(entry.shared_at) >= Date.parse(since));
+    : entries.filter(
+        (entry) => entry.shared_at && Date.parse(entry.shared_at) >= Date.parse(since),
+      );
   const rows = diaryBoard(inPeriod, totals, order, name);
   const highlights = monthHighlights(entries, totals, since);
-  const month = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "America/Belem" }).format(
-    now,
-  );
+  const month = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    timeZone: "America/Belem",
+  }).format(now);
   return (
     <section className="space-y-4">
       <p className="text-sm text-muted-foreground">
@@ -391,7 +409,11 @@ async function BoardTab({
         <input type="hidden" name="aba" value="quadro" />
         <label className="space-y-1">
           <span className="block">Período</span>
-          <select name="periodo" defaultValue={wholePeriod ? "tudo" : "mes"} className={selectClass}>
+          <select
+            name="periodo"
+            defaultValue={wholePeriod ? "tudo" : "mes"}
+            className={selectClass}
+          >
             <option value="mes">Este mês</option>
             <option value="tudo">Todo o estágio</option>
           </select>

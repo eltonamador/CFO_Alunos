@@ -60,6 +60,7 @@ export default async function CoordenacaoAlunosPage({ searchParams }: PageProps)
     .select("id, student_number, war_name, course_status")
     .is("deleted_at", null)
     .neq("course_status", "matriculado")
+    .eq("is_test", false)
     .order("student_number", { ascending: true, nullsFirst: false });
 
   const enriched = bundles.map((b) => ({

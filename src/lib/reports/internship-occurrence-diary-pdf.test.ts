@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { diaryBadges, type DiaryEntry } from "@/modules/internship-management/domain/occurrenceDiary";
+import {
+  diaryBadges,
+  type DiaryEntry,
+} from "@/modules/internship-management/domain/occurrenceDiary";
 import { buildOccurrenceDiaryPDF, pdfSafe } from "./internship-occurrence-diary-pdf";
 
 async function pdfText(buffer: Buffer) {
@@ -24,10 +27,12 @@ const entry = (fields: Partial<DiaryEntry>): DiaryEntry => ({
   occurred_on: "2026-09-26",
   summary: "Registro",
   occurrence_type: null,
+  occurrence_types: [],
   other_type: null,
   severity: null,
   participation: null,
   vehicle: null,
+  vehicles: [],
   perception: null,
   description: null,
   companion_ids: [],
@@ -54,9 +59,11 @@ describe("PDF pessoal do diário", () => {
         id: "e1",
         summary: "Queda de moto 🚑 na BR-210",
         occurrence_type: "aph",
+        occurrence_types: ["aph", "acidente_transito"],
         severity: "moderada",
         participation: "apoiei",
         vehicle: "USB-12",
+        vehicles: ["USB-12", "AR"],
         assignment_id: "a1",
         perception: "Aprendi a importância da imobilização.",
         companion_ids: ["s2"],
@@ -89,11 +96,11 @@ describe("PDF pessoal do diário", () => {
     for (const expected of [
       "Meu diário de ocorrências",
       "SILVA · 07",
-      "2 registros de 26/09/2026 a 02/10/2026 · 2 tipos diferentes · 1 no mural da turma",
+      "2 registros de 26/09/2026 a 02/10/2026 · 3 tipos diferentes · 1 no mural da turma",
       "Insígnias: Primeiro registro · Primeiro APH · Primeiro salvamento aquático",
       "não conta horas e não é avaliação",
       "Queda de moto na BR-210",
-      "26/09 07:45 · USB—APH · 1º GBM · APH (atendimento pré-hospitalar) · Moderada · Apoiei · Viatura USB-12",
+      "26/09 07:45 · USB—APH · 1º GBM · APH (atendimento pré-hospitalar) · Acidente de trânsito · Moderada · Apoiei · Viaturas USB-12, AR",
       "Com COLEGA · 02 · Ocorrência nº 2026-001 · Compartilhado no mural · 3 reações · Destaque da Coordenação",
       "Afogamento evitado no Araxá",
       `página 1 de ${pages}`,

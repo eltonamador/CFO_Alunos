@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/Badge";
 import {
   PARTICIPATIONS,
   SEVERITIES,
+  entryTypes,
+  entryVehicles,
   formatDiaryDate,
   occurrenceTypeLabel,
   optionLabel,
@@ -35,12 +37,18 @@ export function DiaryEntryCard({
   showStatus?: boolean;
   children?: ReactNode;
 }) {
-  const type = occurrenceTypeLabel(entry.occurrence_type, entry.other_type);
+  const types = entryTypes(entry)
+    .map((type) => occurrenceTypeLabel(type, entry.other_type))
+    .filter(Boolean);
+  const vehicles = entryVehicles(entry);
   const severity = optionLabel(SEVERITIES, entry.severity);
   const participation = optionLabel(PARTICIPATIONS, entry.participation);
   const featured = entry.featured_at && entry.status === "compartilhado" && !entry.hidden_at;
   return (
-    <article id={`relato-${entry.id}`} className="scroll-mt-24 space-y-3 rounded-lg border bg-card p-4 text-sm">
+    <article
+      id={`relato-${entry.id}`}
+      className="scroll-mt-24 space-y-3 rounded-lg border bg-card p-4 text-sm"
+    >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <p className="text-xs text-muted-foreground">
@@ -55,16 +63,22 @@ export function DiaryEntryCard({
           {showStatus ? <StatusBadge entry={entry} /> : null}
         </div>
       </header>
-      {type || severity || participation || entry.vehicle ? (
+      {types.length || severity || participation || vehicles.length ? (
         <div className="flex flex-wrap gap-1">
-          {type ? <Badge variant="outline">{type}</Badge> : null}
+          {types.map((type) => (
+            <Badge key={type} variant="outline">
+              {type}
+            </Badge>
+          ))}
           {severity ? (
             <Badge variant={severityVariant[entry.severity as keyof typeof severityVariant]}>
               {severity}
             </Badge>
           ) : null}
           {participation ? <Badge variant="info">{participation}</Badge> : null}
-          {entry.vehicle ? <Badge>{entry.vehicle}</Badge> : null}
+          {vehicles.map((vehicle) => (
+            <Badge key={vehicle}>{vehicle}</Badge>
+          ))}
         </div>
       ) : null}
       {entry.perception ? (

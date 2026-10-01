@@ -48,7 +48,11 @@ describe("preparo do registro", () => {
       otherType: "não usado",
       occurredOn: "26/09/2026",
       assignmentId: "sem-plantao",
-      companionIds: ["a", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
+      companionIds: [
+        "a",
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      ],
       perception: "",
     });
     expect(result).toMatchObject({
@@ -76,10 +80,32 @@ describe("preparo do registro", () => {
     });
     expect(result).toMatchObject({
       ok: true,
-      row: { occurrence_type: "outro", other_type: "Resgate em elevador", occurred_on: "2026-09-26" },
+      row: {
+        occurrence_type: "outro",
+        other_type: "Resgate em elevador",
+        occurred_on: "2026-09-26",
+      },
     });
     expect(occurrenceTypeLabel("outro", "Resgate em elevador")).toBe("Resgate em elevador");
     expect(occurrenceTypeLabel("aph")).toBe("APH (atendimento pré-hospitalar)");
+  });
+
+  it("preserva combinações de tipos e viaturas, sem repetir etiquetas", () => {
+    const result = prepareDiaryEntry({
+      intent: "pessoal",
+      summary: "Fogo em residência e vegetação",
+      occurrenceTypes: ["incendio_urbano", "incendio_vegetacao", "incendio_urbano"],
+      vehicles: ["SB", "AR", "BT", "AR"],
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      row: {
+        occurrence_type: "incendio_urbano",
+        occurrence_types: ["incendio_urbano", "incendio_vegetacao"],
+        vehicle: "SB",
+        vehicles: ["SB", "AR", "BT"],
+      },
+    });
   });
 });
 
@@ -111,6 +137,7 @@ describe("incentivo simbólico", () => {
 
   it("conta registros salvos e tipos vividos, sem rascunhos", () => {
     expect(diaryStats(entries)).toEqual({ saved: 2, drafts: 1, shared: 1, types: 2 });
+    expect(diaryStats([{ ...entries[0]!, occurrence_types: ["aph", "acidente_transito"] }])).toMatchObject({ types: 2 });
   });
 
   it("concede insígnias por marcos, não por pontos", () => {
@@ -178,8 +205,16 @@ describe("quadro da turma", () => {
     const now = Date.parse("2026-10-15T10:00:00-03:00");
     expect(monthStart(now)).toBe("2026-10-01T00:00:00-03:00");
     const entries = [
-      { id: "old", featured_at: "2026-09-30T12:00:00-03:00", shared_at: "2026-09-29T12:00:00-03:00" },
-      { id: "new", featured_at: "2026-10-02T12:00:00-03:00", shared_at: "2026-10-01T12:00:00-03:00" },
+      {
+        id: "old",
+        featured_at: "2026-09-30T12:00:00-03:00",
+        shared_at: "2026-09-29T12:00:00-03:00",
+      },
+      {
+        id: "new",
+        featured_at: "2026-10-02T12:00:00-03:00",
+        shared_at: "2026-10-01T12:00:00-03:00",
+      },
       { id: "liked", featured_at: null, shared_at: "2026-10-03T12:00:00-03:00" },
       { id: "quiet", featured_at: null, shared_at: "2026-10-04T12:00:00-03:00" },
     ];

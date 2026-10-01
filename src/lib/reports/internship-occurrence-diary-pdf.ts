@@ -3,6 +3,8 @@ import {
   DIARY_NOTICE,
   PARTICIPATIONS,
   SEVERITIES,
+  entryTypes,
+  entryVehicles,
   formatDiaryDate,
   occurrenceTypeLabel,
   optionLabel,
@@ -24,7 +26,13 @@ export type OccurrenceDiaryPdfInput = {
 };
 
 const MARGIN = 56;
-const COLORS = { ink: "#111827", soft: "#374151", muted: "#6B7280", accent: "#7B1818", line: "#D4D4D8" };
+const COLORS = {
+  ink: "#111827",
+  soft: "#374151",
+  muted: "#6B7280",
+  accent: "#7B1818",
+  line: "#D4D4D8",
+};
 const WIN_ANSI_EXTRA = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
 
 /** As fontes padrão do PDF usam WinAnsi: emojis e símbolos fora da tabela são removidos. */
@@ -64,7 +72,7 @@ export async function buildOccurrenceDiaryPDF(input: OccurrenceDiaryPdfInput): P
   const width = doc.page.width - 2 * MARGIN;
   const entries = input.entries;
   const shared = entries.filter((entry) => entry.status === "compartilhado" && !entry.hidden_at);
-  const types = new Set(entries.map((entry) => entry.occurrence_type).filter(Boolean)).size;
+  const types = new Set(entries.flatMap(entryTypes)).size;
   const earned = input.badges.filter((badge) => badge.earned).map((badge) => badge.label);
 
   doc.font("Helvetica").fontSize(9).fillColor(COLORS.muted);
@@ -102,10 +110,13 @@ export async function buildOccurrenceDiaryPDF(input: OccurrenceDiaryPdfInput): P
     const reactions = input.reactionTotals.get(entry.id) ?? 0;
     const meta = [
       entry.assignment_id ? input.shiftLabels.get(entry.assignment_id) : null,
-      occurrenceTypeLabel(entry.occurrence_type, entry.other_type),
+      entryTypes(entry)
+        .map((type) => occurrenceTypeLabel(type, entry.other_type))
+        .filter(Boolean)
+        .join(" · "),
       optionLabel(SEVERITIES, entry.severity),
       optionLabel(PARTICIPATIONS, entry.participation),
-      entry.vehicle ? `Viatura ${entry.vehicle}` : null,
+      entryVehicles(entry).length ? `Viaturas ${entryVehicles(entry).join(", ")}` : null,
     ].filter(Boolean);
     const companions = entry.companion_ids.map((id) => input.names.get(id) ?? "Cadete");
     const visibleOnMural = entry.status === "compartilhado" && !entry.hidden_at;

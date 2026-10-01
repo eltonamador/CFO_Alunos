@@ -17,6 +17,7 @@ export const OCCURRENCE_TYPES = [
   { code: "salvamento_aquatico", label: "Salvamento aquático" },
   { code: "busca_salvamento", label: "Busca e salvamento" },
   { code: "animal", label: "Captura ou resgate de animal" },
+  { code: "abelhas_marimbondos", label: "Abelhas ou marimbondos" },
   { code: "arvore", label: "Corte ou queda de árvore" },
   { code: "produtos_perigosos", label: "Gás ou produtos perigosos" },
   { code: "prevencao", label: "Prevenção ou evento" },
@@ -33,6 +34,7 @@ export const PARTICIPATIONS = [
   { value: "apoiei", label: "Apoiei" },
   { value: "atuei", label: "Atuei" },
 ] as const;
+export const DIARY_VEHICLES = ["SB", "AR", "BT", "USB"] as const;
 export const REACTIONS = [
   { kind: "aplauso", emoji: "👏", label: "Aplaudir" },
   { kind: "aprendi", emoji: "💡", label: "Aprendi com isso" },
@@ -44,7 +46,7 @@ export const REACTION_KINDS = REACTIONS.map((r) => r.kind) as [ReactionKind, ...
 
 export const DIARY_ENTRY_COLUMNS =
   "id,student_id,assignment_id,status,occurred_on,summary,occurrence_type,other_type,severity," +
-  "participation,vehicle,perception,description,companion_ids,protocol_number,shared_at," +
+  "occurrence_types,participation,vehicle,vehicles,perception,description,companion_ids,protocol_number,shared_at," +
   "featured_at,hidden_at,hidden_reason,created_at,updated_at";
 
 export type DiaryEntry = {
@@ -55,10 +57,12 @@ export type DiaryEntry = {
   occurred_on: string;
   summary: string;
   occurrence_type: string | null;
+  occurrence_types: string[];
   other_type: string | null;
   severity: string | null;
   participation: string | null;
   vehicle: string | null;
+  vehicles: string[];
   perception: string | null;
   description: string | null;
   companion_ids: string[];
@@ -90,7 +94,9 @@ const choice = <T extends readonly [string, ...string[]]>(values: T) =>
   z
     .string()
     .nullish()
-    .transform((value) => ((values as readonly string[]).includes(value ?? "") ? (value as T[number]) : null));
+    .transform((value) =>
+      (values as readonly string[]).includes(value ?? "") ? (value as T[number]) : null,
+    );
 
 const diaryInput = z.object({
   id: z.string().uuid().nullish(),
@@ -112,10 +118,12 @@ const diaryInput = z.object({
     .nullish()
     .transform((value) => value?.trim().slice(0, 200) ?? ""),
   occurrenceType: choice(OCCURRENCE_TYPES.map((t) => t.code) as [string, ...string[]]),
+  occurrenceTypes: z.array(z.string()).nullish(),
   otherType: text(80),
   severity: choice(SEVERITIES.map((s) => s.value) as [string, ...string[]]),
   participation: choice(PARTICIPATIONS.map((p) => p.value) as [string, ...string[]]),
   vehicle: text(60),
+  vehicles: z.array(z.string()).nullish(),
   perception: text(2000),
   description: text(4000),
   companionIds: z
@@ -133,10 +141,12 @@ export type DiaryEntryRow = {
   occurred_on?: string;
   summary: string;
   occurrence_type: string | null;
+  occurrence_types: string[];
   other_type: string | null;
   severity: string | null;
   participation: string | null;
   vehicle: string | null;
+  vehicles: string[];
   perception: string | null;
   description: string | null;
   companion_ids: string[];
@@ -148,8 +158,22 @@ export function prepareDiaryEntry(
   input: unknown,
 ): { ok: true; id: string | null; row: DiaryEntryRow } | { ok: false; error: string } {
   const parsed = diaryInput.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Não foi possível ler o registro. Tente de novo." };
+  if (!parsed.success)
+    return { ok: false, error: "Não foi possível ler o registro. Tente de novo." };
   const value = parsed.data;
+  const allowedTypes = new Set<string>(OCCURRENCE_TYPES.map((item) => item.code));
+  const occurrenceTypes = [
+    ...new Set(value.occurrenceTypes ?? (value.occurrenceType ? [value.occurrenceType] : [])),
+  ]
+    .filter((type) => allowedTypes.has(type))
+    .slice(0, 6);
+  const vehicles = [
+    ...new Set(
+      (value.vehicles ?? (value.vehicle ? [value.vehicle] : []))
+        .map((vehicle) => vehicle.trim().slice(0, 60))
+        .filter(Boolean),
+    ),
+  ].slice(0, 6);
   if (value.intent !== "rascunho" && value.summary.length < 3) {
     return { ok: false, error: "Conte em uma frase o que aconteceu." };
   }
@@ -161,11 +185,13 @@ export function prepareDiaryEntry(
       assignment_id: value.assignmentId,
       ...(value.occurredOn ? { occurred_on: value.occurredOn } : {}),
       summary: value.summary,
-      occurrence_type: value.occurrenceType,
-      other_type: value.occurrenceType === "outro" ? value.otherType : null,
+      occurrence_type: occurrenceTypes[0] ?? null,
+      occurrence_types: occurrenceTypes,
+      other_type: occurrenceTypes.includes("outro") ? value.otherType : null,
       severity: value.severity,
       participation: value.participation,
-      vehicle: value.vehicle,
+      vehicle: vehicles[0] ?? null,
+      vehicles,
       perception: value.perception,
       description: value.description,
       companion_ids: value.companionIds,
@@ -179,10 +205,12 @@ export type DiaryFormValues = {
   occurredOn: string;
   summary: string;
   occurrenceType: string;
+  occurrenceTypes: string[];
   otherType: string;
   severity: string;
   participation: string;
   vehicle: string;
+  vehicles: string[];
   perception: string;
   description: string;
   companionIds: string[];
@@ -196,10 +224,12 @@ export function newDiaryForm(shift: DiaryShift | null, now: number): DiaryFormVa
     occurredOn: belemDay(shift ? shift.starts_at : now),
     summary: "",
     occurrenceType: "",
+    occurrenceTypes: [],
     otherType: "",
     severity: "",
     participation: "",
     vehicle: shiftVehicle(shift ?? undefined),
+    vehicles: shiftVehicle(shift ?? undefined) ? [shiftVehicle(shift ?? undefined)] : [],
     perception: "",
     description: "",
     companionIds: [],
@@ -213,10 +243,16 @@ export function diaryFormFromEntry(entry: DiaryEntry): DiaryFormValues {
     occurredOn: entry.occurred_on,
     summary: entry.summary,
     occurrenceType: entry.occurrence_type ?? "",
+    occurrenceTypes: entry.occurrence_types?.length
+      ? entry.occurrence_types
+      : entry.occurrence_type
+        ? [entry.occurrence_type]
+        : [],
     otherType: entry.other_type ?? "",
     severity: entry.severity ?? "",
     participation: entry.participation ?? "",
     vehicle: entry.vehicle ?? "",
+    vehicles: entry.vehicles?.length ? entry.vehicles : entry.vehicle ? [entry.vehicle] : [],
     perception: entry.perception ?? "",
     description: entry.description ?? "",
     companionIds: entry.companion_ids,
@@ -228,6 +264,20 @@ export function occurrenceTypeLabel(code: string | null, other?: string | null):
   if (!code) return null;
   if (code === "outro" && other) return other;
   return OCCURRENCE_TYPES.find((t) => t.code === code)?.label ?? code;
+}
+
+export function entryTypes(
+  entry: Pick<DiaryEntry, "occurrence_type" | "occurrence_types">,
+): string[] {
+  return entry.occurrence_types?.length
+    ? entry.occurrence_types
+    : entry.occurrence_type
+      ? [entry.occurrence_type]
+      : [];
+}
+
+export function entryVehicles(entry: Pick<DiaryEntry, "vehicle" | "vehicles">): string[] {
+  return entry.vehicles?.length ? entry.vehicles : entry.vehicle ? [entry.vehicle] : [];
 }
 
 export function optionLabel(
@@ -305,7 +355,8 @@ export function summarizeReactions(
   return byEntry;
 }
 
-type CountedEntry = Pick<DiaryEntry, "id" | "status" | "occurrence_type">;
+type CountedEntry = Pick<DiaryEntry, "id" | "status" | "occurrence_type"> &
+  Partial<Pick<DiaryEntry, "occurrence_types">>;
 
 export function diaryStats(entries: CountedEntry[]) {
   const saved = entries.filter((entry) => entry.status !== "rascunho");
@@ -313,7 +364,15 @@ export function diaryStats(entries: CountedEntry[]) {
     saved: saved.length,
     drafts: entries.length - saved.length,
     shared: saved.filter((entry) => entry.status === "compartilhado").length,
-    types: new Set(saved.map((entry) => entry.occurrence_type).filter(Boolean)).size,
+    types: new Set(
+      saved.flatMap((entry) =>
+        entry.occurrence_types?.length
+          ? entry.occurrence_types
+          : entry.occurrence_type
+            ? [entry.occurrence_type]
+            : [],
+      ),
+    ).size,
   };
 }
 
@@ -325,7 +384,15 @@ export function diaryBadges(
   reactionTotals: ReadonlyMap<string, number> = new Map(),
 ): DiaryBadge[] {
   const saved = entries.filter((entry) => entry.status !== "rascunho");
-  const types = new Set(saved.map((entry) => entry.occurrence_type).filter(Boolean));
+  const types = new Set(
+    saved.flatMap((entry) =>
+      entry.occurrence_types?.length
+        ? entry.occurrence_types
+        : entry.occurrence_type
+          ? [entry.occurrence_type]
+          : [],
+    ),
+  );
   return [
     {
       code: "primeiro_registro",
@@ -390,7 +457,8 @@ export function monthStart(now: number): string {
  * Quem não compartilhou não aparece; empates dividem a mesma medalha.
  */
 export function diaryBoard(
-  entries: Pick<DiaryEntry, "id" | "student_id" | "occurrence_type">[],
+  entries: (Pick<DiaryEntry, "id" | "student_id" | "occurrence_type"> &
+    Partial<Pick<DiaryEntry, "occurrence_types">>)[],
   reactionTotals: ReadonlyMap<string, number>,
   order: BoardOrder,
   nameOf: (studentId: string) => string = (studentId) => studentId,
@@ -399,7 +467,12 @@ export function diaryBoard(
   for (const entry of entries) {
     const row = byStudent.get(entry.student_id) ?? { shared: 0, types: new Set(), reactions: 0 };
     row.shared += 1;
-    if (entry.occurrence_type) row.types.add(entry.occurrence_type);
+    for (const type of entry.occurrence_types?.length
+      ? entry.occurrence_types
+      : entry.occurrence_type
+        ? [entry.occurrence_type]
+        : [])
+      row.types.add(type);
     row.reactions += reactionTotals.get(entry.id) ?? 0;
     byStudent.set(entry.student_id, row);
   }
@@ -427,9 +500,11 @@ export function diaryBoard(
 }
 
 /** Destaques do mês: escolhidos pela Coordenação e os relatos com mais reações. */
-export function monthHighlights<
-  T extends Pick<DiaryEntry, "id" | "featured_at" | "shared_at">,
->(entries: T[], reactionTotals: ReadonlyMap<string, number>, since: string) {
+export function monthHighlights<T extends Pick<DiaryEntry, "id" | "featured_at" | "shared_at">>(
+  entries: T[],
+  reactionTotals: ReadonlyMap<string, number>,
+  since: string,
+) {
   const start = Date.parse(since);
   const reactions = (entry: T) => reactionTotals.get(entry.id) ?? 0;
   return {

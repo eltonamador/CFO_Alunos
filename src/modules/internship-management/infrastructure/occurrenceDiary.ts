@@ -33,7 +33,11 @@ export async function loadCadets(db: Db, ids: string[]): Promise<Map<string, Cad
 }
 
 export async function loadClassmates(db: Db, studentId: string): Promise<Cadet[]> {
-  const { data: me } = await db.from("students").select("class_id").eq("id", studentId).maybeSingle();
+  const { data: me } = await db
+    .from("students")
+    .select("class_id")
+    .eq("id", studentId)
+    .maybeSingle();
   if (!me?.class_id) return [];
   const { data } = await db
     .from("v_student_class_basic")
@@ -64,7 +68,13 @@ export async function loadReactions(db: Db, entryIds: string[]): Promise<Reactio
 
 export type SharedEntry = Pick<
   DiaryEntry,
-  "id" | "student_id" | "occurrence_type" | "summary" | "featured_at" | "shared_at"
+  | "id"
+  | "student_id"
+  | "occurrence_type"
+  | "occurrence_types"
+  | "summary"
+  | "featured_at"
+  | "shared_at"
 >;
 
 /** Todos os relatos visíveis no mural da turma, para o quadro e os destaques. */
@@ -72,7 +82,7 @@ export async function loadSharedEntries(db: Db): Promise<SharedEntry[]> {
   return readAll((from, to) =>
     db
       .from("internship_diary_entries")
-      .select("id,student_id,occurrence_type,summary,featured_at,shared_at")
+      .select("id,student_id,occurrence_type,occurrence_types,summary,featured_at,shared_at")
       .eq("status", "compartilhado")
       .is("hidden_at", null)
       .order("shared_at", { ascending: false })
@@ -96,9 +106,19 @@ export async function loadDiaryShifts(db: Db): Promise<DiaryShift[]> {
 export async function loadMyVehicles(db: Db, studentId: string): Promise<string[]> {
   const { data } = await db
     .from("internship_diary_entries")
-    .select("vehicle")
+    .select("vehicle,vehicles")
     .eq("student_id", studentId)
     .not("vehicle", "is", null)
     .limit(200);
-  return [...new Set(["USB", "AR", ...(data ?? []).map((row) => row.vehicle as string)])];
+  return [
+    ...new Set([
+      "SB",
+      "AR",
+      "BT",
+      "USB",
+      ...(data ?? []).flatMap((row) =>
+        row.vehicles?.length ? row.vehicles : row.vehicle ? [row.vehicle] : [],
+      ),
+    ]),
+  ];
 }

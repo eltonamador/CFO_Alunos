@@ -3611,6 +3611,7 @@ export type Database = {
           id: string;
           occurred_on: string;
           occurrence_type: string | null;
+          occurrence_types: string[];
           other_type: string | null;
           participation: string | null;
           perception: string | null;
@@ -3622,6 +3623,7 @@ export type Database = {
           summary: string;
           updated_at: string;
           vehicle: string | null;
+          vehicles: string[];
         };
         Insert: {
           assignment_id?: string | null;
@@ -3636,6 +3638,7 @@ export type Database = {
           id?: string;
           occurred_on?: string;
           occurrence_type?: string | null;
+          occurrence_types?: string[];
           other_type?: string | null;
           participation?: string | null;
           perception?: string | null;
@@ -3647,6 +3650,7 @@ export type Database = {
           summary?: string;
           updated_at?: string;
           vehicle?: string | null;
+          vehicles?: string[];
         };
         Update: {
           assignment_id?: string | null;
@@ -3661,6 +3665,7 @@ export type Database = {
           id?: string;
           occurred_on?: string;
           occurrence_type?: string | null;
+          occurrence_types?: string[];
           other_type?: string | null;
           participation?: string | null;
           perception?: string | null;
@@ -3672,6 +3677,7 @@ export type Database = {
           summary?: string;
           updated_at?: string;
           vehicle?: string | null;
+          vehicles?: string[];
         };
         Relationships: [
           {
@@ -5164,6 +5170,7 @@ export type Database = {
           has_religious_restriction: boolean | null;
           has_specialization: boolean | null;
           id: string;
+          is_test: boolean;
           marital_status: string | null;
           mother_name: string | null;
           nationality: string | null;
@@ -5218,6 +5225,7 @@ export type Database = {
           has_religious_restriction?: boolean | null;
           has_specialization?: boolean | null;
           id?: string;
+          is_test?: boolean;
           marital_status?: string | null;
           mother_name?: string | null;
           nationality?: string | null;
@@ -5272,6 +5280,7 @@ export type Database = {
           has_religious_restriction?: boolean | null;
           has_specialization?: boolean | null;
           id?: string;
+          is_test?: boolean;
           marital_status?: string | null;
           mother_name?: string | null;
           nationality?: string | null;

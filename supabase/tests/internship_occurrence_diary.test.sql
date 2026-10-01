@@ -7,7 +7,7 @@ create function pg_temp.act(label text) returns text language sql as $$
   select set_config('request.jwt.claims',json_build_object('sub',pg_temp.did(label))::text,true)$$;
 -- Turma A: cadetes 1, 2 e 4 (o 4 administra o estágio por delegação). Turma B: cadete 3.
 insert into auth.users(id,email)
-select pg_temp.did(u),u||'@diary.test.invalid' from unnest(array['coord','cad1','cad2','cad3','cad4']) u;
+select pg_temp.did(u),u||'@diary.test.invalid' from unnest(array['coord','cad1','cad2','cad3','cad4','boris']) u;
 insert into public.courses(id,code,name,year) values(pg_temp.did('course'),'DIARY-TEST','Curso diário',2099);
 insert into public.classes(id,course_id,name)
 values(pg_temp.did('classA'),pg_temp.did('course'),'Turma A'),(pg_temp.did('classB'),pg_temp.did('course'),'Turma B');
@@ -16,12 +16,15 @@ insert into public.students(id,class_id,student_number,war_name,full_name,pelota
  (pg_temp.did('student2'),pg_temp.did('classA'),2,'DIARIO DOIS','Cadete diário dois','CFO I'),
  (pg_temp.did('student3'),pg_temp.did('classB'),3,'DIARIO TRES','Cadete diário três','CFO I'),
  (pg_temp.did('student4'),pg_temp.did('classA'),4,'DIARIO QUATRO','Cadete diário quatro','CFO I');
+insert into public.students(id,class_id,war_name,full_name,pelotao,course_status,is_test)
+values(pg_temp.did('student_boris'),pg_temp.did('classA'),'BORIS','Boris — aluno de teste','CFO I','outro',true);
 insert into public.profiles(id,role,full_name,active,student_id) values
  (pg_temp.did('coord'),'coordenacao','Coordenação diário',true,null),
  (pg_temp.did('cad1'),'aluno','Cadete 1',true,pg_temp.did('student1')),
  (pg_temp.did('cad2'),'aluno','Cadete 2',true,pg_temp.did('student2')),
  (pg_temp.did('cad3'),'aluno','Cadete 3',true,pg_temp.did('student3')),
- (pg_temp.did('cad4'),'aluno','Cadete 4',true,pg_temp.did('student4'));
+ (pg_temp.did('cad4'),'aluno','Cadete 4',true,pg_temp.did('student4')),
+ (pg_temp.did('boris'),'aluno','Boris',true,pg_temp.did('student_boris'));
 insert into public.internship_administrators(student_id,reason) values(pg_temp.did('student4'),'Delegação de teste do diário');
 insert into public.internship_programs(id,class_id,course_phase,name,starts_on,ends_on,required_minutes,target_minutes,status,published_by,published_at)
 values(pg_temp.did('program'),pg_temp.did('classA'),'CFO I','Programa diário','2026-10-01','2026-11-30',15000,15120,'publicado',pg_temp.did('coord'),now());
@@ -58,6 +61,17 @@ select lives_ok($$insert into public.internship_diary_entries(id,student_id,stat
  values(pg_temp.did('shared1'),pg_temp.did('student1'),'compartilhado','Queda de moto, apoiei na imobilização',pg_temp.did('assignment1'),'aph',
   array[pg_temp.did('student2'),pg_temp.did('student3'),pg_temp.did('student1'),pg_temp.did('student2')],now(),now())$$,
  'Relato compartilhado vinculado ao próprio plantão');
+select is((select occurrence_types from public.internship_diary_entries where id=pg_temp.did('shared1')),
+ array['aph']::text[],'Coluna legada simples vira etiqueta na criação');
+update public.internship_diary_entries set
+ occurrence_types=array['acidente_transito','abelhas_marimbondos'],
+ vehicles=array['SB','AR','BT']
+where id=pg_temp.did('shared1');
+select ok((select occurrence_type='acidente_transito' and vehicle='SB'
+ and occurrence_types=array['acidente_transito','abelhas_marimbondos']
+ and vehicles=array['SB','AR','BT']
+ from public.internship_diary_entries where id=pg_temp.did('shared1')),
+ 'Múltiplas etiquetas preservam espelho legado e BT');
 select is((select companion_ids from public.internship_diary_entries where id=pg_temp.did('shared1')),array[pg_temp.did('student2')],
  'Colegas marcados ficam só os da turma, sem repetição e sem o autor');
 select ok((select shared_at is not null and featured_at is null and hidden_at is null from public.internship_diary_entries where id=pg_temp.did('shared1')),
@@ -148,6 +162,37 @@ set local role authenticated;
 select is((select count(*)::integer from public.internship_diary_entries where id=pg_temp.did('shared1')),1,'Relato volta ao mural');
 delete from public.internship_diary_reactions where entry_id=pg_temp.did('shared1') and kind='aplauso';
 select is((select count(*)::integer from public.internship_diary_reactions where entry_id=pg_temp.did('shared1')),1,'Colega desfaz a própria reação');
+reset role;
+
+-- A conta de teste usa o portal da turma sem participar de listas ou do mural oficial.
+select pg_temp.act('boris');
+set local role authenticated;
+select is((select count(*)::integer from public.students where id=pg_temp.did('student_boris')),1,
+ 'Boris lê a própria ficha');
+select is((select count(*)::integer from public.v_student_class_basic where id=pg_temp.did('student_boris')),0,
+ 'View da turma não lista Boris');
+select is((select count(*)::integer from public.internship_diary_entries where id=pg_temp.did('shared1')),1,
+ 'Boris vê o mural compartilhado da turma');
+select lives_ok($$insert into public.internship_diary_entries(id,student_id,status,summary)
+ values(pg_temp.did('boris_entry'),pg_temp.did('student_boris'),'compartilhado','Relato de ensaio')$$,
+ 'Boris grava relato de teste');
+select throws_ok($$insert into public.internship_diary_reactions(entry_id,user_id,kind)
+ values(pg_temp.did('shared1'),pg_temp.did('boris'),'aplauso')$$,
+ '42501',null,'Boris não altera reações do mural oficial');
+select throws_ok($$update public.students set is_test=false where id=pg_temp.did('student_boris')$$,
+ '42501',null,'Boris não remove seu marcador de teste');
+reset role;
+select pg_temp.act('cad2');
+set local role authenticated;
+select is((select count(*)::integer from public.internship_diary_entries where id=pg_temp.did('boris_entry')),0,
+ 'Cadetes reais não veem o relato de Boris');
+reset role;
+select pg_temp.act('coord');
+set local role authenticated;
+select is((select count(*)::integer from public.students where id=pg_temp.did('student_boris')),0,
+ 'Painel da Coordenação não recebe a ficha de Boris');
+select is((select count(*)::integer from public.internship_diary_entries where id=pg_temp.did('boris_entry')),0,
+ 'Painel de ocorrências não recebe o relato de Boris');
 reset role;
 
 select ok(not has_table_privilege('anon','public.internship_diary_entries','SELECT'),'Visitante anônimo não lê o diário');
