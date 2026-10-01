@@ -115,7 +115,7 @@ export async function loadMyVehicles(db: Db, studentId: string): Promise<string[
       "USB",
       "AR",
       "ABT",
-      "SB",
+      "AT",
       ...(data ?? []).flatMap((row) =>
         row.vehicles?.length ? row.vehicles : row.vehicle ? [row.vehicle] : [],
       ),

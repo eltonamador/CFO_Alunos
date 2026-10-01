@@ -65,11 +65,11 @@ select is((select occurrence_types from public.internship_diary_entries where id
  array['aph']::text[],'Coluna legada simples vira etiqueta na criação');
 update public.internship_diary_entries set
  occurrence_types=array['acidente_transito','abelhas_marimbondos'],
- vehicles=array['SB','AR','ABT']
+ vehicles=array['AT','AR','ABT']
 where id=pg_temp.did('shared1');
-select ok((select occurrence_type='acidente_transito' and vehicle='SB'
+select ok((select occurrence_type='acidente_transito' and vehicle='AT'
  and occurrence_types=array['acidente_transito','abelhas_marimbondos']
- and vehicles=array['SB','AR','ABT']
+ and vehicles=array['AT','AR','ABT']
  from public.internship_diary_entries where id=pg_temp.did('shared1')),
  'Múltiplas etiquetas preservam espelho legado e ABT');
 select is((select companion_ids from public.internship_diary_entries where id=pg_temp.did('shared1')),array[pg_temp.did('student2')],

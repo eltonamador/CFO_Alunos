@@ -380,7 +380,7 @@ export function OccurrenceDiaryForm({
                 onChange={(event) => changeCustomVehicle(event.target.value)}
                 list="diary-vehicles"
                 maxLength={60}
-                placeholder="Ex.: SB-12"
+                placeholder="Ex.: AT-12"
                 className={field}
               />
             </label>

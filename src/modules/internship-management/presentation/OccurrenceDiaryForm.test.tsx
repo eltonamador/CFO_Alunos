@@ -129,6 +129,8 @@ it("permite combinar dois tipos e duas viaturas no mesmo relato", async () => {
   expect(screen.getByLabelText("USB")).toBeInTheDocument();
   expect(screen.getByLabelText("AR")).toBeInTheDocument();
   expect(screen.getByLabelText("ABT")).toBeInTheDocument();
+  expect(screen.getByLabelText("AT")).toBeInTheDocument();
+  expect(screen.queryByLabelText("SB")).not.toBeInTheDocument();
   fireEvent.change(summary(), { target: { value: "Fogo em residência e vegetação" } });
   fireEvent.click(screen.getByLabelText("Incêndio urbano"));
   fireEvent.click(screen.getByLabelText("Incêndio em vegetação"));
