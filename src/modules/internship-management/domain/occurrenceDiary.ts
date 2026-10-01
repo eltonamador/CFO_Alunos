@@ -34,7 +34,7 @@ export const PARTICIPATIONS = [
   { value: "apoiei", label: "Apoiei" },
   { value: "atuei", label: "Atuei" },
 ] as const;
-export const DIARY_VEHICLES = ["SB", "AR", "BT", "USB"] as const;
+export const DIARY_VEHICLES = ["USB", "AR", "ABT", "SB"] as const;
 export const REACTIONS = [
   { kind: "aplauso", emoji: "👏", label: "Aplaudir" },
   { kind: "aprendi", emoji: "💡", label: "Aprendi com isso" },

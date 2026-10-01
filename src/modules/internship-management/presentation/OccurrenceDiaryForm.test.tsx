@@ -126,16 +126,19 @@ it("ao escolher o plantão sugere a data e a viatura", () => {
 
 it("permite combinar dois tipos e duas viaturas no mesmo relato", async () => {
   render(<OccurrenceDiaryForm {...props} />);
+  expect(screen.getByLabelText("USB")).toBeInTheDocument();
+  expect(screen.getByLabelText("AR")).toBeInTheDocument();
+  expect(screen.getByLabelText("ABT")).toBeInTheDocument();
   fireEvent.change(summary(), { target: { value: "Fogo em residência e vegetação" } });
   fireEvent.click(screen.getByLabelText("Incêndio urbano"));
   fireEvent.click(screen.getByLabelText("Incêndio em vegetação"));
-  fireEvent.click(screen.getByLabelText("SB"));
-  fireEvent.click(screen.getByLabelText("AR"));
+  fireEvent.click(screen.getByLabelText("USB"));
+  fireEvent.click(screen.getByLabelText("ABT"));
   fireEvent.click(screen.getByRole("button", { name: "Salvar no meu diário" }));
   await waitFor(() => expect(saveDiaryEntry).toHaveBeenCalled());
   expect(vi.mocked(saveDiaryEntry).mock.calls.at(-1)?.[0]).toMatchObject({
     occurrenceTypes: ["incendio_urbano", "incendio_vegetacao"],
-    vehicles: ["SB", "AR"],
+    vehicles: ["USB", "ABT"],
   });
 });
 

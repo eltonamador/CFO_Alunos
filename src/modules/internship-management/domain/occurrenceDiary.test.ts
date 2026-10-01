@@ -95,7 +95,7 @@ describe("preparo do registro", () => {
       intent: "pessoal",
       summary: "Fogo em residência e vegetação",
       occurrenceTypes: ["incendio_urbano", "incendio_vegetacao", "incendio_urbano"],
-      vehicles: ["SB", "AR", "BT", "AR"],
+      vehicles: ["SB", "AR", "ABT", "AR"],
     });
     expect(result).toMatchObject({
       ok: true,
@@ -103,7 +103,7 @@ describe("preparo do registro", () => {
         occurrence_type: "incendio_urbano",
         occurrence_types: ["incendio_urbano", "incendio_vegetacao"],
         vehicle: "SB",
-        vehicles: ["SB", "AR", "BT"],
+        vehicles: ["SB", "AR", "ABT"],
       },
     });
   });
