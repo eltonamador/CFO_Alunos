@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { DIARY_PHOTO_MAX_BYTES, DIARY_PHOTO_RULE } from "../domain/diaryPhoto";
 
@@ -151,6 +152,7 @@ export function DiaryPhotos({
                 }} className="block w-full text-sm" />
               </label>
               <p className="text-xs text-muted-foreground">A foto é reduzida para JPEG de até 1 MiB. Ela fica no Drive privado, fora do banco do aplicativo.</p>
+              <Link href="/privacidade" target="_blank" className="text-xs text-primary underline">Privacidade e uso das fotos</Link>
             </div>
           ) : null}
           {error ? <p role="alert" className="text-destructive">{error}</p> : null}

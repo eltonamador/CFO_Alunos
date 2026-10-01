@@ -10,6 +10,7 @@ type UserRole = "coordenacao" | "secretaria" | "instrutor" | "aluno";
 
 const PUBLIC_PATHS = [
   "/login",
+  "/privacidade",
   "/primeiro-acesso",
   "/offline",
   "/escala-offline.html",
@@ -90,7 +91,7 @@ export async function updateSession(request: NextRequest) {
   const isFirstAccess = !user.user_metadata?.password_changed_at;
 
   // Primeiro acesso: força /primeiro-acesso até trocar
-  if (isFirstAccess && pathname !== "/primeiro-acesso" && pathname !== "/offline") {
+  if (isFirstAccess && pathname !== "/primeiro-acesso" && pathname !== "/offline" && pathname !== "/privacidade") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/primeiro-acesso";
     return NextResponse.redirect(redirectUrl);
