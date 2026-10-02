@@ -33,7 +33,7 @@ interface NavItem {
   shortLabel?: string;
   icon: LucideIcon;
   exact?: boolean;
-  badge?: React.ReactNode;
+  badge?: number;
 }
 
 const NAV_BY_ROLE: Record<SessionProfile["role"], NavItem[]> = {
@@ -139,14 +139,14 @@ function getUserDisplayName(session: SessionProfile): string {
 
 export function AppShell({
   session,
-  unreadAnnouncements,
-  pendingFollowUps,
+  unreadAnnouncements = 0,
+  pendingFollowUps = 0,
   children,
 }: {
   session: SessionProfile;
-  unreadAnnouncements?: React.ReactNode;
+  unreadAnnouncements?: number;
   /** FO− aguardando manifestação (aluno) ou decisão (coordenação). */
-  pendingFollowUps?: React.ReactNode;
+  pendingFollowUps?: number;
   children: React.ReactNode;
 }) {
   const baseNav = [...NAV_BY_ROLE[session.role]];
@@ -167,10 +167,10 @@ export function AppShell({
     });
   }
   const nav: NavItem[] = baseNav.map((item) => {
-    if (item.href === "/aluno/comunicados") {
+    if (item.href === "/aluno/comunicados" && unreadAnnouncements > 0) {
       return { ...item, badge: unreadAnnouncements };
     }
-    if (item.href.endsWith("/acompanhamento")) {
+    if (item.href.endsWith("/acompanhamento") && pendingFollowUps > 0) {
       return { ...item, badge: pendingFollowUps };
     }
     return item;

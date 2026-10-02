@@ -1,6 +1,5 @@
 import { AppLoading } from "@/components/app/AppLoading";
 import { MobileSession } from "@/components/app/MobileSession";
-import { NavBadge } from "@/components/app/NavLink";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "@/components/app/AppShell";
@@ -52,38 +51,6 @@ async function getPendingFollowUpsCount(role: string, studentId: string | null):
   }
 }
 
-/**
- * Alertas institucionais são informativos: não devem atrasar a entrega do
- * shell nem da página solicitada. O Suspense permite que sejam inseridos no
- * stream assim que a consulta terminar, sem expor dados de outra sessão.
- */
-async function BirthdayBannerLoader() {
-  const alerts = await getAdministrativeBirthdayAlerts();
-  return alerts.length > 0 ? (
-    <BirthdayBanner alerts={alerts} />
-  ) : (
-    <span aria-hidden="true" className="hidden" />
-  );
-}
-
-async function UnreadAnnouncementsBadge({ studentId }: { studentId: string }) {
-  const count = await getUnreadAnnouncementsCount(studentId);
-  return (
-    <span className="contents">
-      <NavBadge count={count} />
-    </span>
-  );
-}
-
-async function FollowUpsBadge({ role, studentId }: { role: string; studentId: string | null }) {
-  const count = await getPendingFollowUpsCount(role, studentId);
-  return (
-    <span className="contents">
-      <NavBadge count={count} />
-    </span>
-  );
-}
-
 async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -91,28 +58,21 @@ async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   if (!session.active) redirect("/login");
 
   const canSeeBirthdayAlerts = session.role === "coordenacao" || session.role === "secretaria";
+  const [unreadAnnouncements, pendingFollowUps, birthdayAlerts] = await Promise.all([
+    session.role === "aluno" && session.studentId
+      ? getUnreadAnnouncementsCount(session.studentId)
+      : Promise.resolve(0),
+    getPendingFollowUpsCount(session.role, session.studentId),
+    canSeeBirthdayAlerts ? getAdministrativeBirthdayAlerts() : Promise.resolve([]),
+  ]);
 
   return (
     <AppShell
       session={session}
-      unreadAnnouncements={
-        session.role === "aluno" && session.studentId ? (
-          <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
-            <UnreadAnnouncementsBadge studentId={session.studentId} />
-          </Suspense>
-        ) : null
-      }
-      pendingFollowUps={
-        <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
-          <FollowUpsBadge role={session.role} studentId={session.studentId} />
-        </Suspense>
-      }
+      unreadAnnouncements={unreadAnnouncements}
+      pendingFollowUps={pendingFollowUps}
     >
-      {canSeeBirthdayAlerts && (
-        <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
-          <BirthdayBannerLoader />
-        </Suspense>
-      )}
+      <BirthdayBanner alerts={birthdayAlerts} />
       <OfflineRosterSession userId={session.userId} />
       <OfflineQtsSession userId={session.userId} />
       <MobileSession
