@@ -31,7 +31,11 @@ export function EvaluationReview({
         start(async () => {
           try {
             const result = await reviewEvaluation(data);
-            setMessage(result.error ?? "Revisão registrada.");
+            if (result.error) {
+              setMessage(result.error);
+              return;
+            }
+            setMessage("Revisão registrada.");
             router.refresh();
           } catch {
             setMessage("Falha ao registrar a revisão.");

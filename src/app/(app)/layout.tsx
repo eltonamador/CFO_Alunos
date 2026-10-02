@@ -59,15 +59,29 @@ async function getPendingFollowUpsCount(role: string, studentId: string | null):
  */
 async function BirthdayBannerLoader() {
   const alerts = await getAdministrativeBirthdayAlerts();
-  return <BirthdayBanner alerts={alerts} />;
+  return alerts.length > 0 ? (
+    <BirthdayBanner alerts={alerts} />
+  ) : (
+    <span aria-hidden="true" className="hidden" />
+  );
 }
 
 async function UnreadAnnouncementsBadge({ studentId }: { studentId: string }) {
-  return <NavBadge count={await getUnreadAnnouncementsCount(studentId)} />;
+  const count = await getUnreadAnnouncementsCount(studentId);
+  return (
+    <span className="contents">
+      <NavBadge count={count} />
+    </span>
+  );
 }
 
 async function FollowUpsBadge({ role, studentId }: { role: string; studentId: string | null }) {
-  return <NavBadge count={await getPendingFollowUpsCount(role, studentId)} />;
+  const count = await getPendingFollowUpsCount(role, studentId);
+  return (
+    <span className="contents">
+      <NavBadge count={count} />
+    </span>
+  );
 }
 
 async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
@@ -83,19 +97,19 @@ async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
       session={session}
       unreadAnnouncements={
         session.role === "aluno" && session.studentId ? (
-          <Suspense fallback={null}>
+          <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
             <UnreadAnnouncementsBadge studentId={session.studentId} />
           </Suspense>
         ) : null
       }
       pendingFollowUps={
-        <Suspense fallback={null}>
+        <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
           <FollowUpsBadge role={session.role} studentId={session.studentId} />
         </Suspense>
       }
     >
       {canSeeBirthdayAlerts && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<span aria-hidden="true" className="hidden" />}>
           <BirthdayBannerLoader />
         </Suspense>
       )}
