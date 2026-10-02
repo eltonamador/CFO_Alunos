@@ -49,12 +49,12 @@ describe("homologação simplificada", () => {
     expect(screen.getByRole("button", { name: "Confirmar ficha e homologar" })).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent("Plantão ainda não encerrado");
   });
-  it("traz a saída antecipada para análise sem reduzir automaticamente as horas previstas", () => {
-    const { container } = render(<HomologationForm {...props} earlyExitAt="2026-09-27T08:00:00Z" earlyExitReason="Instrução na ABM por orientação da Coordenação" />);
+  it.each([12, 24])("traz a saída antecipada para análise sem reduzir automaticamente as %sh previstas", (hours) => {
+    const { container } = render(<HomologationForm {...props} startsAt={new Date(Date.parse(props.endsAt) - hours * 60 * 60_000).toISOString()} plannedMinutes={hours * 60} earlyExitAt="2026-09-27T08:00:00Z" earlyExitReason="Instrução na ABM por orientação da Coordenação" />);
     expect(screen.getByLabelText("Saída antecipada informada pelo cadete")).toBeDisabled();
     expect((container.querySelector('[name="attendanceStatus"]') as HTMLInputElement).value).toBe("parcial");
     expect((container.querySelector('[name="actualEndsAt"]') as HTMLInputElement).value).toBe("2026-09-27T05:00");
-    expect((container.querySelector('[name="approvedHours"]') as HTMLInputElement).value).toBe("24");
+    expect((container.querySelector('[name="approvedHours"]') as HTMLInputElement).value).toBe(String(hours));
     expect(screen.getByLabelText("Justificativa da decisão")).toBeRequired();
   });
 });

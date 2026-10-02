@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSession } from "@/modules/identity/presentation/session";
 import { canManageInternship } from "../domain/access";
+import type { AttendancePointData } from "../domain/attendance";
 const pointSchema = z.object({
   assignmentId: z.string().uuid(),
   pointType: z.enum(["entrada", "saida"]),
@@ -20,12 +21,13 @@ const pointSchema = z.object({
 });
 export async function recordInternshipPoint(
   input: z.infer<typeof pointSchema>,
-): Promise<{ error?: string; success?: boolean }> {
+): Promise<{ error?: string; success?: boolean; point?: AttendancePointData | null }> {
   const session = await getSession();
   if (!session?.active || session.role !== "aluno" || !session.studentId)
     return { error: "Acesso restrito ao cadete." };
   const parsed = pointSchema.safeParse(input);
-  if (!parsed.success) return { error: "Revise a localização, o oficial responsável e o motivo da saída." };
+  if (!parsed.success)
+    return { error: "Revise a localização, o oficial responsável e o motivo da saída." };
   const p = parsed.data;
   const args = {
     p_assignment_id: p.assignmentId,
@@ -35,12 +37,13 @@ export async function recordInternshipPoint(
     p_accuracy_m: p.accuracy,
     p_supervisor_name: p.supervisorName,
   };
-  const { error } = p.earlyExitReason
-    ? await createSupabaseServerClient().rpc("internship_record_point_with_reason", {
+  const supabase = createSupabaseServerClient();
+  const { data: pointId, error } = p.earlyExitReason
+    ? await supabase.rpc("internship_record_point_with_reason", {
         ...args,
         p_early_exit_reason: p.earlyExitReason,
       })
-    : await createSupabaseServerClient().rpc("internship_record_point", args);
+    : await supabase.rpc("internship_record_point", args);
   if (error)
     return {
       error:
@@ -50,7 +53,22 @@ export async function recordInternshipPoint(
     };
   revalidatePath("/aluno/estagio");
   revalidatePath("/coordenacao/estagio");
-  return { success: true };
+  // Read the saved snapshot through RLS, including when the RPC returns an existing point.
+  // A failed read must never turn a committed point into an apparent recording failure.
+  try {
+    const { data: point, error: readError } = await supabase
+      .from("internship_attendance_points")
+      .select(
+        "id, point_type, recorded_at, latitude, longitude, accuracy_m, distance_m, site_radius_m, location_status, supervisor_name",
+      )
+      .eq("id", pointId)
+      .eq("student_id", session.studentId)
+      .eq("assignment_id", p.assignmentId)
+      .maybeSingle();
+    return { success: true, point: readError ? null : point };
+  } catch {
+    return { success: true, point: null };
+  }
 }
 const locationSchema = z.object({
   siteId: z.string().uuid(),
@@ -81,15 +99,13 @@ export async function saveInternshipLocation(form: FormData): Promise<void> {
     .maybeSingle();
   if (siteError || site?.site_type !== "gbm")
     redirect("/coordenacao/estagio?resultado=localizacao_invalida#ponto");
-  const { error } = await createSupabaseServerClient()
-    .from("internship_site_locations")
-    .upsert({
-      site_id: p.siteId,
-      latitude: p.latitude,
-      longitude: p.longitude,
-      radius_m: p.radius,
-      updated_by: session!.userId,
-    });
+  const { error } = await createSupabaseServerClient().from("internship_site_locations").upsert({
+    site_id: p.siteId,
+    latitude: p.latitude,
+    longitude: p.longitude,
+    radius_m: p.radius,
+    updated_by: session!.userId,
+  });
   revalidatePath("/coordenacao/estagio");
   redirect(
     `/coordenacao/estagio?resultado=${error ? "falha_localizacao" : "localizacao_salva"}#ponto`,

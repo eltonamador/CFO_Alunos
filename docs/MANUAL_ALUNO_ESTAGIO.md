@@ -31,6 +31,10 @@
 
 Se já bloqueou a localização: **cadeado** ao lado do endereço → **Permissões → Localização → Permitir** → recarregue a página. O horário do ponto é o **horário real registrado pelo servidor depois de obter o GPS**; não é o horário previsto na escala.
 
+**Nos GBMs, registre dentro do raio do local.** Mesmo se a aula atrasar sua chegada ou precisar sair antes para uma instrução, marque a entrada ao chegar e a saída ainda no local. As horas previstas (12h, 24h ou a carga da sua escala) permanecem para homologação pela Coordenação, sem desconto automático pelo GPS ou pelo horário do ponto.
+
+**Fora do raio, o registro continua permitido**, com um alerta destacado e a distância, o raio e a precisão aproximada. O ponto salvo não precisa ser repetido. GPS impreciso ou local sem coordenadas recebem avisos próprios, pois não comprovam que você estava fora do serviço. Se estava no local e recebeu um alerta, informe a Coordenação para conferir a localização. Na praia, permanece o registro no posto móvel, sem raio fixo.
+
 ### 2. Identifique o supervisor e envie a ficha
 
 O campo **Supervisor do serviço (pode informar na saída)** pode ficar **em branco na entrada**. Preencha quando souber o nome, até registrar a saída.

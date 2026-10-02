@@ -13,6 +13,7 @@ export type AttendancePointData = {
   longitude: number;
   accuracy_m: number;
   distance_m: number | null;
+  site_radius_m: number | null;
   location_status: string;
   supervisor_name: string | null;
 };
